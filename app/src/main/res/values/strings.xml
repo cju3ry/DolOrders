@@ -1,3 +1,34 @@
 <resources>
     <string name="app_name">DolOrders</string>
+    <string name="menu_accueil">Accueil</string>
+    <string name="menu_client">Client</string>
+    <string name="menu_commande">Commande</string>
+    <string name="menu_en_attente">En attente</string>
+
+    <string name="accueil_titre">Accueil :</string>
+    <string name="accueil_tableau_entete">Données en attente</string>
+    <string name="accueil_tableau_ligne_client">Clients</string>
+    <string name="accueil_tableau_ligne_commande">Commandes</string>
+    <string name="accueil_tableau_ligne_total">Total</string>
+
+    <string name="accueil_raccourci_client">+ Nouveau Client</string>
+    <string name="accueil_raccourci_commande">+ Nouvelle Commande</string>
+    <string name="accueil_raccourci_attente">Données en attente</string>
+
+    <string name="client_titre">Ajouter un client :</string>
+    <string name="client_champ_nom">Nom client :</string>
+    <string name="client_champ_adresse">Adresse :</string>
+    <string name="client_champ_code_postal">Code postal :</string>
+    <string name="client_champ_ville">Ville :</string>
+    <string name="client_champ_adresse_mail">Adresse mail :</string>
+    <string name="client_champ_telephone">Téléphone :</string>
+
+    <string name="commande_titre">Ajouter une commande :</string>
+    <string name="commande_champ_client">Nom client :</string>
+    <string name="commande_champ_date">Date :</string>
+    <string name="commande_champ_article">Article(s) :</string>
+    <string name="commande_champ_remise">Remise éventuelle :</string>
+
+    <string name="bouton_valider">Ajouter un client</string>
+    <string name="bouton_annuler">Ajouter un client</string>
 </resources>

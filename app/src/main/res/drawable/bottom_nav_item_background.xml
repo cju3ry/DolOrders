@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Fond quand l'item est sélectionné (coché) -->
+    <item android:state_checked="true" android:drawable="@color/blue_dolibarr" />
+    <!-- Fond par défaut (transparent pour laisser voir le gris de la barre) -->
+    <item android:drawable="@android:color/transparent" />
+</selector>
