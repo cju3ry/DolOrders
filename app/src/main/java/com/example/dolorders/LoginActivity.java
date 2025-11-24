@@ -76,6 +76,7 @@ public class LoginActivity extends AppCompatActivity {
             finish();
         }
     }
+
     /**
      * Crée et retourne une instance de SharedPreferences cryptées.
      * Les données sont automatiquement cryptées lors de l'écriture
@@ -100,6 +101,7 @@ public class LoginActivity extends AppCompatActivity {
 
     /**
      * Valide les champs d'entrée de l'utilisateur.
+     *
      * @param username
      * @param password
      * @param url
@@ -124,6 +126,7 @@ public class LoginActivity extends AppCompatActivity {
     /**
      * Effectue la connexion au serveur Dolibarr.
      * Si baseUrl est "stub" ou "bouchon", simule une connexion réussie.
+     *
      * @param username
      * @param password
      * @param baseUrl
@@ -176,8 +179,9 @@ public class LoginActivity extends AppCompatActivity {
                         int statusCode = error.networkResponse.statusCode;
                         if (statusCode == 400) errorMessage = "Erreur 400: Requête invalide";
                         else if (statusCode == 401) errorMessage = "Identifiants incorrects";
-                        else if (statusCode == 403) errorMessage = "Identifiants et ou mot de passe " +
-                                                                   "incorrects";
+                        else if (statusCode == 403)
+                            errorMessage = "Identifiants et ou mot de passe " +
+                                    "incorrects";
                         else if (statusCode == 404) errorMessage = "URL Dolibarr incorrecte (404)";
                         else if (statusCode == 500) errorMessage = "Erreur serveur Dolibarr (500)";
                         else errorMessage = "Erreur de connexion (" + statusCode + ")";
@@ -276,6 +280,7 @@ public class LoginActivity extends AppCompatActivity {
 
     /**
      * Affiche un message d'erreur. Pour le debug
+     *
      * @param message
      */
     private void showError(String message) {
