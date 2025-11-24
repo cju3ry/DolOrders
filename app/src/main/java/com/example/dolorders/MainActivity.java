@@ -1,6 +1,10 @@
 package com.example.dolorders;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
@@ -10,6 +14,7 @@ import com.example.dolorders.ui.HomeFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class MainActivity extends AppCompatActivity {
+    private Button btnLogout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -17,6 +22,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         BottomNavigationView bottomNav = findViewById(R.id.bottomNavigation);
+        btnLogout = findViewById(R.id.btnLogout);
+        btnLogout.setOnClickListener(v -> logout());
         bottomNav.setOnItemSelectedListener(item -> {
             Fragment selectedFragment = null;
             int id = item.getItemId();
@@ -43,5 +50,16 @@ public class MainActivity extends AppCompatActivity {
                     .replace(R.id.fragment_container, new HomeFragment())
                     .commit();
         }
+    }
+
+    private void logout() {
+        // Effacer les données de connexion
+        SharedPreferences prefs = getSharedPreferences("DolOrdersPrefs", MODE_PRIVATE);
+        prefs.edit().clear().apply();
+
+        // Retourner à la page de login
+        Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+        startActivity(intent);
+        finish();
     }
 }
