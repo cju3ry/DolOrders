@@ -74,4 +74,5 @@ dependencies {
     implementation("com.google.android.material:material:1.9.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("com.android.volley:volley:1.2.1")
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 }

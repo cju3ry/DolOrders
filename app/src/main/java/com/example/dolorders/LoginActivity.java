@@ -9,6 +9,8 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.security.crypto.EncryptedSharedPreferences;
+import androidx.security.crypto.MasterKey;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -21,6 +23,8 @@ import com.google.android.material.textfield.TextInputEditText;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,10 +36,11 @@ public class LoginActivity extends AppCompatActivity {
     private Button btnLogin;
     private RequestQueue requestQueue;
 
+    private SharedPreferences securePrefs;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // mot de passe de test FNNEIz5QQZVq
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
@@ -45,6 +50,15 @@ public class LoginActivity extends AppCompatActivity {
         btnLogin = findViewById(R.id.btnLogin);
 
         requestQueue = Volley.newRequestQueue(this);
+
+        // Initialiser les SharedPreferences cryptées
+        try {
+            securePrefs = getEncryptedSharedPreferences();
+        } catch (GeneralSecurityException | IOException e) {
+            Toast.makeText(this, "Erreur d'initialisation du stockage sécurisé", Toast.LENGTH_LONG).show();
+            e.printStackTrace();
+            return;
+        }
 
         btnLogin.setOnClickListener(v -> {
             String username = etUsername.getText().toString().trim();
@@ -57,11 +71,31 @@ public class LoginActivity extends AppCompatActivity {
         });
 
         // Si déjà connecté, démarrer directement MainActivity
-        SharedPreferences prefs = getSharedPreferences("DolOrdersPrefs", MODE_PRIVATE);
-        if (prefs.getBoolean("is_logged_in", false)) {
+        if (securePrefs.getBoolean("is_logged_in", false)) {
             startActivity(new Intent(LoginActivity.this, MainActivity.class));
             finish();
         }
+    }
+    /**
+     * Crée et retourne une instance de SharedPreferences cryptées.
+     * Les données sont automatiquement cryptées lors de l'écriture
+     * et décryptées lors de la lecture.
+     */
+    private SharedPreferences getEncryptedSharedPreferences()
+            throws GeneralSecurityException, IOException {
+        // Créer ou récupérer la clé maître pour le cryptage
+        MasterKey masterKey = new MasterKey.Builder(this)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build();
+
+        // Créer les SharedPreferences cryptées
+        return EncryptedSharedPreferences.create(
+                this,
+                "secure_prefs_crypto",  // Nom du fichier
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        );
     }
 
     /**
@@ -194,19 +228,49 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     /**
-     * Sauvegarde les informations de connexion dans SharedPreferences.
-     * @param username
-     * @param apiKey
-     * @param baseUrl
+     * Sauvegarde les informations de connexion de manière CRYPTÉE.
+     * Les données sont automatiquement cryptées par EncryptedSharedPreferences.
+     *
+     * @param username Le nom d'utilisateur
+     * @param apiKey   La clé API (sera cryptée automatiquement)
+     * @param baseUrl  L'URL de base (sera cryptée automatiquement)
      */
     private void saveCredentials(String username, String apiKey, String baseUrl) {
-        SharedPreferences sharedPreferences = getSharedPreferences("DolOrdersPrefs", MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
+        SharedPreferences.Editor editor = securePrefs.edit();
+
+        // Toutes ces données sont automatiquement cryptées lors de l'écriture
         editor.putString("username", username);
         editor.putString("api_key", apiKey);
         editor.putString("base_url", baseUrl);
         editor.putBoolean("is_logged_in", true);
+
         editor.apply();
+
+        android.util.Log.d("LOGIN_DEBUG", "Identifiants sauvegardés de manière cryptée");
+    }
+    /**
+     * MÉTHODE UTILITAIRE pour récupérer la clé API décryptée
+     */
+    public static String getApiKey(AppCompatActivity activity) {
+        try {
+            MasterKey masterKey = new MasterKey.Builder(activity)
+                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                    .build();
+
+            SharedPreferences securePrefs = EncryptedSharedPreferences.create(
+                    activity,
+                    "secure_prefs",
+                    masterKey,
+                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            );
+
+            // La clé est automatiquement décryptée lors de la lecture
+            return securePrefs.getString("api_key", null);
+        } catch (GeneralSecurityException | IOException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     /**
