@@ -34,11 +34,40 @@ android {
 }
 
 dependencies {
-    implementation(libs.appcompat)
-    implementation(libs.material)
-    implementation(libs.activity)
-    implementation(libs.constraintlayout)
+    val lifecycleVersion = "2.8.3"
+    val activityVersion = "1.11.0"
+    val fragmentVersion = "1.8.1"
+    val appCompatVersion = "1.7.0"
+    val constraintLayoutVersion = "2.1.4"
+    val materialVersion = "1.12.0"
+
+    constraints {
+        implementation("androidx.core:core-ktx:1.13.1") {
+            because("Garantir une version unique du core de Kotlin")
+        }
+        implementation("androidx.appcompat:appcompat:$appCompatVersion") {
+            because("Garantir une version unique d'appcompat")
+        }
+    }
+
+    // App
+    implementation("androidx.appcompat:appcompat:$appCompatVersion")
+    implementation("com.google.android.material:material:$materialVersion")
+    implementation("androidx.constraintlayout:constraintlayout:$constraintLayoutVersion")
+    implementation("androidx.activity:activity-ktx:$activityVersion")
+    implementation("androidx.fragment:fragment-ktx:$fragmentVersion")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycleVersion")
+    implementation("androidx.lifecycle:lifecycle-livedata-ktx:$lifecycleVersion")
+
+    // Tests locaux JVM
     testImplementation(libs.junit)
-    androidTestImplementation(libs.ext.junit)
-    androidTestImplementation(libs.espresso.core)
+
+    // Tests instrumentés (AndroidTest)
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation("androidx.test:runner:1.5.2")
+    androidTestImplementation("androidx.test:rules:1.5.0")
+
+    // FragmentScenario -> version compatible avec AndroidX Test 1.5.x
+    debugImplementation("androidx.fragment:fragment-testing:1.6.2")
 }

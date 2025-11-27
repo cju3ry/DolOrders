@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    android:orientation="vertical">
+
+    <!-- La Toolbar reste inchangée -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbarHome"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/blue_dolibarr"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+        app:menu="@menu/menu_user"
+        app:title="@string/app_name"
+        app:titleTextColor="@android:color/white" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Titre Accueil -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:text="@string/accueil_titre"
+                android:textColor="@android:color/black"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <!-- Tableau des données en attente -->
+            <TableLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/table_border"
+                android:stretchColumns="1">
+
+                <TableRow>
+                    <TextView
+                        android:layout_span="2"
+                        android:background="@drawable/table_header_bg"
+                        android:gravity="center_horizontal"
+                        android:padding="12dp"
+                        android:text="@string/accueil_tableau_entete"
+                        android:textColor="@android:color/black"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:background="@drawable/cell_border"
+                        android:padding="12dp"
+                        android:text="@string/accueil_tableau_ligne_client"
+                        android:textColor="@android:color/black"
+                        android:textSize="16sp" />
+
+                    <TextView
+                        android:id="@+id/textClients"
+                        android:background="@drawable/cell_border"
+                        android:gravity="end"
+                        android:padding="12dp"
+                        android:text="28"
+                        android:textColor="@android:color/black"
+                        android:textSize="16sp" />
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:background="@drawable/cell_border"
+                        android:padding="12dp"
+                        android:text="@string/accueil_tableau_ligne_commande"
+                        android:textColor="@android:color/black"
+                        android:textSize="16sp" />
+
+                    <TextView
+                        android:id="@+id/textCommandes"
+                        android:background="@drawable/cell_border"
+                        android:gravity="end"
+                        android:padding="12dp"
+                        android:text="96"
+                        android:textColor="@android:color/black"
+                        android:textSize="16sp" />
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:background="@drawable/cell_border"
+                        android:padding="12dp"
+                        android:text="@string/accueil_tableau_ligne_total"
+                        android:textColor="@android:color/black"
+                        android:textSize="16sp"
+                        android:textStyle="bold"/>
+
+                    <TextView
+                        android:id="@+id/textTotal"
+                        android:background="@drawable/cell_border"
+                        android:gravity="end"
+                        android:padding="12dp"
+                        android:text="124"
+                        android:textColor="@android:color/black"
+                        android:textSize="16sp"
+                        android:textStyle="bold"/>
+                </TableRow>
+            </TableLayout>
+
+            <!-- Boutons d'action -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnNewClient"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:paddingVertical="12dp"
+                android:text="@string/accueil_raccourci_client"
+                android:textColor="@android:color/black"
+                app:backgroundTint="#E0E0E0"
+                app:strokeWidth="0dp"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnNewCommande"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:paddingVertical="12dp"
+                android:text="@string/accueil_raccourci_commande"
+                android:textColor="@android:color/black"
+                app:backgroundTint="#E0E0E0"
+                app:strokeWidth="0dp"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPendingData"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:paddingVertical="12dp"
+                android:text="@string/accueil_raccourci_attente"
+                android:textColor="@android:color/black"
+                app:icon="@drawable/commande_noir"
+                app:iconGravity="textStart"
+                app:iconPadding="16dp"
+                app:backgroundTint="#E0E0E0"
+                app:strokeWidth="0dp"/>
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>
