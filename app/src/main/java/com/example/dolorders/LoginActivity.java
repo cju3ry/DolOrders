@@ -51,7 +51,7 @@ public class LoginActivity extends AppCompatActivity {
 
         requestQueue = Volley.newRequestQueue(this);
 
-        // Initialiser les SharedPreferences cryptées
+        // Initialise les SharedPreferences cryptées
         try {
             securePrefs = getEncryptedSharedPreferences();
         } catch (GeneralSecurityException | IOException e) {
@@ -83,12 +83,12 @@ public class LoginActivity extends AppCompatActivity {
      */
     private SharedPreferences getEncryptedSharedPreferences()
             throws GeneralSecurityException, IOException {
-        // Créer ou récupérer la clé maître pour le cryptage
+        // Crée ou récupére la clé maître pour le cryptage
         MasterKey masterKey = new MasterKey.Builder(this)
                 .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
                 .build();
 
-        // Créer les SharedPreferences cryptées
+        // Crée les SharedPreferences cryptées
         return EncryptedSharedPreferences.create(
                 this,
                 "secure_prefs_crypto",  // Nom du fichier
@@ -251,6 +251,9 @@ public class LoginActivity extends AppCompatActivity {
     /**
      * MÉTHODE UTILITAIRE pour récupérer la clé API décryptée
      */
+    /**
+     * MÉTHODE UTILITAIRE pour récupérer la clé API décryptée
+     */
     public static String getApiKey(AppCompatActivity activity) {
         try {
             MasterKey masterKey = new MasterKey.Builder(activity)
@@ -259,7 +262,7 @@ public class LoginActivity extends AppCompatActivity {
 
             SharedPreferences securePrefs = EncryptedSharedPreferences.create(
                     activity,
-                    "secure_prefs",
+                    "secure_prefs_crypto",  // ⚠️ IMPORTANT : Même nom que dans getEncryptedSharedPreferences()
                     masterKey,
                     EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
@@ -280,6 +283,48 @@ public class LoginActivity extends AppCompatActivity {
     private void showError(String message) {
         btnLogin.setEnabled(true);
         Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+    }
+
+
+    /**
+     * MÉTHODE DE DÉCONNEXION
+     * Efface toutes les données cryptées et redirige vers LoginActivity
+     *
+     * Utilisation dans une autre activité (ex: MainActivity):
+     * LoginActivity.logout(this);
+     */
+    public static void logout(AppCompatActivity activity) {
+        try {
+            // Récupére les SharedPreferences cryptées
+            MasterKey masterKey = new MasterKey.Builder(activity)
+                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                    .build();
+
+            SharedPreferences securePrefs = EncryptedSharedPreferences.create(
+                    activity,
+                    "secure_prefs_crypto",
+                    masterKey,
+                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            );
+
+            // Efface TOUTES les données cryptées
+            securePrefs.edit().clear().apply();
+
+            android.util.Log.d("LOGOUT_DEBUG", "Données cryptées effacées avec succès");
+
+            // Redirige vers LoginActivity
+            Intent intent = new Intent(activity, LoginActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            activity.startActivity(intent);
+            activity.finish();
+
+            Toast.makeText(activity, "Déconnexion réussie", Toast.LENGTH_SHORT).show();
+
+        } catch (GeneralSecurityException | IOException e) {
+            android.util.Log.e("LOGOUT_DEBUG", "Erreur lors de la déconnexion", e);
+            Toast.makeText(activity, "Erreur lors de la déconnexion", Toast.LENGTH_LONG).show();
+        }
     }
 
     /**

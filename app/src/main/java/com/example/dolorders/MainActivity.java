@@ -23,7 +23,7 @@ public class MainActivity extends AppCompatActivity {
 
         BottomNavigationView bottomNav = findViewById(R.id.bottomNavigation);
         btnLogout = findViewById(R.id.btnLogout);
-        btnLogout.setOnClickListener(v -> logout());
+        btnLogout.setOnClickListener(v -> LoginActivity.logout(this));
         bottomNav.setOnItemSelectedListener(item -> {
             Fragment selectedFragment = null;
             int id = item.getItemId();

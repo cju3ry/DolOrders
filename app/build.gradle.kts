@@ -60,6 +60,11 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:$lifecycleVersion")
 
     // Tests locaux JVM
+    implementation(libs.appcompat)
+    implementation(libs.material)
+    implementation(libs.activity)
+    implementation(libs.constraintlayout)
+    implementation(libs.espresso.intents)
     testImplementation(libs.junit)
 
     // Tests instrumentés (AndroidTest)
