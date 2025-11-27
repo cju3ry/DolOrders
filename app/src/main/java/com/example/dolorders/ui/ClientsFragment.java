@@ -175,7 +175,6 @@ public class ClientsFragment extends Fragment {
         return true;
     }
 
-
     private void showCancelConfirmationDialog() {
         new AlertDialog.Builder(requireContext())
                 .setTitle("Annuler la saisie")
