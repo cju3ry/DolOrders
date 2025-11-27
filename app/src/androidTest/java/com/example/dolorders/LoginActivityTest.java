@@ -42,7 +42,7 @@ import java.security.GeneralSecurityException;
 public class LoginActivityTest {
 
     // ========== VARIABLES GLOBALES DE TEST ==========
-    // À MODIFIER avec tes vraies credentials de test
+    // À MODIFIER avec les vraies credentials de test
 //    private static final String TEST_URL = "stub";  // "stub" pu "bouchon" pour le mode bouchon
 //    private static final String TEST_USERNAME = "admin";
 //    private static final String TEST_PASSWORD = "admin123";
