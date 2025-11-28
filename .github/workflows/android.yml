@@ -36,9 +36,20 @@ jobs:
       - name: Run Unit Tests
         run: ./gradlew test --no-daemon
 
+      - name: Display Unit Test Results Summary
+        run: cat app/build/test-results/testDebugUnitTest/TEST-*.xml || echo "No XML summary found."
+
       - name: Upload Test Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-report
           path: app/build/reports/tests/testDebugUnitTest/
+
+      - name: Publish Test Results
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Unit Tests
+          path: app/build/test-results/testDebugUnitTest/*.xml
+          reporter: java-junit
