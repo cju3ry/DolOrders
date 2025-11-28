@@ -1,12 +1,10 @@
-name: Java Unit Tests
+name: DolOrders CI
 
 on:
   push:
     branches:
       - main
   pull_request:
-    branches:
-      - main
 
 jobs:
   unit-tests:
@@ -19,34 +17,27 @@ jobs:
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
-          java-version: '17'
           distribution: temurin
+          java-version: 17
 
-      - name: Grant execute permission for Gradle Wrapper
-        run: chmod +x ./gradlew
-
-      - name: Build project (skip tests)
-        run: ./gradlew build -x test --parallel --console=plain
-
-      - name: Run JVM unit tests
-        run: ./gradlew testDebugUnitTest --info --console=plain
-
-      - name: Display test results
-        run: |
-          echo "========= TEST RESULTS ========="
-          if [ -d app/build/test-results/testDebugUnitTest ]; then
-            find app/build/test-results/testDebugUnitTest -name '*.xml' | while read file; do
-              echo "File: $file"
-              xmllint --format "$file"
-            done
-          else
-            echo "No test results found"
-          fi
-
-      - name: Show summary
-        uses: dorny/test-reporter@v1
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v3
         with:
-          name: Unit Tests
-          path: app/build/test-results/testDebugUnitTest
-          reporter: junit
-          fail-on-error: true
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper/
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Run unit tests
+        run: ./gradlew testDebugUnitTest --info --console=plain --tests "*"
+
+      - name: Display test reports
+        run: |
+          echo "========= TEST REPORT ========="
+          if [ -d app/build/reports/tests/testDebugUnitTest ]; then
+            find app/build/reports/tests/testDebugUnitTest -name "*.html" -print
+          else
+            echo "No test reports found."
+          fi
