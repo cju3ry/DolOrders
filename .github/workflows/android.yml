@@ -35,5 +35,5 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew assembleDebug --stacktrace
 
-      - name: Run tests
-        run: ./gradlew testDebugUnitTest
+      - name: Run tests (clear output)
+        run: ./gradlew testDebugUnitTest --info --console=plain
