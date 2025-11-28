@@ -10,6 +10,7 @@ public class Client {
             Pattern.CASE_INSENSITIVE
     );
 
+    private final String id;
     private final String nom;
     private final String adresse;
     private final String codePostal;
@@ -20,6 +21,7 @@ public class Client {
     private final Date dateSaisie;
 
     private Client(Builder builder) {
+        this.id = builder.id;
         this.nom = builder.nom;
         this.adresse = builder.adresse;
         this.codePostal = builder.codePostal;
@@ -30,6 +32,7 @@ public class Client {
         this.dateSaisie = builder.dateSaisie;
     }
 
+    public String getId() { return id; }
     public String getNom() { return nom; }
     public String getAdresse() { return adresse; }
     public String getCodePostal() { return codePostal; }
@@ -39,8 +42,13 @@ public class Client {
     public String getUtilisateur() { return utilisateur; }
     public Date getDateSaisie() { return dateSaisie; }
 
+    @Override
+    public String toString() {
+        return nom;
+    }
 
     public static class Builder {
+        private String id;
         private String nom;
         private String adresse;
         private String codePostal;
@@ -49,6 +57,11 @@ public class Client {
         private String telephone;
         private String utilisateur;
         private Date dateSaisie;
+
+        public Builder setId(String id) {
+            this.id = id;
+            return this;
+        }
 
         public Builder setNom(String nom) {
             this.nom = nom;
