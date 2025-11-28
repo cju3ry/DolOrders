@@ -2,42 +2,36 @@ name: DolOrders CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   pull_request:
+    branches: [ main ]
 
 jobs:
-  unit-tests:
+  build:
+    name: Build (Gradle)
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: '17'
 
-      - name: Cache Gradle dependencies
-        uses: actions/cache@v3
+      - name: Cache Gradle
+        uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
-            ~/.gradle/wrapper/
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}-${{ hashFiles('**/*.gradle*','**/gradle.properties') }}
           restore-keys: |
             gradle-${{ runner.os }}-
 
-      - name: Run unit tests
-        run: ./gradlew testDebugUnitTest --info --console=plain --tests "*"
+      - name: Ensure gradlew is executable
+        run: chmod +x ./gradlew
 
-      - name: Display test reports
-        run: |
-          echo "========= TEST REPORT ========="
-          if [ -d app/build/reports/tests/testDebugUnitTest ]; then
-            find app/build/reports/tests/testDebugUnitTest -name "*.html" -print
-          else
-            echo "No test reports found."
-          fi
+      - name: Run Gradle build
+        run: ./gradlew build --no-daemon
