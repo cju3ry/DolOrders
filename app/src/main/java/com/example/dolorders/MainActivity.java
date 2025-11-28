@@ -13,6 +13,8 @@ import com.example.dolorders.ui.ClientsFragment;
 import com.example.dolorders.ui.HomeFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
+import java.io.IOException;
+
 public class MainActivity extends AppCompatActivity {
     private Button btnLogout;
 
@@ -50,16 +52,5 @@ public class MainActivity extends AppCompatActivity {
                     .replace(R.id.fragment_container, new HomeFragment())
                     .commit();
         }
-    }
-
-    private void logout() {
-        // Effacer les données de connexion
-        SharedPreferences prefs = getSharedPreferences("DolOrdersPrefs", MODE_PRIVATE);
-        prefs.edit().clear().apply();
-
-        // Retourner à la page de login
-        Intent intent = new Intent(MainActivity.this, LoginActivity.class);
-        startActivity(intent);
-        finish();
     }
 }

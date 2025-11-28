@@ -248,9 +248,7 @@ public class LoginActivity extends AppCompatActivity {
 
         android.util.Log.d("LOGIN_DEBUG", "Identifiants sauvegardés de manière cryptée");
     }
-    /**
-     * MÉTHODE UTILITAIRE pour récupérer la clé API décryptée
-     */
+
     /**
      * MÉTHODE UTILITAIRE pour récupérer la clé API décryptée
      */
@@ -262,7 +260,7 @@ public class LoginActivity extends AppCompatActivity {
 
             SharedPreferences securePrefs = EncryptedSharedPreferences.create(
                     activity,
-                    "secure_prefs_crypto",  // ⚠️ IMPORTANT : Même nom que dans getEncryptedSharedPreferences()
+                    "secure_prefs_crypto",  // Nom du fichier
                     masterKey,
                     EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
