@@ -35,5 +35,35 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew assembleDebug --stacktrace
 
-      - name: Run tests (clear output)
+      - name: Run unit tests
         run: ./gradlew testDebugUnitTest --info --console=plain
+
+  # ----------------------------------------
+  # ANDROID TESTS (INSTRUMENTED TESTS)
+  # ----------------------------------------
+  instrumented-tests:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Run instrumented tests on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-window -noaudio
+          script: ./gradlew connectedDebugAndroidTest --info --console=plain
