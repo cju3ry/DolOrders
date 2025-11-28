@@ -5,4 +5,5 @@
     <color name="blue_dolibarr">#263C5C</color>
     <color name="grey">#D7D7D7</color>
     <color name="light_grey">#EDEEF0</color>
+    <color name="connexion_background">#263C5C</color>
 </resources>
