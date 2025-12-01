@@ -39,7 +39,7 @@ public class Commande {
     public Date getDateCommande() { return dateCommande; }
     public Client getClient() { return client; }
     public Map<Produit, Integer> getProduitsEtQuantites() { return produitsEtQuantites; }
-    public double getMontantTotal() { return montantTotal; }
+    public double getMontantTotal() { return montantTotal * (1 - remise / 100); }
     public String getUtilisateur() { return utilisateur; }
     public double getRemise() { return remise; }
 
