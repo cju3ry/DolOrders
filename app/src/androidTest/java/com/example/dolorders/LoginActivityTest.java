@@ -48,9 +48,9 @@ public class LoginActivityTest {
 //    private static final String TEST_PASSWORD = "admin123";
 
     // Pour les tests avec de vraies credentials :
-     private static final String TEST_URL = "http://doli-info.iut-rodez.fr/dolibarr-19.0.4_cazor/htdocs/";
-     private static final String TEST_USERNAME = "test";
-     private static final String TEST_PASSWORD = "v4fVlzwpYieL";
+     private static final String TEST_URL = "À MODIFIER";
+     private static final String TEST_USERNAME = "À MODIFIER";
+     private static final String TEST_PASSWORD = "À MODIFIER";
 
     @Rule
     public ActivityScenarioRule<LoginActivity> activityRule =
@@ -322,4 +322,5 @@ public class LoginActivityTest {
         onView(withId(R.id.btnLogin)).perform(click());
         onView(withId(R.id.etUrl)).check(matches(hasErrorText("URL requise")));
     }
+
 }
