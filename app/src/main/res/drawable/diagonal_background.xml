@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Couleur de fond (gris clair en bas) -->
+    <item>
+        <shape>
+            <solid android:color="#ECF0F1" />
+        </shape>
+    </item>
+
+    <!-- Triangle diagonal (bleu foncé en haut) -->
+    <item
+        android:bottom="0dp">
+        <rotate
+            android:fromDegrees="80"
+            android:pivotX="100%"
+            android:pivotY="0%">
+            <shape android:shape="rectangle">
+                <solid android:color="#2C3E50" />
+            </shape>
+        </rotate>
+    </item>
+</layer-list>
