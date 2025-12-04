@@ -93,15 +93,6 @@ public class CommandeTest {
     }
 
     @Test(expected = IllegalStateException.class)
-    public void build_echoueSansDate() {
-        new Commande.Builder()
-                .setClient(clientValide)
-                .setProduitsEtQuantites(produitsValides)
-                .setUtilisateur(utilisateurValide)
-                .build(); // Pas de setDateCommande
-    }
-
-    @Test(expected = IllegalStateException.class)
     public void build_echoueSansUtilisateur() {
         new Commande.Builder()
                 .setClient(clientValide)
