@@ -36,8 +36,8 @@ public class CommandeTest {
                 .build();
 
         produitsValides = new HashMap<>();
-        produitsValides.put(new Produit(1, "Produit A", 10.0, "Cat A"), 2); // 2 * 10.0 = 20.0
-        produitsValides.put(new Produit(2, "Produit B", 5.0, "Cat B"), 1);  // 1 *  5.0 =  5.0
+        produitsValides.put(new Produit(1, "Produit A", 10.0, "Cat A"), 2);
+        produitsValides.put(new Produit(2, "Produit B", 5.0, "Cat B"), 1);
 
         dateValide = new Date();
         utilisateurValide = "Admin";
@@ -54,7 +54,7 @@ public class CommandeTest {
 
         assertNotNull(commande);
         assertEquals(clientValide, commande.getClient());
-        assertEquals(25.0, commande.getMontantTotal(), 0.01); // 20.0 + 5.0
+        assertEquals(25.0, commande.getMontantTotal(), 0.01);
     }
 
     @Test
@@ -64,12 +64,11 @@ public class CommandeTest {
                 .setProduitsEtQuantites(produitsValides)
                 .setDateCommande(dateValide)
                 .setUtilisateur(utilisateurValide)
-                .setRemise(10.0) // 10% de remise sur 25.0
+                .setRemise(10.0)
                 .build();
 
         assertNotNull(commande);
         assertEquals(10.0, commande.getRemise(), 0.01);
-        // Total = 25.0 - (25.0 * 10 / 100) = 22.5
         assertEquals(22.5, commande.getMontantTotal(), 0.01);
     }
 

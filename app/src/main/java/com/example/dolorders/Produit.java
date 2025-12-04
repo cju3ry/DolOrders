@@ -1,4 +1,3 @@
-// Dans app/src/main/java/com/example/dolorders/Produit.java
 package com.example.dolorders;
 
 import java.util.Objects;

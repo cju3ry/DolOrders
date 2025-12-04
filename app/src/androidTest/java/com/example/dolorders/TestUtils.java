@@ -14,7 +14,6 @@ public class TestUtils {
     /**
      * Matcher qui vérifie le texte d'erreur d'un TextInputLayout parent,
      * quelle que soit la profondeur de l'enfant (EditText ou AutoCompleteTextView).
-     * C'est la méthode la plus fiable et recommandée.
      */
     public static Matcher<View> hasTextInputLayoutErrorText(final String expectedErrorText) {
         return new TypeSafeMatcher<View>() {
