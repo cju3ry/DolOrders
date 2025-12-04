@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 
 import com.example.dolorders.ui.ClientsFragment;
+import com.example.dolorders.ui.CommandesFragment;
 import com.example.dolorders.ui.HomeFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
@@ -34,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
             if (id == R.id.nav_home) {
                 selectedFragment = new HomeFragment();
             } else if (id == R.id.nav_commandes) {
-                // selectedFragment = new CommandesFragment();
+                selectedFragment = new CommandesFragment();
             } else if (id == R.id.nav_clients) {
                 selectedFragment = new ClientsFragment();
             }
