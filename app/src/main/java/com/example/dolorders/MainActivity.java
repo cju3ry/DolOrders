@@ -1,6 +1,11 @@
 package com.example.dolorders;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.widget.Button;
+import android.view.View;
+import android.widget.Button;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
@@ -10,7 +15,10 @@ import com.example.dolorders.ui.CommandesFragment;
 import com.example.dolorders.ui.HomeFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
+import java.io.IOException;
+
 public class MainActivity extends AppCompatActivity {
+    private Button btnLogout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -18,6 +26,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         BottomNavigationView bottomNav = findViewById(R.id.bottomNavigation);
+        btnLogout = findViewById(R.id.btnLogout);
+        btnLogout.setOnClickListener(v -> LoginActivity.logout(this));
         bottomNav.setOnItemSelectedListener(item -> {
             Fragment selectedFragment = null;
             int id = item.getItemId();
