@@ -151,7 +151,6 @@ public class CommandesFragment extends Fragment {
     private void updateArticlesListView(Map<Produit, Integer> articles) {
         layoutArticlesSelectionnes.removeAllViews();
         if (articles.isEmpty()) {
-            btnValider.setEnabled(false);
             return;
         }
 
@@ -200,43 +199,52 @@ public class CommandesFragment extends Fragment {
     }
 
     private boolean isFormulaireValide() {
-        // Nettoie les erreurs précédentes
         autoCompleteClient.setError(null);
         autoCompleteArticle.setError(null);
         editTextDate.setError(null);
         editTextRemise.setError(null);
 
+        boolean estValide = true;
+
         // Vérification du client
         if (viewModel.getClientSelectionne().getValue() == null) {
             autoCompleteClient.setError("Veuillez sélectionner un client");
-            autoCompleteClient.requestFocus();
-            return false;
+            if (estValide) {
+                autoCompleteClient.requestFocus();
+            }
+            estValide = false;
         }
 
         // Vérification des articles
         Map<Produit, Integer> articles = viewModel.getArticles().getValue();
         if (articles == null || articles.isEmpty()) {
             autoCompleteArticle.setError("Veuillez ajouter au moins un article");
-            autoCompleteArticle.requestFocus();
-            return false;
+            if (estValide) {
+                autoCompleteArticle.requestFocus();
+            }
+            estValide = false;
         }
 
         // Vérification de la date
         String dateStr = viewModel.getDate().getValue();
         if (dateStr == null || dateStr.trim().isEmpty()) {
-            editTextDate.setError("La date de la commande est requise");
-            editTextDate.requestFocus();
-            return false;
-        }
-
-        try {
-            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE);
-            sdf.setLenient(false);
-            sdf.parse(dateStr);
-        } catch (ParseException e) {
-            editTextDate.setError("Le format de la date est invalide (jj/mm/aaaa)");
-            editTextDate.requestFocus();
-            return false;
+            editTextDate.setError("La date de la commande est requise"); // Changé
+            if (estValide) {
+                editTextDate.requestFocus();
+            }
+            estValide = false;
+        } else {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE);
+                sdf.setLenient(false);
+                sdf.parse(dateStr);
+            } catch (ParseException e) {
+                editTextDate.setError("Le format de la date est invalide (jj/mm/aaaa)"); // Changé
+                if (estValide) {
+                    editTextDate.requestFocus();
+                }
+                estValide = false;
+            }
         }
 
         // Vérification sur la remise
@@ -246,17 +254,21 @@ public class CommandesFragment extends Fragment {
                 double remise = Double.parseDouble(remiseStr);
                 if (remise < 0) {
                     editTextRemise.setError("La remise ne peut pas être négative");
-                    editTextRemise.requestFocus();
-                    return false;
+                    if (estValide) {
+                        editTextRemise.requestFocus();
+                    }
+                    estValide = false;
                 }
             } catch (NumberFormatException e) {
                 editTextRemise.setError("La valeur de la remise est invalide");
-                editTextRemise.requestFocus();
-                return false;
+                if (estValide) {
+                    editTextRemise.requestFocus();
+                }
+                estValide = false;
             }
         }
 
-        return true;
+        return estValide;
     }
 
     private void enregistrerCommande() {

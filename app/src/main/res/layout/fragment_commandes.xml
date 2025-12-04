@@ -54,6 +54,7 @@
 
             <!-- Champ Date -->
             <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layout_date"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -94,6 +95,7 @@
 
             <!-- Champ Remise -->
             <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layout_remise"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

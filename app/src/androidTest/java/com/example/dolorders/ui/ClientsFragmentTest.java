@@ -1,12 +1,10 @@
 package com.example.dolorders.ui;
 
 import androidx.test.core.app.ActivityScenario;
-import androidx.test.espresso.Espresso;
 import androidx.test.espresso.matcher.ViewMatchers;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.example.dolorders.MainActivity;
 import com.example.dolorders.R;
-import com.example.dolorders.TestUtils;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -26,7 +24,6 @@ import static androidx.test.espresso.matcher.ViewMatchers.withText;
 public class ClientsFragmentTest {
 
     /**
-     * NOUVELLE MÉTHODE DE SETUP
      * On lance la MainActivity directement. Elle se chargera de créer et d'afficher
      * le ClientsFragment, avec le bon thème et le bon contexte.
      */
@@ -116,7 +113,6 @@ public class ClientsFragmentTest {
 
         onView(withId(R.id.btn_valider)).perform(click());
 
-        // On vérifie que les champs ont été vidés, ce qui prouve que viewModel.clear() a été appelé.
         onView(withId(R.id.nav_home)).check(matches(isDisplayed()));
     }
 

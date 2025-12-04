@@ -60,6 +60,10 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:$lifecycleVersion")
 
     // Tests locaux JVM
+    implementation(libs.appcompat)
+    implementation(libs.material)
+    implementation(libs.activity)
+    implementation(libs.constraintlayout)
     testImplementation(libs.junit)
 
     // Tests instrumentés (AndroidTest)
@@ -70,4 +74,9 @@ dependencies {
 
     // FragmentScenario -> version compatible avec AndroidX Test 1.5.x
     debugImplementation("androidx.fragment:fragment-testing:1.6.2")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("com.google.android.material:material:1.9.0")
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("com.android.volley:volley:1.2.1")
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 }

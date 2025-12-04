@@ -1,7 +1,10 @@
 package com.example.dolorders;
 
 import android.view.View;
+import android.view.ViewParent;
+
 import com.google.android.material.textfield.TextInputLayout;
+
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -9,31 +12,35 @@ import org.hamcrest.TypeSafeMatcher;
 public class TestUtils {
 
     /**
-     * Renvoie un Matcher qui vérifie si un TextInputLayout affiche un texte d'erreur spécifique.
-     * @param expectedErrorText Le message d'erreur attendu.
-     * @return Un Matcher pour la vérification avec Espresso.
+     * Matcher qui vérifie le texte d'erreur d'un TextInputLayout parent,
+     * quelle que soit la profondeur de l'enfant (EditText ou AutoCompleteTextView).
+     * C'est la méthode la plus fiable et recommandée.
      */
-    public static Matcher<View> withError(final String expectedErrorText) {
+    public static Matcher<View> hasTextInputLayoutErrorText(final String expectedErrorText) {
         return new TypeSafeMatcher<View>() {
+
             @Override
             public boolean matchesSafely(View view) {
-                // Vérifie si la vue est bien un TextInputLayout
-                if (!(view.getParent().getParent() instanceof TextInputLayout)) {
-                    return false;
+                // On remonte la hiérarchie des vues pour trouver le TextInputLayout parent.
+                ViewParent parent = view.getParent();
+                while (parent != null && !(parent instanceof TextInputLayout)) {
+                    parent = parent.getParent();
                 }
-                // Récupère le message d'erreur du TextInputLayout parent
-                CharSequence error = ((TextInputLayout) view.getParent().getParent()).getError();
-                if (error == null) {
-                    return false;
+
+                // Si on a trouvé un TextInputLayout, on vérifie son erreur.
+                if (parent instanceof TextInputLayout) {
+                    TextInputLayout textInputLayout = (TextInputLayout) parent;
+                    CharSequence error = textInputLayout.getError();
+                    return error != null && expectedErrorText.equals(error.toString());
                 }
-                String hint = error.toString();
-                // Compare le message d'erreur avec celui attendu
-                return expectedErrorText.equals(hint);
+
+                // Si aucun TextInputLayout n'est trouvé, le test échoue.
+                return false;
             }
 
             @Override
             public void describeTo(Description description) {
-                description.appendText("with error: " + expectedErrorText);
+                description.appendText("has parent TextInputLayout with error text: " + expectedErrorText);
             }
         };
     }

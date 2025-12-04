@@ -4,7 +4,7 @@ import android.app.AlertDialog;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Patterns; // Importation pour la validation d'email
+import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,13 +15,13 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.example.dolorders.Client; // Importation de votre classe Client
+import com.example.dolorders.Client;
 import com.example.dolorders.R;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
-import java.util.Date; // Importation de la classe Date
+import java.util.Date;
 
 public class ClientsFragment extends Fragment {
 
@@ -129,7 +129,6 @@ public class ClientsFragment extends Fragment {
         editTextEmail.setError(null);
         editTextTelephone.setError(null);
 
-        // Utiliser les LiveData du ViewModel est plus sûr
         String nom = viewModel.getNom().getValue();
         if (nom == null || nom.trim().isEmpty()) {
             editTextNom.setError("Le nom du client est requis");
