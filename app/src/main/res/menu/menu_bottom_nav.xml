@@ -2,17 +2,17 @@
     <item
         android:id="@+id/nav_home"
         android:icon="@drawable/maison_noir"
-        android:title="Accueil" />
+        android:title="@string/menu_accueil" />
     <item
         android:id="@+id/nav_clients"
         android:icon="@drawable/client_ajout_noir"
-        android:title="Clients" />
+        android:title="@string/menu_client" />
     <item
         android:id="@+id/nav_commandes"
         android:icon="@drawable/commande_noir"
-        android:title="Commandes" />
+        android:title="@string/menu_commande" />
     <item
         android:id="@+id/nav_en_attentes"
         android:icon="@drawable/attente_noir"
-        android:title="En attente" />
+        android:title="@string/menu_en_attente" />
 </menu>
