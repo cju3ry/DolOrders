@@ -49,7 +49,6 @@ public class HomeFragment extends Fragment {
         // Exemple de données fictives
         updateStats(28, 96);
 
-        // Action au clic sur le bouton "+ Nouveau client"
         btnNewClient.setOnClickListener(v -> {
             // On récupère la barre de navigation depuis l'activité parente
             BottomNavigationView bottomNav = getActivity().findViewById(R.id.bottomNavigation);
@@ -57,13 +56,11 @@ public class HomeFragment extends Fragment {
             bottomNav.setSelectedItemId(R.id.nav_clients);
         });
 
-        // Action au clic sur le bouton "+ Nouvelle commande"
         btnNewCommande.setOnClickListener(v -> {
             BottomNavigationView bottomNav = getActivity().findViewById(R.id.bottomNavigation);
             bottomNav.setSelectedItemId(R.id.nav_commandes);
         });
 
-        // Action au clic sur le bouton "Données en attente"
         btnPendingData.setOnClickListener(v -> {
             BottomNavigationView bottomNav = getActivity().findViewById(R.id.bottomNavigation);
             bottomNav.setSelectedItemId(R.id.nav_en_attentes);
