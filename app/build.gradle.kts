@@ -58,6 +58,7 @@ dependencies {
     implementation("androidx.fragment:fragment-ktx:$fragmentVersion")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycleVersion")
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:$lifecycleVersion")
+    implementation("com.google.code.gson:gson:2.10.1")
 
     // Tests locaux JVM
     implementation(libs.appcompat)

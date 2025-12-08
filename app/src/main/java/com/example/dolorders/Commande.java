@@ -1,17 +1,32 @@
 package com.example.dolorders;
 
 import java.util.ArrayList;
+import com.google.gson.annotations.SerializedName;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
 public class Commande {
+
+    @SerializedName("order_id") // Le champ "order_id" du JSON sera mappé sur ce champ "id"
     private final String id;
+
+    @SerializedName("customer")
     private final Client client;
+
+    @SerializedName("order_date")
     private final Date dateCommande;
+
+    @SerializedName("products")
     private final Map<Produit, Integer> produitsEtQuantites;
+
+    @SerializedName("total_amount")
     private final double montantTotal;
+
+    @SerializedName("discount_percentage")
     private final double remise;
+
+    @SerializedName("created_by_user")
     private final String utilisateur;
 
     private Commande(Builder builder) {

@@ -1,5 +1,6 @@
 package com.example.dolorders;
 
+import com.google.gson.annotations.SerializedName;
 import java.util.Date;
 import java.util.regex.Pattern; // Importation pour la validation de l'e-mail
 
@@ -10,14 +11,31 @@ public class Client {
             Pattern.CASE_INSENSITIVE
     );
 
+    @SerializedName("idclient") // Le champ "idclient" du JSON sera mappé sur ce champ "id"
     private final String id;
+
+    @SerializedName("nom")
     private final String nom;
+
+    @SerializedName("adresse")
     private final String adresse;
+
+    @SerializedName("codepostal")
     private final String codePostal;
+
+    @SerializedName("ville")
     private final String ville;
+
+    @SerializedName("mail")
     private final String adresseMail;
+
+    @SerializedName("telephone")
     private final String telephone;
+
+    @SerializedName("creator_name")
     private final String utilisateur;
+
+    @SerializedName("creation_date")
     private final Date dateSaisie;
 
     private Client(Builder builder) {
