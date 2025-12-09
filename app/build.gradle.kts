@@ -66,10 +66,13 @@ dependencies {
     implementation(libs.constraintlayout)
     implementation(libs.espresso.intents)
     testImplementation(libs.junit)
+    testImplementation("org.mockito:mockito-core:4.8.0")
+    testImplementation("org.mockito:mockito-inline:4.8.0")
 
     // Tests instrumentés (AndroidTest)
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation ("androidx.test.espresso:espresso-intents:3.5.1")
     androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.test:rules:1.5.0")
 

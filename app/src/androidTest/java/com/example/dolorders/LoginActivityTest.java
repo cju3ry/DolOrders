@@ -48,9 +48,9 @@ public class LoginActivityTest {
 //    private static final String TEST_PASSWORD = "admin123";
 
     // Pour les tests avec de vraies credentials :
-     private static final String TEST_URL = "À MODIFIER";
-     private static final String TEST_USERNAME = "À MODIFIER";
-     private static final String TEST_PASSWORD = "À MODIFIER";
+     private static final String TEST_URL = "A MODIFIER";
+     private static final String TEST_USERNAME = "A MODIFIER";
+     private static final String TEST_PASSWORD = "A MODIFIER";
 
     @Rule
     public ActivityScenarioRule<LoginActivity> activityRule =
@@ -105,9 +105,7 @@ public class LoginActivityTest {
      */
     @Test
     public void successfulLogin() throws InterruptedException {
-        // Prépare les données de test
 
-        // Rempli les champs et cliquer sur connexion
         onView(withId(R.id.etUrl))
                 .perform(typeText(TEST_URL), closeSoftKeyboard());
 
@@ -120,7 +118,6 @@ public class LoginActivityTest {
         onView(withId(R.id.btnLogin))
                 .perform(click());
 
-        // Attend la réponse
         Thread.sleep(1000);
 
         // ASSERT 1 : Vérifie que l'intention de démarrer MainActivity a bien été lancée.
@@ -151,9 +148,7 @@ public class LoginActivityTest {
      */
     @Test
     public void alreadyLoggedIn() throws InterruptedException {
-        // Simuler un utilisateur déjà connecté
-        // On utilise commit() dans les tests pour s'assurer que l'écriture est terminée
-        // avant de passer à l'étape suivante.
+
         securePrefs.edit()
                 .putString("username", TEST_USERNAME)
                 .putString("api_key", "8tx6JpQ69itXzK9bQbEK9qW17gmAZ41K")
@@ -161,21 +156,14 @@ public class LoginActivityTest {
                 .putBoolean("is_logged_in", true)
                 .commit();
 
-        //  Ferme l'activité actuelle (lancée par la @Rule)
-        // et en lance une nouvelle manuellement pour tester le onCreate().
         activityRule.getScenario().close();
 
-        // Lance une nouvelle instance de LoginActivity.
         ActivityScenario<LoginActivity> scenario = ActivityScenario.launch(LoginActivity.class);
 
-        // Attendre que la redirection (qui est asynchrone) ait lieu
         Thread.sleep(1000);
 
-        // Vérifie que l'intention de démarrer MainActivity a bien été lancée.
-        // `intended` vérifie toutes les intentions lancées depuis le dernier `Intents.init()`.
         intended(hasComponent(MainActivity.class.getName()));
 
-        // Ferme le scénario que nous avons lancé manuellement.
         scenario.close();
     }
 
@@ -197,11 +185,10 @@ public class LoginActivityTest {
      */
     @Test
     public void incorrectCredentials_ErrorAndClearsPassword() throws InterruptedException {
-        // Prépare de mauvais identifiants
-        // ---Ce test ne fonctionne qu'avec une vrai instance de Dolibarr---
+
+        // Ce test ne fonctionne qu'avec une vrai instance de Dolibarr
         String wrongPassword = "mauvais_mot_de_passe";
 
-        // Rempli avec de mauvais identifiants
         onView(withId(R.id.etUrl))
                 .perform(typeText(TEST_URL), closeSoftKeyboard());
 
@@ -214,10 +201,8 @@ public class LoginActivityTest {
         onView(withId(R.id.btnLogin))
                 .perform(click());
 
-        // Attendre la réponse du serveur
         Thread.sleep(2000);
 
-        // Vérifie qu'on est toujours sur LoginActivity (pas de navigation)
         onView(withId(R.id.btnLogin)).check(matches(isDisplayed()));
 
     }
@@ -237,10 +222,9 @@ public class LoginActivityTest {
      */
     @Test
     public void noInternet_showsNetworkError() throws InterruptedException {
-        // Utilise une URL invalide pour simuler une erreur réseau
+
         String invalidUrl = "http://url-qui-nexiste-pas.invalide";
 
-        // Rempli les champs avec une URL invalide
         onView(withId(R.id.etUrl))
                 .perform(typeText(invalidUrl), closeSoftKeyboard());
 
@@ -253,10 +237,8 @@ public class LoginActivityTest {
         onView(withId(R.id.btnLogin))
                 .perform(click());
 
-        // Attend le timeout
         Thread.sleep(3000);
 
-        // Vérifie qu'on est toujours sur LoginActivity
         onView(withId(R.id.btnLogin)).check(matches(isDisplayed()));
 
     }
@@ -272,10 +254,9 @@ public class LoginActivityTest {
      */
     @Test
     public void apiTimeout_showsTimeoutError() throws InterruptedException {
-        // Utilisation d'une URL qui va timeout
-        String timeoutUrl = "http://10.255.255.1";  // Adresse non routable
 
-        // Tente la connexion
+        String timeoutUrl = "http://10.255.255.1";
+
         onView(withId(R.id.etUrl))
                 .perform(typeText(timeoutUrl), closeSoftKeyboard());
 
@@ -288,15 +269,13 @@ public class LoginActivityTest {
         onView(withId(R.id.btnLogin))
                 .perform(click());
 
-        // Attend plus que le timeout (3000ms + 1000ms marge)
         Thread.sleep(4000);
 
-        // Vérifie qu'on est toujours sur LoginActivity
         onView(withId(R.id.btnLogin)).check(matches(isDisplayed()));
     }
 
     // =============================================
-    // TESTS DE VALIDATION (existants)
+    // TESTS DE VALIDATION
     // =============================================
 
     @Test
