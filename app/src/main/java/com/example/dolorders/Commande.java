@@ -1,32 +1,17 @@
 package com.example.dolorders;
 
-import java.util.ArrayList;
-import com.google.gson.annotations.SerializedName;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 
 public class Commande {
 
-    @SerializedName("order_id") // Le champ "order_id" du JSON sera mappé sur ce champ "id"
     private final String id;
-
-    @SerializedName("customer")
     private final Client client;
-
-    @SerializedName("order_date")
     private final Date dateCommande;
-
-    @SerializedName("products")
+    private final Date dateCreation;
     private final Map<Produit, Integer> produitsEtQuantites;
-
-    @SerializedName("total_amount")
     private final double montantTotal;
-
-    @SerializedName("discount_percentage")
     private final double remise;
-
-    @SerializedName("created_by_user")
     private final String utilisateur;
 
     private Commande(Builder builder) {
@@ -37,6 +22,7 @@ public class Commande {
         this.montantTotal = calculerMontantTotal();
         this.utilisateur = builder.utilisateur;
         this.remise = builder.remise;
+        this.dateCreation = builder.dateCreation;
     }
 
     private double calculerMontantTotal() {
@@ -51,6 +37,7 @@ public class Commande {
     }
 
     public String getId() { return id; }
+    public Date getDateCreation() { return dateCreation; }
     public Date getDateCommande() { return dateCommande; }
     public Client getClient() { return client; }
     public Map<Produit, Integer> getProduitsEtQuantites() { return produitsEtQuantites; }
@@ -61,6 +48,7 @@ public class Commande {
     public static class Builder {
         private String id;
         private Date dateCommande;
+        private Date dateCreation;
         private Client client;
         private Map<Produit, Integer> produitsEtQuantites;
         private String utilisateur;
@@ -73,6 +61,11 @@ public class Commande {
 
         public Builder setDateCommande(Date dateCommande) {
             this.dateCommande = dateCommande;
+            return this;
+        }
+
+        public Builder setDateCreation(Date dateCreation) {
+            this.dateCreation = dateCreation;
             return this;
         }
 
@@ -103,6 +96,9 @@ public class Commande {
             }
             if (dateCommande == null) {
                 this.dateCommande = new Date();
+            }
+            if (dateCreation == null) {
+                this.dateCreation = new Date();
             }
             if (produitsEtQuantites == null || produitsEtQuantites.isEmpty()) {
                 throw new IllegalStateException("Une commande doit contenir au moins un produit.");

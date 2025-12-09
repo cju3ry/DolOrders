@@ -1,52 +1,77 @@
 package com.example.dolorders.mappers;
 
 import com.example.dolorders.Client;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.example.dolorders.data.dto.ClientApiReponseDto;
+import com.example.dolorders.data.dto.ClientApiRequeteDto;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 /**
- * Classe responsable de la conversion entre l'objet Client et sa représentation JSON.
- * Elle respecte le Principe de Responsabilité Unique en isolant la logique de sérialisation
- * des modèles de données.
+ * Mapper responsable de la conversion entre les DTOs (Data Transfer Objects)
+ * et le modèle de domaine Client.
  */
 public class ClientMapper {
 
-    private final Gson gson;
+    /**
+     * Convertit un DTO de réponse API en un objet Client du domaine.
+     * C'est ici qu'on transforme les données brutes en un objet métier valide.
+     *
+     * @param dto Le DTO reçu de l'API.
+     * @return Un objet Client valide.
+     */
+    public Client getClient(ClientApiReponseDto dto) {
+        if (dto == null) {
+            return null;
+        }
 
-    public ClientMapper() {
-        // Gson est thread-safe, mais il est bon de le configurer une seule fois.
-        // On configure Gson pour qu'il formate correctement les dates.
-        this.gson = new GsonBuilder()
-                .setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ") // Format de date standard ISO 8601
-                .create();
+        // Conversion du timestamp en secondes vers un objet Date
+        // Le constructeur de Date attend des millisecondes, donc on multiplie par 1000.
+        Date dateSaisie = new Date(dto.dateSaisie * 1000L);
+
+        // On utilise le Builder pour garantir la validité de l'objet créé.
+        // Si le DTO contient des données invalides (ex: nom vide), le .build() lèvera une exception
+        return new Client.Builder()
+                .setId(dto.id)
+                .setNom(dto.nom)
+                .setAdresse(dto.adresse)
+                .setCodePostal(dto.codePostal)
+                .setVille(dto.ville)
+                .setAdresseMail(dto.mail)
+                .setTelephone(dto.numTel)
+                .setDateSaisie(dateSaisie)
+                .build();
     }
 
     /**
-     * Convertit un objet Client en sa représentation sous forme de chaîne JSON.
+     * Convertit un objet Client du domaine en un DTO prêt à être envoyé à l'API.
      *
-     * @param client L'objet Client à convertir.
-     * @return Une chaîne de caractères contenant le JSON représentant le client.
+     * @param client L'objet Client de votre application.
+     * @return Un DTO prêt à être sérialisé en JSON par Gson.
      */
-    public String toJson(Client client) {
+    public ClientApiRequeteDto requeteDto(Client client) {
         if (client == null) {
             return null;
         }
-        // La librairie Gson s'occupe de toute la complexité de la conversion.
-        return gson.toJson(client);
-    }
 
-    /**
-     * Convertit une chaîne de caractères JSON en un objet Client.
-     *
-     * @param clientJson La chaîne JSON à convertir.
-     * @return Un nouvel objet Client peuplé avec les données du JSON.
-     * @throws com.google.gson.JsonSyntaxException si la chaîne n'est pas un JSON valide.
-     */
-    public Client fromJson(String clientJson) {
-        if (clientJson == null || clientJson.trim().isEmpty()) {
-            return null;
-        }
-        // Gson mappe automatiquement les champs du JSON aux champs de la classe Client.
-        return gson.fromJson(clientJson, Client.class);
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE);
+
+        ClientApiRequeteDto dto = new ClientApiRequeteDto();
+        dto.id = client.getId();
+        dto.nom = client.getNom();
+        dto.adresse = client.getAdresse();
+        dto.codePostal = client.getCodePostal();
+        dto.ville = client.getVille();
+        dto.mail = client.getAdresseMail();
+        dto.numTel = client.getTelephone();
+        dto.dateSaisie = sdf.format(client.getDateSaisie());
+        dto.utilisateur = client.getUtilisateur();
+        dto.utilisateurEnvoie = client.getUtilisateurEnvoie();
+        dto.dateEnvoie = sdf.format(client.getDateEnvoie());
+        dto.dateMiseAJour = sdf.format(client.getDateMiseAJour());
+
+
+        return dto;
     }
 }

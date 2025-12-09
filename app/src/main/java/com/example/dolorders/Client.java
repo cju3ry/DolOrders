@@ -1,9 +1,13 @@
 package com.example.dolorders;
 
-import com.google.gson.annotations.SerializedName;
 import java.util.Date;
-import java.util.regex.Pattern; // Importation pour la validation de l'e-mail
+import java.util.regex.Pattern;
 
+/**
+ * Représente un Client au sein de l'application (modèle de domaine).
+ * Cette classe est "pure" et ne contient aucune logique de sérialisation.
+ * Elle représente la source de vérité pour la logique métier.
+ */
 public class Client {
     // Déclaration d'une expression régulière simple pour la validation d'e-mail
     private static final Pattern EMAIL_PATTERN = Pattern.compile(
@@ -11,32 +15,18 @@ public class Client {
             Pattern.CASE_INSENSITIVE
     );
 
-    @SerializedName("idclient") // Le champ "idclient" du JSON sera mappé sur ce champ "id"
     private final String id;
-
-    @SerializedName("nom")
     private final String nom;
-
-    @SerializedName("adresse")
     private final String adresse;
-
-    @SerializedName("codepostal")
     private final String codePostal;
-
-    @SerializedName("ville")
     private final String ville;
-
-    @SerializedName("mail")
     private final String adresseMail;
-
-    @SerializedName("telephone")
     private final String telephone;
-
-    @SerializedName("creator_name")
     private final String utilisateur;
-
-    @SerializedName("creation_date")
     private final Date dateSaisie;
+    private final String utilisateurEnvoie;
+    private final Date dateEnvoie;
+    private final Date dateMiseAJour;
 
     private Client(Builder builder) {
         this.id = builder.id;
@@ -48,8 +38,12 @@ public class Client {
         this.telephone = builder.telephone;
         this.utilisateur = builder.utilisateur;
         this.dateSaisie = builder.dateSaisie;
+        this.utilisateurEnvoie = builder.utilisateurEnvoie;
+        this.dateEnvoie = builder.dateEnvoie;
+        this.dateMiseAJour = builder.dateMiseAJour;
     }
 
+    // --- Getters ---
     public String getId() { return id; }
     public String getNom() { return nom; }
     public String getAdresse() { return adresse; }
@@ -59,12 +53,11 @@ public class Client {
     public String getTelephone() { return telephone; }
     public String getUtilisateur() { return utilisateur; }
     public Date getDateSaisie() { return dateSaisie; }
+    public String getUtilisateurEnvoie() { return utilisateurEnvoie; }
+    public Date getDateEnvoie() { return dateEnvoie; }
+    public Date getDateMiseAJour() { return dateMiseAJour; }
 
-    @Override
-    public String toString() {
-        return nom;
-    }
-
+    // --- Builder ---
     public static class Builder {
         private String id;
         private String nom;
@@ -75,6 +68,9 @@ public class Client {
         private String telephone;
         private String utilisateur;
         private Date dateSaisie;
+        private String utilisateurEnvoie;
+        private Date dateEnvoie;
+        private Date dateMiseAJour;
 
         public Builder setId(String id) {
             this.id = id;
@@ -121,44 +117,48 @@ public class Client {
             return this;
         }
 
+        public Builder setUtilisateurEnvoie(String utilisateurEnvoie) {
+            this.utilisateurEnvoie = utilisateurEnvoie;
+            return this;
+        }
+
+        public Builder setDateEnvoie(Date dateEnvoie) {
+            this.dateEnvoie = dateEnvoie;
+            return this;
+        }
+
+        public Builder setDateMiseAJour(Date dateMiseAJour) {
+            this.dateMiseAJour = dateMiseAJour;
+            return this;
+        }
+
         public Client build() {
+            // La logique de validation reste ici, garantissant que tout objet Client
+            // dans l'application est toujours valide.
             if (nom == null || nom.trim().isEmpty()) {
                 throw new IllegalStateException("Le client doit avoir un nom !");
             }
-
             if (adresse == null || adresse.trim().isEmpty()) {
                 throw new IllegalStateException("Le client doit avoir une adresse !");
             }
-
-            // Vérification du format du code postal (5 chiffres pour la France)
             if (codePostal == null || !codePostal.matches("\\d{5}")) {
                 throw new IllegalStateException("Le client doit avoir un code postal valide à 5 chiffres !");
             }
-
             if (ville == null || ville.trim().isEmpty()) {
                 throw new IllegalStateException("Le client doit avoir une ville !");
             }
-
-            // Vérification du format de l'adresse e-mail
             if (adresseMail == null || !EMAIL_PATTERN.matcher(adresseMail).matches()) {
                 throw new IllegalStateException("Le client doit avoir une adresse mail valide !");
             }
-
-            // Vérification améliorée du numéro de téléphone
             if (telephone == null || !telephone.matches("\\d{10}")) {
-                throw new IllegalStateException(
-                        "Le client doit avoir un numéro de téléphone valide à 10 chiffres !"
-                );
+                throw new IllegalStateException("Le client doit avoir un numéro de téléphone valide à 10 chiffres !");
             }
-
             if (utilisateur == null || utilisateur.trim().isEmpty()) {
                 throw new IllegalStateException("Le client doit avoir un utilisateur !");
             }
-
             if (dateSaisie == null) {
                 throw new IllegalStateException("Le client doit avoir une date de saisie !");
             }
-
             return new Client(this);
         }
     }

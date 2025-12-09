@@ -2,6 +2,10 @@ package com.example.dolorders;
 
 import java.util.Objects;
 
+/**
+ * Représente un Produit au sein de l'application (modèle de domaine pur).
+ * Ne contient aucune annotation de sérialisation.
+ */
 public class Produit {
     private final int id;
     private final String nom;
