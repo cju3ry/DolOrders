@@ -64,7 +64,6 @@ public class UrlManager {
                 }
             }
 
-            // Crée un nouveau tableau avec l'URL en premier
             JSONArray newUrls = new JSONArray();
             newUrls.put(url);
 
