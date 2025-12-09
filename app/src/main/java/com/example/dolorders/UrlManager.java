@@ -30,7 +30,7 @@ public class UrlManager {
     /** Tag pour les logs */
     private static final String TAG = "UrlManager";
 
-    private Context context;
+    private final Context context;
 
     /**
      * Constructeur

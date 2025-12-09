@@ -36,4 +36,5 @@
     <string name="connexion_motdepasse_placeholder">Mot de passe</string>
     <string name="connexion_url_placeholder">Url</string>
     <string name="connexion_se_connecter">Se connecter</string>
+    <string name="connexion_url_placeholder">URL de votre Dolibarr</string>
 </resources>
