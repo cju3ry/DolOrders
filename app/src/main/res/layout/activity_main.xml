@@ -30,15 +30,6 @@
         app:itemActiveIndicatorStyle="@color/blue_dolibarr" />
 
         <!-- app:labelVisibilityMode="labeled" -->
-    <Button
-        android:id="@+id/btnLogout"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Se déconnecter"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        />
 </LinearLayout>
 
 

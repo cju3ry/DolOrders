@@ -48,9 +48,9 @@ public class LoginActivityTest {
 //    private static final String TEST_PASSWORD = "admin123";
 
     // Pour les tests avec de vraies credentials :
-     private static final String TEST_URL = "À MODIFIER";
-     private static final String TEST_USERNAME = "À MODIFIER";
-     private static final String TEST_PASSWORD = "À MODIFIER";
+     private static final String TEST_URL = " https://dolorders.com/htdocs/";
+     private static final String TEST_USERNAME = "DolOrder_SAE";
+     private static final String TEST_PASSWORD = "Dol_SAE_D0lOrders";
 
     @Rule
     public ActivityScenarioRule<LoginActivity> activityRule =

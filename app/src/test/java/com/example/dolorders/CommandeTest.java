@@ -36,8 +36,8 @@ public class CommandeTest {
                 .build();
 
         produitsValides = new HashMap<>();
-        produitsValides.put(new Produit(1, "Produit A", 10.0, "Cat A"), 2);
-        produitsValides.put(new Produit(2, "Produit B", 5.0, "Cat B"), 1);
+        produitsValides.put(new Produit(1, "Produit A", 10.0), 2);
+        produitsValides.put(new Produit(2, "Produit B", 5.0), 1);
 
         dateValide = new Date();
         utilisateurValide = "Admin";

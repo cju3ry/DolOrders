@@ -131,73 +131,25 @@ public class LoginActivity extends AppCompatActivity {
      * @param password
      * @param baseUrl
      */
-    private void login(final String username, final String password, String baseUrl) {
+    private void login(String username, String password, String baseUrl) {
+
         btnLogin.setEnabled(false);
 
-        // Mode bouchon : si baseUrl est "stub" ou "bouchon", simule une connexion réussie
-        if (baseUrl != null && (baseUrl.equalsIgnoreCase("stub") || baseUrl.equalsIgnoreCase("bouchon"))) {
-            try {
-                JSONObject fakeResponse = new JSONObject();
-                JSONObject successObj = new JSONObject();
-                successObj.put("token", "FAKE_TOKEN_1234567890");
-                fakeResponse.put("success", successObj);
-                handleLoginSuccess(fakeResponse, username, baseUrl);
-            } catch (JSONException e) {
-                showError("Erreur interne du mode bouchon");
-            }
-            return;
-        }
+        ApiManager api = new ApiManager(this);
 
-        String apiUrl = baseUrl.endsWith("/")
-                ? baseUrl + "api/index.php/login?login=" + username + "&password=" + password
-                : baseUrl + "/api/index.php/login?login=" + username + "&password=" + password;
-
-        // Debug
-        android.util.Log.d("LOGIN_DEBUG", "URL appelée: " + apiUrl);
-        Toast.makeText(this, "Tentative de connexion à: " + apiUrl, Toast.LENGTH_LONG).show();
-
-        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(
-                Request.Method.GET,
-                apiUrl,
-                null,
-                response -> {
-                    android.util.Log.d("LOGIN_DEBUG", "Réponse reçue: " + response.toString());
-                    handleLoginSuccess(response, username, baseUrl);
-                },
-                error -> {
-                    btnLogin.setEnabled(true);
-                    // debug
-                    android.util.Log.e("LOGIN_DEBUG", "Erreur: " + error.toString());
-                    if (error.networkResponse != null) {
-                        android.util.Log.e("LOGIN_DEBUG", "Code erreur: " + error.networkResponse.statusCode);
-                    }
-
-                    String errorMessage;
-                    if (error.networkResponse == null) {
-                        errorMessage = "Erreur réseau: Vérifiez votre connexion Internet et l'URL";
-                    } else {
-                        int statusCode = error.networkResponse.statusCode;
-                        if (statusCode == 400) errorMessage = "Erreur 400: Requête invalide";
-                        else if (statusCode == 401) errorMessage = "Identifiants incorrects";
-                        else if (statusCode == 403)
-                            errorMessage = "Identifiants et ou mot de passe " +
-                                    "incorrects";
-                        else if (statusCode == 404) errorMessage = "URL Dolibarr incorrecte (404)";
-                        else if (statusCode == 500) errorMessage = "Erreur serveur Dolibarr (500)";
-                        else errorMessage = "Erreur de connexion (" + statusCode + ")";
-                    }
-                    Toast.makeText(LoginActivity.this, errorMessage, Toast.LENGTH_LONG).show();
-                }
-        ) {
+        api.login(baseUrl, username, password, new ApiManager.ApiCallback() {
             @Override
-            public Map<String, String> getHeaders() {
-                Map<String, String> headers = new HashMap<>();
-                headers.put("Accept", "application/json");
-                return headers;
+            public void onSuccess(JSONObject response) {
+                handleLoginSuccess(response, username, baseUrl);
+                btnLogin.setEnabled(true);
             }
-        };
 
-        requestQueue.add(jsonObjectRequest);
+            @Override
+            public void onError(String error) {
+                btnLogin.setEnabled(true);
+                Toast.makeText(LoginActivity.this, error, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     /**
