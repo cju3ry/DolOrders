@@ -5,6 +5,17 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <!-- Toolbar partagée par tous les fragments -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbarHome"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/blue_dolibarr"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+        app:popupTheme="@style/ThemeOverlay.App.CustomPopupBlackText"
+        app:titleTextColor="@android:color/white"
+        app:menu="@menu/menu_user" />
+
     <!-- Conteneur des fragments -->
     <FrameLayout
         android:id="@+id/fragment_container"
@@ -12,34 +23,16 @@
         android:layout_height="0dp"
         android:layout_weight="1" />
 
-    <!-- Barre de navigation inférieure MODIFIÉE -->
+    <!-- Barre de navigation inférieure -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigation"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:menu="@menu/menu_bottom_nav"
-
         android:background="#F5F5F5"
-
         app:itemIconTint="@color/bottom_nav_color_selector"
-
         app:itemTextColor="@color/bottom_nav_color_selector"
-
         app:itemBackground="@drawable/bottom_nav_item_background"
-
         app:itemActiveIndicatorStyle="@color/blue_dolibarr" />
 
-        <!-- app:labelVisibilityMode="labeled" -->
-    <Button
-        android:id="@+id/btnLogout"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Se déconnecter"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        />
 </LinearLayout>
-
-
-

@@ -97,10 +97,10 @@ public class CommandesFragmentViewModel extends ViewModel {
 
         // Produits factices
         List<Produit> produitsFactices = new ArrayList<>();
-        produitsFactices.add(new Produit(101, "Stylo Bleu", 1.50, "Fournitures"));
-        produitsFactices.add(new Produit(102, "Cahier A4", 3.20, "Papeterie"));
-        produitsFactices.add(new Produit(103, "Clavier USB", 25.00, "Informatique"));
-        produitsFactices.add(new Produit(104, "Souris sans fil", 18.50, "Informatique"));
+        produitsFactices.add(new Produit(101, "Stylo Bleu", 1.50));
+        produitsFactices.add(new Produit(102, "Cahier A4", 3.20));
+        produitsFactices.add(new Produit(103, "Clavier USB", 25.00));
+        produitsFactices.add(new Produit(104, "Souris sans fil", 18.50));
         listeProduits.setValue(produitsFactices);
     }
 }

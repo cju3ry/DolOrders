@@ -171,7 +171,7 @@ public class CommandesFragment extends Fragment {
             ImageButton btnMinus = articleView.findViewById(R.id.btn_minus);
             ImageButton btnPlus = articleView.findViewById(R.id.btn_plus);
 
-            textLibelle.setText(produit.getNom());
+            textLibelle.setText(produit.getLibelle());
             editTextQuantite.setText(String.valueOf(quantite));
             textPrix.setText(String.format(Locale.FRANCE, "%.2f €/u", produit.getPrixUnitaire()));
 

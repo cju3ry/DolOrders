@@ -6,4 +6,7 @@
     </style>
 
     <style name="Theme.DolOrders" parent="Base.Theme.DolOrders" />
+    <style name="ThemeOverlay.App.CustomPopupBlackText" parent="ThemeOverlay.AppCompat.Light">
+        <item name="android:textColorPrimary">@android:color/black</item>
+    </style>
 </resources>

@@ -133,69 +133,33 @@ public class LoginActivity extends AppCompatActivity {
         return true;
     }
 
-    private void login(final String username, final String password, String baseUrl) {
+    /**
+     * Effectue la connexion au serveur Dolibarr.
+     * Si baseUrl est "stub" ou "bouchon", simule une connexion réussie.
+     *
+     * @param username
+     * @param password
+     * @param baseUrl
+     */
+    private void login(String username, String password, String baseUrl) {
+
         btnLogin.setEnabled(false);
 
-        // Mode bouchon
-        if (baseUrl != null && (baseUrl.equalsIgnoreCase("stub") || baseUrl.equalsIgnoreCase("bouchon"))) {
-            try {
-                JSONObject fakeResponse = new JSONObject();
-                JSONObject successObj = new JSONObject();
-                successObj.put("token", "FAKE_TOKEN_1234567890");
-                fakeResponse.put("success", successObj);
-                handleLoginSuccess(fakeResponse, username, baseUrl);
-            } catch (JSONException e) {
-                showError("Erreur interne du mode bouchon");
-            }
-            return;
-        }
+        ApiManager api = new ApiManager(this);
 
-        String apiUrl = baseUrl.endsWith("/")
-                ? baseUrl + "api/index.php/login?login=" + username + "&password=" + password
-                : baseUrl + "/api/index.php/login?login=" + username + "&password=" + password;
-
-        android.util.Log.d("LOGIN_DEBUG", "URL appelée: " + apiUrl);
-
-        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(
-                Request.Method.GET,
-                apiUrl,
-                null,
-                response -> {
-                    android.util.Log.d("LOGIN_DEBUG", "Réponse reçue: " + response.toString());
-                    handleLoginSuccess(response, username, baseUrl);
-                },
-                error -> {
-                    btnLogin.setEnabled(true);
-                    android.util.Log.e("LOGIN_DEBUG", "Erreur: " + error.toString());
-                    if (error.networkResponse != null) {
-                        android.util.Log.e("LOGIN_DEBUG", "Code erreur: " + error.networkResponse.statusCode);
-                    }
-
-                    String errorMessage;
-                    if (error.networkResponse == null) {
-                        errorMessage = "Erreur réseau: Vérifiez votre connexion Internet et l'URL";
-                    } else {
-                        int statusCode = error.networkResponse.statusCode;
-                        if (statusCode == 400) errorMessage = "Erreur 400: Requête invalide";
-                        else if (statusCode == 401) errorMessage = "Identifiants incorrects";
-                        else if (statusCode == 403)
-                            errorMessage = "Identifiants et/ou mot de passe incorrects";
-                        else if (statusCode == 404) errorMessage = "URL Dolibarr incorrecte (404)";
-                        else if (statusCode == 500) errorMessage = "Erreur serveur Dolibarr (500)";
-                        else errorMessage = "Erreur de connexion (" + statusCode + ")";
-                    }
-                    Toast.makeText(LoginActivity.this, errorMessage, Toast.LENGTH_LONG).show();
-                }
-        ) {
+        api.login(baseUrl, username, password, new ApiManager.ApiCallback() {
             @Override
-            public Map<String, String> getHeaders() {
-                Map<String, String> headers = new HashMap<>();
-                headers.put("Accept", "application/json");
-                return headers;
+            public void onSuccess(JSONObject response) {
+                handleLoginSuccess(response, username, baseUrl);
+                btnLogin.setEnabled(true);
             }
-        };
 
-        requestQueue.add(jsonObjectRequest);
+            @Override
+            public void onError(String error) {
+                btnLogin.setEnabled(true);
+                Toast.makeText(LoginActivity.this, error, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void handleLoginSuccess(JSONObject response, String username, String baseUrl) {
@@ -262,36 +226,9 @@ public class LoginActivity extends AppCompatActivity {
         Toast.makeText(this, message, Toast.LENGTH_LONG).show();
     }
 
-    public static void logout(AppCompatActivity activity) {
-        try {
-            MasterKey masterKey = new MasterKey.Builder(activity)
-                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                    .build();
-
-            SharedPreferences securePrefs = EncryptedSharedPreferences.create(
-                    activity,
-                    "secure_prefs_crypto",
-                    masterKey,
-                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-            );
-
-            securePrefs.edit().clear().apply();
-            android.util.Log.d("LOGOUT_DEBUG", "Données cryptées effacées avec succès");
-
-            Intent intent = new Intent(activity, LoginActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            activity.startActivity(intent);
-            activity.finish();
-
-            Toast.makeText(activity, "Déconnexion réussie", Toast.LENGTH_SHORT).show();
-
-        } catch (GeneralSecurityException | IOException e) {
-            android.util.Log.e("LOGOUT_DEBUG", "Erreur lors de la déconnexion", e);
-            Toast.makeText(activity, "Erreur lors de la déconnexion", Toast.LENGTH_LONG).show();
-        }
-    }
-
+    /**
+     * Annule les requêtes en cours lorsque l'activité est détruite.
+     */
     @Override
     protected void onDestroy() {
         super.onDestroy();
