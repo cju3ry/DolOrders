@@ -240,48 +240,6 @@ public class LoginActivity extends AppCompatActivity {
         Toast.makeText(this, message, Toast.LENGTH_LONG).show();
     }
 
-
-    /**
-     * MÉTHODE DE DÉCONNEXION
-     * Efface toutes les données cryptées et redirige vers LoginActivity
-     *
-     * Utilisation dans une autre activité (ex: MainActivity):
-     * LoginActivity.logout(this);
-     */
-    public static void logout(AppCompatActivity activity) {
-        try {
-            // Récupére les SharedPreferences cryptées
-            MasterKey masterKey = new MasterKey.Builder(activity)
-                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                    .build();
-
-            SharedPreferences securePrefs = EncryptedSharedPreferences.create(
-                    activity,
-                    "secure_prefs_crypto",
-                    masterKey,
-                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-            );
-
-            // Efface TOUTES les données cryptées
-            securePrefs.edit().clear().apply();
-
-            android.util.Log.d("LOGOUT_DEBUG", "Données cryptées effacées avec succès");
-
-            // Redirige vers LoginActivity
-            Intent intent = new Intent(activity, LoginActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            activity.startActivity(intent);
-            activity.finish();
-
-            Toast.makeText(activity, "Déconnexion réussie", Toast.LENGTH_SHORT).show();
-
-        } catch (GeneralSecurityException | IOException e) {
-            android.util.Log.e("LOGOUT_DEBUG", "Erreur lors de la déconnexion", e);
-            Toast.makeText(activity, "Erreur lors de la déconnexion", Toast.LENGTH_LONG).show();
-        }
-    }
-
     /**
      * Annule les requêtes en cours lorsque l'activité est détruite.
      */

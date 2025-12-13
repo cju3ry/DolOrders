@@ -1,13 +1,13 @@
 package com.example.dolorders;
 
-import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.widget.Button;
-import android.view.View;
-import android.widget.Button;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.example.dolorders.ui.ClientsFragment;
@@ -15,16 +15,25 @@ import com.example.dolorders.ui.CommandesFragment;
 import com.example.dolorders.ui.HomeFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
-import java.io.IOException;
-
 public class MainActivity extends AppCompatActivity {
+
+    private Toolbar toolbar;
+    private BottomNavigationView bottomNav;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        BottomNavigationView bottomNav = findViewById(R.id.bottomNavigation);
+        // Toolbar globale
+        toolbar = findViewById(R.id.toolbarHome);
+        setSupportActionBar(toolbar);
+
+        // Overflow icon blanc
+        toolbar.setOverflowIcon(ContextCompat.getDrawable(this, R.drawable.ic_overflow_white));
+
+        // Bottom Navigation
+        bottomNav = findViewById(R.id.bottomNavigation);
         bottomNav.setOnItemSelectedListener(item -> {
             Fragment selectedFragment = null;
             int id = item.getItemId();
@@ -45,11 +54,32 @@ public class MainActivity extends AppCompatActivity {
             return true;
         });
 
-        // Par défaut, on charge l’accueil
+        // Fragment par défaut
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.fragment_container, new HomeFragment())
                     .commit();
         }
+    }
+
+    // Inflater le menu utilisateur pour la Toolbar
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_user, menu);
+        return true;
+    }
+
+    // Gérer les clics sur les items du menu
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.action_logout) {
+            SessionManager.logout(this);
+            return true;
+        } else if (id == R.id.action_about) {
+            Toast.makeText(this, "À propos", Toast.LENGTH_SHORT).show();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 }

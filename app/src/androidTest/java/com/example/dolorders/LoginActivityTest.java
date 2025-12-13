@@ -48,8 +48,8 @@ public class LoginActivityTest {
 //    private static final String TEST_PASSWORD = "admin123";
 
     // Pour les tests avec de vraies credentials :
-     private static final String TEST_URL = " https://dolorders.com/htdocs/";
-     private static final String TEST_USERNAME = "DolOrder_SAE";
+     public static final String TEST_URL = " https://dolorders.com/htdocs/";
+     public static final String TEST_USERNAME = "DolOrder_SAE";
      private static final String TEST_PASSWORD = "Dol_SAE_D0lOrders";
 
     @Rule

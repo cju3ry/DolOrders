@@ -7,15 +7,6 @@
     android:orientation="vertical">
 
     <!-- La Toolbar reste inchangée -->
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbarHome"
-        android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="@color/blue_dolibarr"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
-        app:menu="@menu/menu_user"
-        app:title="@string/app_name"
-        app:titleTextColor="@android:color/white" />
 
     <ScrollView
         android:layout_width="match_parent"
