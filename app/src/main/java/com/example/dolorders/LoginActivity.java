@@ -1,10 +1,10 @@
-// java
 package com.example.dolorders;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.Toast;
 
@@ -14,8 +14,6 @@ import androidx.security.crypto.MasterKey;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.google.android.material.textfield.TextInputEditText;
@@ -26,18 +24,18 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class LoginActivity extends AppCompatActivity {
 
     private TextInputEditText etUsername;
     private TextInputEditText etPassword;
-    private TextInputEditText etUrl;
+    private AutoCompleteTextView etUrl;
     private Button btnLogin;
     private RequestQueue requestQueue;
-
     private SharedPreferences securePrefs;
-
+    private UrlManager urlManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,16 +48,23 @@ public class LoginActivity extends AppCompatActivity {
         btnLogin = findViewById(R.id.btnLogin);
 
         requestQueue = Volley.newRequestQueue(this);
+        urlManager = new UrlManager(this);
 
-        // Initialise les SharedPreferences cryptées
+        // --- Initialisation des SharedPreferences cryptées ---
         try {
             securePrefs = getEncryptedSharedPreferences();
         } catch (GeneralSecurityException | IOException e) {
             Toast.makeText(this, "Erreur d'initialisation du stockage sécurisé", Toast.LENGTH_LONG).show();
             e.printStackTrace();
+            // Si l'initialisation échoue, on ferme l'activité
+            finish();
             return;
         }
 
+        // --- Configuration de l'auto-complétion pour l'URL ---
+        setupUrlAutoComplete();
+
+        // --- Listener du bouton de connexion ---
         btnLogin.setOnClickListener(v -> {
             String username = etUsername.getText().toString().trim();
             String password = etPassword.getText().toString().trim();
@@ -70,7 +75,7 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
 
-        // Si déjà connecté, démarrer directement MainActivity
+        // --- Vérification si déjà connecté ---
         if (securePrefs.getBoolean("is_logged_in", false)) {
             startActivity(new Intent(LoginActivity.this, MainActivity.class));
             finish();
@@ -78,35 +83,40 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     /**
-     * Crée et retourne une instance de SharedPreferences cryptées.
-     * Les données sont automatiquement cryptées lors de l'écriture
-     * et décryptées lors de la lecture.
+     * Configure l'auto-complétion pour le champ URL avec les URLs enregistrées.
      */
+
+    private void setupUrlAutoComplete() {
+        List<String> urls = urlManager.getAllUrls();
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                this,
+                android.R.layout.simple_dropdown_item_1line,
+                urls
+        );
+
+        etUrl.setAdapter(adapter);
+
+        etUrl.setThreshold(1); // Affiche la liste dès le premier caractère
+
+        // Réautorise la saisie manuelle
+        etUrl.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_URI);
+    }
+
     private SharedPreferences getEncryptedSharedPreferences()
             throws GeneralSecurityException, IOException {
-        // Crée ou récupére la clé maître pour le cryptage
         MasterKey masterKey = new MasterKey.Builder(this)
                 .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
                 .build();
 
-        // Crée les SharedPreferences cryptées
         return EncryptedSharedPreferences.create(
                 this,
-                "secure_prefs_crypto",  // Nom du fichier
+                "secure_prefs_crypto",
                 masterKey,
                 EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         );
     }
 
-    /**
-     * Valide les champs d'entrée de l'utilisateur.
-     *
-     * @param username
-     * @param password
-     * @param url
-     * @return
-     */
     private boolean validateInputs(String username, String password, String url) {
         if (username.isEmpty()) {
             etUsername.setError("Identifiant requis");
@@ -152,21 +162,17 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
-    /**
-     * Gère la réponse de la requête de connexion.
-     *
-     * @param response     La réponse du serveur.
-     * @param username     Le nom d'utilisateur utilisé pour la connexion.
-     * @param baseUrl      L'URL de base utilisée pour la connexion.
-     */
     private void handleLoginSuccess(JSONObject response, String username, String baseUrl) {
         try {
             if (response.has("success")) {
                 JSONObject successObj = response.getJSONObject("success");
                 if (successObj.has("token")) {
                     String apiKey = successObj.getString("token");
+
+                    // Sauvegarde les credentials cryptés
                     saveCredentials(username, apiKey, baseUrl);
-                    // TODO Lance .... La page principale de l'application
+
+                    // Lance MainActivity qui sauvegardera l'URL
                     Intent intent = new Intent(LoginActivity.this, MainActivity.class);
                     startActivity(intent);
                     finish();
@@ -183,31 +189,17 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Sauvegarde les informations de connexion de manière CRYPTÉE.
-     * Les données sont automatiquement cryptées par EncryptedSharedPreferences.
-     *
-     * @param username Le nom d'utilisateur
-     * @param apiKey   La clé API (sera cryptée automatiquement)
-     * @param baseUrl  L'URL de base (sera cryptée automatiquement)
-     */
     private void saveCredentials(String username, String apiKey, String baseUrl) {
         SharedPreferences.Editor editor = securePrefs.edit();
-
-        // Toutes ces données sont automatiquement cryptées lors de l'écriture
         editor.putString("username", username);
         editor.putString("api_key", apiKey);
         editor.putString("base_url", baseUrl);
         editor.putBoolean("is_logged_in", true);
-
         editor.apply();
 
         android.util.Log.d("LOGIN_DEBUG", "Identifiants sauvegardés de manière cryptée");
     }
 
-    /**
-     * MÉTHODE UTILITAIRE pour récupérer la clé API décryptée
-     */
     public static String getApiKey(AppCompatActivity activity) {
         try {
             MasterKey masterKey = new MasterKey.Builder(activity)
@@ -216,13 +208,12 @@ public class LoginActivity extends AppCompatActivity {
 
             SharedPreferences securePrefs = EncryptedSharedPreferences.create(
                     activity,
-                    "secure_prefs_crypto",  // Nom du fichier
+                    "secure_prefs_crypto",
                     masterKey,
                     EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             );
 
-            // La clé est automatiquement décryptée lors de la lecture
             return securePrefs.getString("api_key", null);
         } catch (GeneralSecurityException | IOException e) {
             e.printStackTrace();
@@ -230,11 +221,6 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Affiche un message d'erreur. Pour le debug
-     *
-     * @param message
-     */
     private void showError(String message) {
         btnLogin.setEnabled(true);
         Toast.makeText(this, message, Toast.LENGTH_LONG).show();
