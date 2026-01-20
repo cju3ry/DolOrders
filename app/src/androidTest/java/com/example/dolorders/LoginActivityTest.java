@@ -293,13 +293,5 @@ public class LoginActivityTest {
         onView(withId(R.id.btnLogin)).perform(click());
         onView(withId(R.id.etPassword)).check(matches(hasErrorText("Mot de passe requis")));
     }
-
-//    @Test
-//    public void emptyUrl_showsValidationError() {
-//        onView(withId(R.id.etUsername)).perform(typeText("un_identifiant"));
-//        onView(withId(R.id.etPassword)).perform(typeText("un_mot_de_passe"), closeSoftKeyboard());
-//        onView(withId(R.id.btnLogin)).perform(click());
-//        onView(withId(R.id.etUrl)).check(matches(hasErrorText("URL requise")));
-//    }
-
 }
+
