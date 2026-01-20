@@ -15,7 +15,7 @@ public class ClientApiReponseDto {
     @SerializedName("name")
     public String nom;
 
-    @SerializedName("adress")
+    @SerializedName("address")
     public String adresse;
 
     @SerializedName("zip")

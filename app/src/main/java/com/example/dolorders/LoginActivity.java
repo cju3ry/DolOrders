@@ -37,6 +37,7 @@ public class LoginActivity extends AppCompatActivity {
     private RequestQueue requestQueue;
 
     private SharedPreferences securePrefs;
+    private SharedPreferences normalPrefs; // Pour stocker l'URL
 
 
     @Override
@@ -51,13 +52,22 @@ public class LoginActivity extends AppCompatActivity {
 
         requestQueue = Volley.newRequestQueue(this);
 
-        // Initialise les SharedPreferences cryptées
+        // Initialise les SharedPreferences normales pour l'URL
+        normalPrefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
+
+        // Initialise les SharedPreferences cryptées pour les données sensibles
         try {
             securePrefs = getEncryptedSharedPreferences();
         } catch (GeneralSecurityException | IOException e) {
             Toast.makeText(this, "Erreur d'initialisation du stockage sécurisé", Toast.LENGTH_LONG).show();
             e.printStackTrace();
             return;
+        }
+
+        // Charger l'URL sauvegardée précédemment (si elle existe)
+        String savedUrl = normalPrefs.getString("base_url", "");
+        if (!savedUrl.isEmpty()) {
+            etUrl.setText(savedUrl);
         }
 
         btnLogin.setOnClickListener(v -> {
@@ -232,25 +242,28 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     /**
-     * Sauvegarde les informations de connexion de manière CRYPTÉE.
-     * Les données sont automatiquement cryptées par EncryptedSharedPreferences.
+     * Sauvegarde les informations de connexion.
+     * L'URL de base est stockée en clair (SharedPreferences normales) pour être reproposée.
+     * Les données sensibles (username, apiKey) sont cryptées.
      *
-     * @param username Le nom d'utilisateur
-     * @param apiKey   La clé API (sera cryptée automatiquement)
-     * @param baseUrl  L'URL de base (sera cryptée automatiquement)
+     * @param username Le nom d'utilisateur (sera crypté)
+     * @param apiKey   La clé API (sera cryptée)
+     * @param baseUrl  L'URL de base (stockée en clair)
      */
     private void saveCredentials(String username, String apiKey, String baseUrl) {
-        SharedPreferences.Editor editor = securePrefs.edit();
+        // 1. Sauvegarde de l'URL en clair (pour la reproposer)
+        SharedPreferences.Editor normalEditor = normalPrefs.edit();
+        normalEditor.putString("base_url", baseUrl);
+        normalEditor.apply();
 
-        // Toutes ces données sont automatiquement cryptées lors de l'écriture
-        editor.putString("username", username);
-        editor.putString("api_key", apiKey);
-        editor.putString("base_url", baseUrl);
-        editor.putBoolean("is_logged_in", true);
+        // 2. Sauvegarde des données sensibles cryptées
+        SharedPreferences.Editor secureEditor = securePrefs.edit();
+        secureEditor.putString("username", username);
+        secureEditor.putString("api_key", apiKey);
+        secureEditor.putBoolean("is_logged_in", true);
+        secureEditor.apply();
 
-        editor.apply();
-
-        android.util.Log.d("LOGIN_DEBUG", "Identifiants sauvegardés de manière cryptée");
+        android.util.Log.d("LOGIN_DEBUG", "URL sauvegardée en clair, identifiants cryptés");
     }
 
     /**
@@ -288,10 +301,47 @@ public class LoginActivity extends AppCompatActivity {
         Toast.makeText(this, message, Toast.LENGTH_LONG).show();
     }
 
+    /**
+     * MÉTHODE UTILITAIRE pour récupérer la clé API depuis n'importe quel Context
+     * La clé API est stockée de manière cryptée pour la sécurité.
+     * Fonctionne avec Activity, Fragment, Service, etc.
+     */
+    public static String getApiKeyFromContext(android.content.Context context) {
+        try {
+            MasterKey masterKey = new MasterKey.Builder(context)
+                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                    .build();
+
+            SharedPreferences securePrefs = EncryptedSharedPreferences.create(
+                    context,
+                    "secure_prefs_crypto",
+                    masterKey,
+                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            );
+
+            return securePrefs.getString("api_key", null);
+        } catch (GeneralSecurityException | IOException e) {
+            android.util.Log.e("LOGIN_DEBUG", "Erreur récupération API key", e);
+            return null;
+        }
+    }
+
+    /**
+     * MÉTHODE UTILITAIRE pour récupérer l'URL de base depuis n'importe quel Context
+     * L'URL est stockée en clair dans les SharedPreferences normales (pas de cryptage nécessaire)
+     * Fonctionne avec Activity, Fragment, Service, etc.
+     */
+    public static String getBaseUrlFromContext(android.content.Context context) {
+        SharedPreferences prefs = context.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE);
+        return prefs.getString("base_url", null);
+    }
+
 
     /**
      * MÉTHODE DE DÉCONNEXION
      * Efface toutes les données cryptées et redirige vers LoginActivity
+     * Note : L'URL de base est conservée pour être reproposée lors de la prochaine connexion
      *
      * Utilisation dans une autre activité (ex: MainActivity):
      * LoginActivity.logout(this);
@@ -311,8 +361,13 @@ public class LoginActivity extends AppCompatActivity {
                     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             );
 
-            // Efface TOUTES les données cryptées
+            // Efface TOUTES les données cryptées (username, api_key)
             securePrefs.edit().clear().apply();
+
+            // Note : On garde l'URL pour la reproposer à l'utilisateur
+            // Si vous voulez aussi effacer l'URL, décommentez les lignes suivantes :
+            // SharedPreferences normalPrefs = activity.getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
+            // normalPrefs.edit().remove("base_url").apply();
 
             android.util.Log.d("LOGOUT_DEBUG", "Données cryptées effacées avec succès");
 

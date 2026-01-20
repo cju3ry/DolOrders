@@ -25,22 +25,39 @@ public class ClientMapper {
         if (dto == null) {
             return null;
         }
+        // Utilisation de chaînes vides ou texte par défaut si null ou vide
+        String nom = dto.nom != null && !dto.nom.trim().isEmpty() ? dto.nom : "Nom inconnu";
+        String adresse = dto.adresse != null && !dto.adresse.trim().isEmpty() ? dto.adresse : "Adresse non renseignée";
+        String cp = dto.codePostal != null && !dto.codePostal.trim().isEmpty() ? dto.codePostal : "00000";
+        String ville = dto.ville != null && !dto.ville.trim().isEmpty() ? dto.ville : "Ville inconnue";
+        String tel = dto.numTel != null && !dto.numTel.trim().isEmpty() ? dto.numTel : "0000000000";
+        String mail = dto.mail != null && !dto.mail.trim().isEmpty() ? dto.mail : "inconnu@email.com";
 
         // Conversion du timestamp en secondes vers un objet Date
         // Le constructeur de Date attend des millisecondes, donc on multiplie par 1000.
         Date dateSaisie = new Date(dto.dateSaisie * 1000L);
 
+        // TODO Corriger ces valeurs par défaut si besoin
+        // Valeurs par défaut pour les champs non fournis par l'API Dolibarr
+        String utilisateur = "Système";
+        String utilisateurEnvoie = "Système";
+        Date dateEnvoie = new Date();
+        Date dateMiseAJour = dateSaisie;
+
         // On utilise le Builder pour garantir la validité de l'objet créé.
-        // Si le DTO contient des données invalides (ex: nom vide), le .build() lèvera une exception
         return new Client.Builder()
                 .setId(dto.id)
-                .setNom(dto.nom)
-                .setAdresse(dto.adresse)
-                .setCodePostal(dto.codePostal)
-                .setVille(dto.ville)
-                .setAdresseMail(dto.mail)
-                .setTelephone(dto.numTel)
+                .setNom(nom)
+                .setAdresse(adresse)
+                .setCodePostal(cp)
+                .setVille(ville)
+                .setAdresseMail(mail)
+                .setTelephone(tel)
+                .setUtilisateur(utilisateur)
                 .setDateSaisie(dateSaisie)
+                .setUtilisateurEnvoie(utilisateurEnvoie)
+                .setDateEnvoie(dateEnvoie)
+                .setDateMiseAJour(dateMiseAJour)
                 .build();
     }
 

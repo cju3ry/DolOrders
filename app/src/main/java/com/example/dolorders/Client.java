@@ -162,4 +162,21 @@ public class Client {
             return new Client(this);
         }
     }
+
+    public String toString() {
+        return "Client{" +
+                "id='" + id + '\'' +
+                ", nom='" + nom + '\'' +
+                ", adresse='" + adresse + '\'' +
+                ", codePostal='" + codePostal + '\'' +
+                ", ville='" + ville + '\'' +
+                ", adresseMail='" + adresseMail + '\'' +
+                ", telephone='" + telephone + '\'' +
+                ", utilisateur='" + utilisateur + '\'' +
+                ", dateSaisie=" + dateSaisie +
+                ", utilisateurEnvoie='" + utilisateurEnvoie + '\'' +
+                ", dateEnvoie=" + dateEnvoie +
+                ", dateMiseAJour=" + dateMiseAJour +
+                '}';
+    }
 }
