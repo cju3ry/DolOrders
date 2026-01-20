@@ -6,78 +6,68 @@
     android:gravity="center_vertical"
     android:orientation="horizontal"
     android:paddingTop="8dp"
-    android:paddingBottom="8dp">
+    android:paddingBottom="8dp"
+    android:background="@drawable/border_bottom"> <TextView
+    android:id="@+id/text_libelle_article"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_weight="3"
+    android:text="Nom Article"
+    android:textColor="@android:color/black"
+    android:textSize="14sp"
+    android:maxLines="2"
+    android:ellipsize="end"/>
 
     <TextView
-        android:id="@+id/text_libelle_article"
+        android:id="@+id/text_prix_unitaire"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:text="Libelle article"
-        android:textColor="@android:color/black"
-        android:textSize="16sp" />
+        android:layout_weight="1.5"
+        android:gravity="end"
+        android:text="10.00 €"
+        android:textSize="12sp"
+        android:textColor="@android:color/darker_gray"/>
 
-    <!-- Section Quantité interactive -->
-    <LinearLayout
-        android:layout_width="wrap_content"
+    <EditText
+        android:id="@+id/edit_text_quantite_article"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="16dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:layout_weight="1.2"
+        android:gravity="center"
+        android:inputType="number"
+        android:background="@android:drawable/edit_text"
+        android:textSize="14sp"
+        android:text="1"/>
 
-        <ImageButton
-            android:id="@+id/btn_minus"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Diminuer la quantité"
-            android:src="@drawable/ic_arrow_drop"
-            app:tint="?attr/colorPrimary" />
-
-        <EditText
-            android:id="@+id/edit_text_quantite_article"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="8dp"
-            android:background="@android:color/transparent"
-            android:gravity="center"
-            android:inputType="number"
-            android:minWidth="30dp"
-            android:text="1"
-            android:textColor="@android:color/black"
-            android:textSize="16sp"
-            android:textStyle="bold" />
-
-        <ImageButton
-            android:id="@+id/btn_plus"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Augmenter la quantité"
-            android:src="@drawable/ic_arrow_up"
-            app:tint="?attr/colorPrimary" />
-
-    </LinearLayout>
-
+    <EditText
+        android:id="@+id/edit_text_remise_ligne"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1.2"
+        android:gravity="center"
+        android:inputType="numberDecimal"
+        android:background="@android:drawable/edit_text"
+        android:hint="%"
+        android:textSize="14sp"/>
 
     <TextView
-        android:id="@+id/text_prix_article"
-        android:layout_width="wrap_content"
+        android:id="@+id/text_total_ligne"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="16dp"
-        android:text="1.50€/u"
-        android:textColor="@android:color/darker_gray"
-        android:textSize="16sp" />
+        android:layout_weight="1.8"
+        android:gravity="end"
+        android:text="100 €"
+        android:textStyle="bold"
+        android:textColor="@color/blue_dolibarr"
+        android:textSize="13sp"
+        android:paddingEnd="4dp"/>
 
     <ImageButton
         android:id="@+id/btn_delete_article"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
         android:src="@android:drawable/ic_menu_delete"
-        android:contentDescription="Supprimer l'article"
         android:background="?attr/selectableItemBackgroundBorderless"
         app:tint="@android:color/holo_red_dark" />
 
 </LinearLayout>
-
