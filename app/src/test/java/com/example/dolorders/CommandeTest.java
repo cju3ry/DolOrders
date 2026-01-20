@@ -3,9 +3,9 @@ package com.example.dolorders;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -16,7 +16,7 @@ import static org.junit.Assert.*;
 public class CommandeTest {
 
     private Client clientValide;
-    private Map<Produit, Integer> produitsValides;
+    private List<LigneCommande> lignesValides;
     private Date dateValide;
     private String utilisateurValide;
 
@@ -35,9 +35,16 @@ public class CommandeTest {
                 .setDateSaisie(new Date())
                 .build();
 
-        produitsValides = new HashMap<>();
-        produitsValides.put(new Produit(1, "Produit A", 10.0), 2);
-        produitsValides.put(new Produit(2, "Produit B", 5.0), 1);
+        // Initialisation de la liste des lignes de commande
+        lignesValides = new ArrayList<>();
+
+        // Ajout d'une ligne : Produit A (10.0€) x 2 sans remise = 20.0€
+        Produit produitA = new Produit(1, "Produit A", 10.0);
+        lignesValides.add(new LigneCommande(produitA, 2, 0.0));
+
+        // Ajout d'une ligne : Produit B (5.0€) x 1 sans remise = 5.0€
+        Produit produitB = new Produit(2, "Produit B", 5.0);
+        lignesValides.add(new LigneCommande(produitB, 1, 0.0));
 
         dateValide = new Date();
         utilisateurValide = "Admin";
@@ -47,35 +54,57 @@ public class CommandeTest {
     public void build_reussitAvecTousLesChampsValides() {
         Commande commande = new Commande.Builder()
                 .setClient(clientValide)
-                .setProduitsEtQuantites(produitsValides)
+                .setLignesCommande(lignesValides)
                 .setDateCommande(dateValide)
                 .setUtilisateur(utilisateurValide)
+                .setRemiseGlobale(0.0) // Valeur par défaut explicite
                 .build();
 
         assertNotNull(commande);
         assertEquals(clientValide, commande.getClient());
+        // Vérification du total : 20.0 + 5.0 = 25.0
         assertEquals(25.0, commande.getMontantTotal(), 0.01);
     }
 
     @Test
-    public void build_reussitAvecRemiseCalculeCorrectementLeTotal() {
+    public void build_calculeCorrectementAvecRemiseParLigne() {
+        // Création d'un cas de test spécifique pour vérifier le calcul de la remise par ligne
+        List<LigneCommande> lignesAvecRemise = new ArrayList<>();
+
+        // Produit à 100€, qté 1, remise 50% -> Doit faire 50€
+        Produit produitCher = new Produit(3, "Produit Cher", 100.0);
+        lignesAvecRemise.add(new LigneCommande(produitCher, 1, 50.0));
+
         Commande commande = new Commande.Builder()
                 .setClient(clientValide)
-                .setProduitsEtQuantites(produitsValides)
+                .setLignesCommande(lignesAvecRemise)
                 .setDateCommande(dateValide)
                 .setUtilisateur(utilisateurValide)
-                .setRemise(10.0)
+                .build();
+
+        assertEquals(50.0, commande.getMontantTotal(), 0.01);
+    }
+
+    @Test
+    public void build_calculeCorrectementAvecRemiseGlobale() {
+        // Test de la logique de remise globale du modèle (indépendant de l'UI)
+        Commande commande = new Commande.Builder()
+                .setClient(clientValide)
+                .setLignesCommande(lignesValides) // Total brut des lignes = 25.0
+                .setDateCommande(dateValide)
+                .setUtilisateur(utilisateurValide)
+                .setRemiseGlobale(10.0) // 10% de remise sur 25.0 -> -2.5€
                 .build();
 
         assertNotNull(commande);
-        assertEquals(10.0, commande.getRemise(), 0.01);
+        assertEquals(10.0, commande.getRemiseGlobale(), 0.01);
         assertEquals(22.5, commande.getMontantTotal(), 0.01);
     }
 
     @Test(expected = IllegalStateException.class)
     public void build_echoueSansClient() {
         new Commande.Builder()
-                .setProduitsEtQuantites(produitsValides)
+                .setLignesCommande(lignesValides)
                 .setDateCommande(dateValide)
                 .setUtilisateur(utilisateurValide)
                 .build();
@@ -85,7 +114,7 @@ public class CommandeTest {
     public void build_echoueSansProduits() {
         new Commande.Builder()
                 .setClient(clientValide)
-                .setProduitsEtQuantites(new HashMap<>()) // Panier vide
+                .setLignesCommande(new ArrayList<>()) // Liste vide interdite
                 .setDateCommande(dateValide)
                 .setUtilisateur(utilisateurValide)
                 .build();
@@ -95,19 +124,19 @@ public class CommandeTest {
     public void build_echoueSansUtilisateur() {
         new Commande.Builder()
                 .setClient(clientValide)
-                .setProduitsEtQuantites(produitsValides)
+                .setLignesCommande(lignesValides)
                 .setDateCommande(dateValide)
-                .build(); // Pas de setUtilisateur
+                .build(); // Champ utilisateur manquant
     }
 
     @Test(expected = IllegalStateException.class)
-    public void build_echoueAvecRemiseNegative() {
+    public void build_echoueAvecRemiseGlobaleNegative() {
         new Commande.Builder()
                 .setClient(clientValide)
-                .setProduitsEtQuantites(produitsValides)
+                .setLignesCommande(lignesValides)
                 .setDateCommande(dateValide)
                 .setUtilisateur(utilisateurValide)
-                .setRemise(-5.0) // Remise négative invalide
+                .setRemiseGlobale(-5.0) // La remise ne peut pas être négative
                 .build();
     }
 }

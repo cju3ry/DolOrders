@@ -2,35 +2,34 @@ package com.example.dolorders;
 
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.List;import java.util.Map;
 
 public class Commande {
     private final String id;
     private final Client client;
     private final Date dateCommande;
-    private final Map<Produit, Integer> produitsEtQuantites;
+    private final List<LigneCommande> lignesCommande;
     private final double montantTotal;
-    private final double remise;
     private final String utilisateur;
+    private final double remiseGlobale; // Non utilisé pour le moment
 
     private Commande(Builder builder) {
         this.id = builder.id;
         this.dateCommande = builder.dateCommande;
         this.client = builder.client;
-        this.produitsEtQuantites = builder.produitsEtQuantites;
+        this.lignesCommande = builder.lignesCommande;
         this.montantTotal = calculerMontantTotal();
         this.utilisateur = builder.utilisateur;
-        this.remise = builder.remise;
+        this.remiseGlobale = builder.remiseGlobale;
     }
 
     private double calculerMontantTotal() {
-        if (produitsEtQuantites == null || produitsEtQuantites.isEmpty()) {
+        if (lignesCommande == null || lignesCommande.isEmpty()) {
             return 0.0;
         }
         double total = 0.0;
-        for (Map.Entry<Produit, Integer> entry : produitsEtQuantites.entrySet()) {
-            total += entry.getKey().getPrixUnitaire() * entry.getValue();
+        for (LigneCommande ligne : lignesCommande) {
+            total += ligne.getMontantLigne();
         }
         return total;
     }
@@ -38,18 +37,18 @@ public class Commande {
     public String getId() { return id; }
     public Date getDateCommande() { return dateCommande; }
     public Client getClient() { return client; }
-    public Map<Produit, Integer> getProduitsEtQuantites() { return produitsEtQuantites; }
-    public double getMontantTotal() { return montantTotal * (1 - remise / 100); }
+    public List<LigneCommande> getLignesCommande() { return lignesCommande; }
+    public double getMontantTotal() { return montantTotal * (1 - remiseGlobale / 100); }
     public String getUtilisateur() { return utilisateur; }
-    public double getRemise() { return remise; }
+    public double getRemiseGlobale() { return remiseGlobale; }
 
     public static class Builder {
         private String id;
         private Date dateCommande;
         private Client client;
-        private Map<Produit, Integer> produitsEtQuantites;
+        private List<LigneCommande> lignesCommande;
         private String utilisateur;
-        private double remise;
+        private double remiseGlobale;
 
         public Builder setId(String id) {
             this.id = id;
@@ -66,8 +65,8 @@ public class Commande {
             return this;
         }
 
-        public Builder setProduitsEtQuantites(Map<Produit, Integer> produitsEtQuantites) {
-            this.produitsEtQuantites = produitsEtQuantites;
+        public Builder setLignesCommande(List<LigneCommande> lignesCommande) {
+            this.lignesCommande = lignesCommande;
             return this;
         }
 
@@ -76,11 +75,10 @@ public class Commande {
             return this;
         }
 
-        public Builder setRemise(double remise) {
-            this.remise = remise;
+        public Builder setRemiseGlobale(double remise) {
+            this.remiseGlobale = remise;
             return this;
         }
-
 
         public Commande build() {
             if (client == null) {
@@ -89,14 +87,14 @@ public class Commande {
             if (dateCommande == null) {
                 this.dateCommande = new Date();
             }
-            if (produitsEtQuantites == null || produitsEtQuantites.isEmpty()) {
+            if (lignesCommande == null || lignesCommande.isEmpty()) { // Modifié
                 throw new IllegalStateException("Une commande doit contenir au moins un produit.");
             }
             if (utilisateur == null || utilisateur.isEmpty()) {
                 throw new IllegalStateException("Un utilisateur doit être renseigné.");
             }
-            if (remise < 0) {
-                throw new IllegalStateException("La remise ne peut pas être négative.");
+            if (remiseGlobale < 0) { // Modifié
+                throw new IllegalStateException("La remise globale ne peut pas être négative.");
             }
 
             return new Commande(this);
