@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -38,6 +39,23 @@ public class MainActivity extends AppCompatActivity {
         // Toolbar globale
         toolbar = findViewById(R.id.toolbarHome);
         setSupportActionBar(toolbar);
+
+        // Désactive le titre par défaut de la Toolbar
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayShowTitleEnabled(false);
+        }
+
+        // Récupération du nom d'utilisateur et mise à jour du TextView
+        TextView tvWelcomeUser = findViewById(R.id.tvWelcomeUser);
+        String username = LoginActivity.getUsername(this);
+        Log.d(TAG, "Username récupéré: " + username);
+        if (username != null && !username.isEmpty()) {
+            tvWelcomeUser.setText("Bienvenue " + username);
+            Log.d(TAG, "TextView mis à jour: Bienvenue " + username);
+        } else {
+            tvWelcomeUser.setText("Bienvenue");
+            Log.w(TAG, "Username null ou vide, texte par défaut utilisé");
+        }
 
         // Overflow icon blanc
         toolbar.setOverflowIcon(ContextCompat.getDrawable(this, R.drawable.ic_overflow_white));
