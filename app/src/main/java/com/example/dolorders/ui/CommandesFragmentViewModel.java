@@ -5,29 +5,24 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.example.dolorders.Client;
+import com.example.dolorders.LigneCommande;
 import com.example.dolorders.Produit;
 
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
 public class CommandesFragmentViewModel extends ViewModel {
 
+    private final MutableLiveData<List<LigneCommande>> lignesCommande = new MutableLiveData<>(new ArrayList<>());
     private final MutableLiveData<Client> clientSelectionne = new MutableLiveData<>();
     private final MutableLiveData<String> date = new MutableLiveData<>();
-    private final MutableLiveData<String> remise = new MutableLiveData<>();
-    private final MutableLiveData<Map<Produit, Integer>> articles = new MutableLiveData<>(new LinkedHashMap<>());
     private final MutableLiveData<List<Client>> listeClients = new MutableLiveData<>();
     private final MutableLiveData<List<Produit>> listeProduits = new MutableLiveData<>();
 
     // --- Getters ---
+    public LiveData<List<LigneCommande>> getLignesCommande() { return lignesCommande; }
     public LiveData<Client> getClientSelectionne() { return clientSelectionne; }
     public LiveData<String> getDate() { return date; }
-    public LiveData<String> getRemise() { return remise; }
-    public LiveData<Map<Produit, Integer>> getArticles() { return articles; }
     public LiveData<List<Client>> getListeClients() { return listeClients; }
     public LiveData<List<Produit>> getListeProduits() { return listeProduits; }
 
@@ -39,49 +34,69 @@ public class CommandesFragmentViewModel extends ViewModel {
         this.date.setValue(date);
     }
 
-    public void setRemise(String remise) {
-        this.remise.setValue(remise);
-    }
-
     public void addArticle(Produit produit) {
-        Map<Produit, Integer> panierActuel = articles.getValue();
-        if (panierActuel == null) panierActuel = new LinkedHashMap<>();
+        List<LigneCommande> currentList = lignesCommande.getValue();
+        if (currentList == null) currentList = new ArrayList<>();
 
-        int quantite = panierActuel.getOrDefault(produit, 0);
-        panierActuel.put(produit, quantite + 1);
-        articles.setValue(panierActuel); // Déclenche l'update
-    }
-
-    public void removeArticle(Produit produit) {
-        Map<Produit, Integer> panierActuel = articles.getValue();
-        if (panierActuel != null) {
-            panierActuel.remove(produit);
-            articles.setValue(panierActuel);
-        }
-    }
-
-    public void updateQuantity(Produit produit, int nouvelleQuantite) {
-        Map<Produit, Integer> panierActuel = articles.getValue();
-        if (panierActuel != null && panierActuel.containsKey(produit)) {
-            if (nouvelleQuantite > 0) {
-                panierActuel.put(produit, nouvelleQuantite);
-            } else {
-                panierActuel.remove(produit); // Supprime si la quantité est 0 ou moins
+        // Vérifier si le produit existe déjà
+        for (LigneCommande ligne : currentList) {
+            if (ligne.getProduit().getId() == produit.getId()) {
+                return;
             }
-            articles.setValue(panierActuel);
         }
+
+        // Si pas trouvé, on l'ajoute avec quantité 1
+        List<LigneCommande> newList = new ArrayList<>(currentList);
+        newList.add(new LigneCommande(produit, 1, 0.0));
+        lignesCommande.setValue(newList);
+    }
+
+    public void removeLigne(LigneCommande ligneToDelete) {
+        List<LigneCommande> currentList = lignesCommande.getValue();
+        if (currentList != null) {
+            List<LigneCommande> newList = new ArrayList<>(currentList);
+            // Suppression basée sur l'égalité des objets ou ID
+            newList.removeIf(l -> l.getProduit().getId() == ligneToDelete.getProduit().getId());
+            lignesCommande.setValue(newList);
+        }
+    }
+
+    public void updateLigne(LigneCommande oldLigne, int newQty, double newRemise) {
+        List<LigneCommande> currentList = lignesCommande.getValue();
+        if (currentList != null) {
+            List<LigneCommande> newList = new ArrayList<>();
+            for (LigneCommande l : currentList) {
+                if (l.getProduit().getId() == oldLigne.getProduit().getId()) {
+                    if (newQty > 0) {
+                        newList.add(new LigneCommande(l.getProduit(), newQty, newRemise));
+                    }
+                } else {
+                    newList.add(l);
+                }
+            }
+            lignesCommande.setValue(newList);
+        }
+    }
+
+    public double getTotal() {
+        List<LigneCommande> list = lignesCommande.getValue();
+        double total = 0.0;
+        if (list != null) {
+            for (LigneCommande l : list) {
+                total += l.getMontantLigne();
+            }
+        }
+        return total;
     }
 
     public void clear() {
-        clientSelectionne.setValue(null);
-        date.setValue(null);
-        remise.setValue(null);
-        articles.setValue(new LinkedHashMap<>());
+        setClientSelectionne(null);
+        setDate(null);
+        lignesCommande.setValue(new ArrayList<>());
     }
 
-    // --- Chargement des données de test ---
     public void chargerDonneesDeTest() {
-        Client.Builder client = new Client.Builder()
+        Client.Builder clientBuilder = new Client.Builder()
                 .setId("001")
                 .setNom("Dupont")
                 .setAdresse("10 rue de la Paix")
@@ -90,12 +105,11 @@ public class CommandesFragmentViewModel extends ViewModel {
                 .setAdresseMail("test@example.com")
                 .setTelephone("0123456789")
                 .setUtilisateur("userTest")
-                .setDateSaisie(new Date());
+                .setDateSaisie(new java.util.Date());
         List<Client> clientsFactices = new ArrayList<>();
-        clientsFactices.add(client.build());
+        clientsFactices.add(clientBuilder.build());
         listeClients.setValue(clientsFactices);
 
-        // Produits factices
         List<Produit> produitsFactices = new ArrayList<>();
         produitsFactices.add(new Produit(101, "Stylo Bleu", 1.50));
         produitsFactices.add(new Produit(102, "Cahier A4", 3.20));
