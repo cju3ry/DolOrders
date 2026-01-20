@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/action_details"
+        android:title="Détails"/>
+
+    <item
+        android:id="@+id/action_modifier"
+        android:title="Modifier"/>
+
+    <item
+        android:id="@+id/action_nouvelle_commande"
+        android:title="Nouvelle commande"/>
+
+</menu>

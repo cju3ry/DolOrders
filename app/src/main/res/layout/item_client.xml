@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="12dp"
+    android:gravity="center_vertical">
+
+    <!-- Colonne 1 : Icône utilisateur -->
+    <ImageView
+        android:id="@+id/imgUser"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:src="@drawable/user_regular_full"
+        android:contentDescription="Utilisateur"
+        android:layout_marginEnd="12dp"/>
+
+    <!-- Colonne 2 : Nom -->
+    <TextView
+        android:id="@+id/txtNom"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="2"
+        android:text="Nom Client"
+        android:textStyle="bold"
+        android:textSize="14sp"/>
+
+    <!-- Colonne 3 : Téléphone -->
+    <TextView
+        android:id="@+id/txtTelephone"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="2"
+        android:text="06 00 00 00 00"
+        android:textSize="14sp"/>
+
+    <!-- Colonne 4 : Ville -->
+    <TextView
+        android:id="@+id/txtVille"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="2"
+        android:text="Ville"
+        android:textSize="14sp"/>
+
+    <!-- Colonne 5 : Actions -->
+    <ImageView
+        android:id="@+id/btnActions"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:src="@drawable/actions"
+        android:contentDescription="Actions"
+        android:padding="4dp"
+        android:clickable="true"
+        android:focusable="true"/>
+</LinearLayout>

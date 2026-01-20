@@ -21,7 +21,7 @@ import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 
 @RunWith(AndroidJUnit4.class)
-public class ClientsFragmentTest {
+public class ClientsAjoutFragmentTest {
 
     /**
      * On lance la MainActivity directement. Elle se chargera de créer et d'afficher

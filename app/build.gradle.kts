@@ -35,6 +35,7 @@ android {
 
 dependencies {
     implementation(libs.firebase.crashlytics.buildtools)
+    implementation(libs.recyclerview)
     val lifecycleVersion = "2.8.3"
     val activityVersion = "1.11.0"
     val fragmentVersion = "1.8.1"
