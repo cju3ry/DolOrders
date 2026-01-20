@@ -39,7 +39,19 @@ public class SessionManager {
                     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             );
 
+            // Sauvegarde l'URL avant d'effacer (pour la réutiliser à la prochaine connexion)
+            String lastUrl = securePrefs.getString("base_url", null);
+            android.util.Log.d("LOGOUT_DEBUG", "URL sauvegardée avant effacement: " + lastUrl);
+
+            // Efface toutes les données cryptées
             securePrefs.edit().clear().apply();
+
+            // Restaure l'URL dans les SharedPreferences normales (non sensible)
+            if (lastUrl != null && !lastUrl.isEmpty()) {
+                SharedPreferences normalPrefs = activity.getSharedPreferences("DolOrdersPrefs", Context.MODE_PRIVATE);
+                normalPrefs.edit().putString("last_used_url", lastUrl).apply();
+                android.util.Log.d("LOGOUT_DEBUG", "URL restaurée pour la prochaine connexion");
+            }
 
             android.util.Log.d("LOGOUT_DEBUG", "Données cryptées effacées avec succès");
 

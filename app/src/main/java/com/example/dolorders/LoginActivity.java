@@ -3,6 +3,7 @@ package com.example.dolorders;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
@@ -50,7 +51,7 @@ public class LoginActivity extends AppCompatActivity {
         requestQueue = Volley.newRequestQueue(this);
         urlManager = new UrlManager(this);
 
-        // --- Initialisation des SharedPreferences cryptées ---
+        // Initialisation des SharedPreferences cryptées
         try {
             securePrefs = getEncryptedSharedPreferences();
         } catch (GeneralSecurityException | IOException e) {
@@ -61,10 +62,29 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
-        // --- Configuration de l'auto-complétion pour l'URL ---
+        // Configuration de l'auto-complétion pour l'URL
         setupUrlAutoComplete();
 
-        // --- Listener du bouton de connexion ---
+        // Pré-remplir avec la dernière URL utilisée
+        final String lastUrl = getLastUsedUrl();
+        final boolean[] urlWasPrefilled = {false};
+
+        if (lastUrl != null && !lastUrl.isEmpty()) {
+            etUrl.setText(lastUrl);
+            urlWasPrefilled[0] = true;
+            Log.d("LoginActivity", "URL pré-remplie: " + lastUrl);
+        }
+
+        // Efface l'URL au clic pour permettre une nouvelle saisie
+        etUrl.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus && urlWasPrefilled[0]) {
+                etUrl.setText("");
+                urlWasPrefilled[0] = false;
+                Log.d("LoginActivity", "URL effacée au focus");
+            }
+        });
+
+        // Listener du bouton de connexion
         btnLogin.setOnClickListener(v -> {
             String username = etUsername.getText().toString().trim();
             String password = etPassword.getText().toString().trim();
@@ -190,6 +210,8 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void saveCredentials(String username, String apiKey, String baseUrl) {
+        android.util.Log.d("LOGIN_DEBUG", "Sauvegarde des credentials - username: " + username);
+
         SharedPreferences.Editor editor = securePrefs.edit();
         editor.putString("username", username);
         editor.putString("api_key", apiKey);
@@ -198,6 +220,10 @@ public class LoginActivity extends AppCompatActivity {
         editor.apply();
 
         android.util.Log.d("LOGIN_DEBUG", "Identifiants sauvegardés de manière cryptée");
+
+        // Vérification immédiate
+        String verif = securePrefs.getString("username", null);
+        android.util.Log.d("LOGIN_DEBUG", "Vérification immédiate - username lu: " + verif);
     }
 
     public static String getApiKey(AppCompatActivity activity) {
@@ -221,9 +247,67 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Récupère le nom d'utilisateur depuis les SharedPreferences cryptées
+     */
+    public static String getUsername(android.content.Context context) {
+        try {
+            android.util.Log.d("LoginActivity", "Tentative de récupération du username");
+
+            MasterKey masterKey = new MasterKey.Builder(context)
+                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                    .build();
+
+            SharedPreferences securePrefs = EncryptedSharedPreferences.create(
+                    context,
+                    "secure_prefs_crypto",
+                    masterKey,
+                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            );
+
+            String username = securePrefs.getString("username", null);
+            android.util.Log.d("LoginActivity", "Username récupéré: " + username);
+            return username;
+        } catch (GeneralSecurityException | IOException e) {
+            android.util.Log.e("LoginActivity", "Erreur lors de la récupération du username", e);
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     private void showError(String message) {
         btnLogin.setEnabled(true);
         Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+    }
+
+    /**
+     * Récupère la dernière URL utilisée depuis les SharedPreferences cryptées
+     * ou les SharedPreferences normales (après déconnexion)
+     */
+    private String getLastUsedUrl() {
+        try {
+            // D'abord, vérifier les SharedPreferences normales (sauvegardées lors de la déconnexion)
+            SharedPreferences normalPrefs = getSharedPreferences("DolOrdersPrefs", MODE_PRIVATE);
+            String lastUrl = normalPrefs.getString("last_used_url", null);
+
+            if (lastUrl != null && !lastUrl.isEmpty()) {
+                Log.d("LoginActivity", "URL récupérée depuis SharedPreferences normales: " + lastUrl);
+                return lastUrl;
+            }
+
+            // Sinon, vérifier les SharedPreferences cryptées (si encore connecté)
+            if (securePrefs != null) {
+                lastUrl = securePrefs.getString("base_url", null);
+                if (lastUrl != null && !lastUrl.isEmpty()) {
+                    Log.d("LoginActivity", "URL récupérée depuis SharedPreferences cryptées: " + lastUrl);
+                    return lastUrl;
+                }
+            }
+        } catch (Exception e) {
+            Log.e("LoginActivity", "Erreur lors de la récupération de la dernière URL", e);
+        }
+        return null;
     }
 
     /**
