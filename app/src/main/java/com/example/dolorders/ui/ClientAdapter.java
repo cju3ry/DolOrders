@@ -7,7 +7,6 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -19,10 +18,21 @@ import java.util.List;
 
 public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientViewHolder> {
 
-    private final List<Client> clients;
+    // ✅ 1) INTERFACE (callback vers le Fragment)
+    public interface OnClientActionListener {
+        void onDetails(Client client);
+        void onModifier(Client client);
+        void onNouvelleCommande(Client client);
+    }
 
-    public ClientAdapter(List<Client> clients) {
+    // ✅ 2) CHAMPS MEMBRES
+    private final List<Client> clients;
+    private final OnClientActionListener listener;
+
+    // ✅ 3) CONSTRUCTEUR
+    public ClientAdapter(List<Client> clients, OnClientActionListener listener) {
         this.clients = clients;
+        this.listener = listener;
     }
 
     @NonNull
@@ -48,33 +58,24 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
         PopupMenu popup = new PopupMenu(anchor.getContext(), anchor);
         popup.getMenuInflater().inflate(R.menu.menu_actions_client, popup.getMenu());
 
-        popup.setOnMenuItemClickListener(item -> handleMenuClick(item, anchor, client));
-
+        popup.setOnMenuItemClickListener(item -> handleMenuClick(item, client));
         popup.show();
     }
 
-    private boolean handleMenuClick(MenuItem item, View anchor, Client client) {
+    // ✅ 4) UTILISATION DU listener (là où tu avais l’erreur)
+    private boolean handleMenuClick(MenuItem item, Client client) {
         int id = item.getItemId();
 
         if (id == R.id.action_details) {
-            // TODO: appeler la navigation / ouvrir écran détails
-            Toast.makeText(anchor.getContext(),
-                    "Détails: " + client.getNom(),
-                    Toast.LENGTH_SHORT).show();
+            if (listener != null) listener.onDetails(client);
             return true;
 
         } else if (id == R.id.action_modifier) {
-            // TODO: ouvrir écran modification
-            Toast.makeText(anchor.getContext(),
-                    "Modifier: " + client.getNom(),
-                    Toast.LENGTH_SHORT).show();
+            if (listener != null) listener.onModifier(client);
             return true;
 
         } else if (id == R.id.action_nouvelle_commande) {
-            // TODO: ouvrir écran nouvelle commande
-            Toast.makeText(anchor.getContext(),
-                    "Nouvelle commande: " + client.getNom(),
-                    Toast.LENGTH_SHORT).show();
+            if (listener != null) listener.onNouvelleCommande(client);
             return true;
         }
 

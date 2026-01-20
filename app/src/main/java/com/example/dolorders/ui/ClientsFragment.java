@@ -50,7 +50,7 @@ public class ClientsFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         setupViews(view);
-        setupRecyclerView();      // ✅ AJOUT
+        setupRecyclerView();
         // observeViewModel();
         // setupListeners();
     }
@@ -59,11 +59,6 @@ public class ClientsFragment extends Fragment {
         listeClients = view.findViewById(R.id.listeClient);
         btnFiltre = view.findViewById(R.id.btn_filtrer_clients);
         btnAjoutClient = view.findViewById(R.id.btn_ajouter_client);
-
-        // ❌ À supprimer : ces vues ne sont pas dans fragment_client.xml
-        // txtNom = view.findViewById(R.id.txtNom);
-        // txtTelephone = view.findViewById(R.id.txtTelephone);
-        // txtVille = view.findViewById(R.id.txtVille);
     }
 
     private void setupRecyclerView() {
@@ -87,10 +82,10 @@ public class ClientsFragment extends Fragment {
         clients.add(new Client.Builder()
                 .setId("2")
                 .setNom("Martin")
-                .setAdresse("adresse")
+                .setAdresse("2 Rue du Test")
                 .setCodePostal("12000")
-                .setVille("Lyon")
-                .setAdresseMail("mail@mail.com")
+                .setVille("Rodez")
+                .setAdresseMail("mail.martin@gmail.com")
                 .setTelephone("0611111111")
                 .setUtilisateur("utilisateur")
                 .setDateSaisie(new Date())
@@ -110,7 +105,64 @@ public class ClientsFragment extends Fragment {
         );
 
         // 3) Adapter
-        clientAdapter = new ClientAdapter(clients);
+        clientAdapter = new ClientAdapter(clients, new ClientAdapter.OnClientActionListener() {
+            @Override
+            public void onDetails(Client client) {
+                ClientFormDialogFragment dialog = ClientFormDialogFragment.newInstance(
+                        ClientFormDialogFragment.MODE_DETAILS, client
+                );
+                dialog.show(getParentFragmentManager(), "client_details");
+            }
+
+            @Override
+            public void onModifier(Client client) {
+                // On capture l'index avant d'ouvrir le dialog
+                int index = clients.indexOf(client);
+                if (index < 0) return;
+
+                ClientFormDialogFragment dialog = ClientFormDialogFragment.newInstance(
+                        ClientFormDialogFragment.MODE_EDIT, client
+                );
+
+                dialog.setOnClientEditedListener((nom, adresse, cp, ville, tel, mail) -> {
+                    try {
+                        // 1) Construire un NOUVEAU client (car champs final)
+                        Client updated = new Client.Builder()
+                                .setId(client.getId())                 // conserve
+                                .setNom(nom)
+                                .setAdresse(adresse)
+                                .setCodePostal(cp)
+                                .setVille(ville)
+                                .setTelephone(tel)
+                                .setAdresseMail(mail)
+                                .setUtilisateur(client.getUtilisateur()) // conserve
+                                .setDateSaisie(client.getDateSaisie())   // conserve
+                                .build();
+
+                        // 2) Remplacer dans la liste
+                        clients.set(index, updated);
+
+                        // 3) Notifier l’adapter
+                        clientAdapter.notifyItemChanged(index);
+
+                        // (optionnel) si tu veux aussi “sauvegarder” ailleurs (ViewModel/API), c’est ici.
+
+                    } catch (IllegalStateException ex) {
+                        android.widget.Toast.makeText(requireContext(),
+                                ex.getMessage(),
+                                android.widget.Toast.LENGTH_LONG).show();
+                    }
+                });
+
+                dialog.show(getParentFragmentManager(), "client_edit");
+            }
+
+            @Override
+            public void onNouvelleCommande(Client client) {
+                // TODO
+
+            }
+        });
         listeClients.setAdapter(clientAdapter);
     }
 }
