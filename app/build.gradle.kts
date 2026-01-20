@@ -34,6 +34,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.firebase.crashlytics.buildtools)
     val lifecycleVersion = "2.8.3"
     val activityVersion = "1.11.0"
     val fragmentVersion = "1.8.1"
@@ -83,4 +84,5 @@ dependencies {
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("com.android.volley:volley:1.2.1")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    implementation("com.google.code.gson:gson:2.10.1")
 }

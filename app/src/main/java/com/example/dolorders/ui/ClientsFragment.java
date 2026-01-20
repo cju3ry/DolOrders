@@ -17,6 +17,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.dolorders.Client;
 import com.example.dolorders.R;
+import com.example.dolorders.data.storage.ClientStorageManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
@@ -26,6 +27,7 @@ import java.util.Date;
 public class ClientsFragment extends Fragment {
 
     private ClientsFragmentViewModel viewModel;
+    private ClientStorageManager storageManager;
     private TextInputEditText editTextNom, editTextAdresse, editTextCodePostal, editTextVille, editTextEmail, editTextTelephone;
     private MaterialButton btnAnnuler, btnValider;
 
@@ -33,6 +35,7 @@ public class ClientsFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         viewModel = new ViewModelProvider(requireActivity()).get(ClientsFragmentViewModel.class);
+        storageManager = new ClientStorageManager(requireContext());
     }
 
     @Nullable
@@ -98,9 +101,14 @@ public class ClientsFragment extends Fragment {
                         .setDateSaisie(new Date())
                         .build();
 
-                Toast.makeText(getContext(), "Client '" + nouveauClient.getNom() + "' ajouté !", Toast.LENGTH_SHORT).show();
+                // Enregistrement du client en local
+                boolean sauvegarde = storageManager.addClient(nouveauClient);
 
-                // TODO: Ajouter la logique pour sauvegarder le client (ex: viewModel.sauvegarderClient(nouveauClient))
+                if (sauvegarde) {
+                    Toast.makeText(getContext(), "Client '" + nouveauClient.getNom() + "' ajouté et enregistré localement !", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(getContext(), "Client '" + nouveauClient.getNom() + "' ajouté, mais l'enregistrement local a échoué", Toast.LENGTH_LONG).show();
+                }
 
                 // Vide le ViewModel et retourne à l'accueil
                 viewModel.clear();
