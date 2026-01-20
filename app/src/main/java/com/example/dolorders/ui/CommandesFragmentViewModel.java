@@ -95,6 +95,13 @@ public class CommandesFragmentViewModel extends ViewModel {
         lignesCommande.setValue(new ArrayList<>());
     }
 
+    public void startNouvelleCommandePour(Client client) {
+        clientSelectionne.setValue(client);
+        date.setValue(String.valueOf(new java.util.Date()));
+        lignesCommande.setValue(new java.util.ArrayList<>());
+    }
+
+
     public void chargerDonneesDeTest() {
         Client.Builder clientBuilder = new Client.Builder()
                 .setId("001")

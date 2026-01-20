@@ -189,9 +189,10 @@ public class ClientsAjoutFragment extends Fragment {
     private void navigateToHome() {
         BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottomNavigation);
         if (bottomNav != null) {
-            bottomNav.setSelectedItemId(R.id.nav_home);
+            bottomNav.setSelectedItemId(R.id.nav_clients);
         }
     }
+
 
     private TextWatcher createTextWatcher(TextUpdate action) {
         return new TextWatcher() {

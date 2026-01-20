@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.dolorders.Client;
 import com.example.dolorders.R;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.example.dolorders.data.storage.ClientStorageManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
@@ -25,6 +26,8 @@ import java.util.List;
 public class ClientsFragment extends Fragment {
 
     private ClientsFragmentViewModel viewModel;
+
+    private final List<Client> clients = new ArrayList<>();
 
     private RecyclerView listeClients;
     private ClientAdapter clientAdapter;
@@ -51,8 +54,8 @@ public class ClientsFragment extends Fragment {
 
         setupViews(view);
         setupRecyclerView();
+        setupListeners();
         // observeViewModel();
-        // setupListeners();
     }
 
     private void setupViews(View view) {
@@ -66,7 +69,7 @@ public class ClientsFragment extends Fragment {
         listeClients.setLayoutManager(new LinearLayoutManager(getContext()));
 
         // 2) Données temporaires (remplacées plus tard par JSON/API)
-        List<Client> clients = new ArrayList<>();
+        clients.clear();
         clients.add(new Client.Builder()
                 .setId("1")
                 .setNom("Dupont")
@@ -159,10 +162,45 @@ public class ClientsFragment extends Fragment {
 
             @Override
             public void onNouvelleCommande(Client client) {
-                // TODO
+                CommandesFragmentViewModel commandesVM =
+                        new ViewModelProvider(requireActivity()).get(CommandesFragmentViewModel.class);
 
+                commandesVM.startNouvelleCommandePour(client);
+
+                BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottomNavigation);
+                if (bottomNav != null) {
+                    bottomNav.setSelectedItemId(R.id.nav_commandes);
+                }
             }
         });
         listeClients.setAdapter(clientAdapter);
     }
+
+    private void setupListeners() {
+        btnAjoutClient.setOnClickListener(v -> {
+            // (Optionnel mais propre) vider le formulaire avant d’ouvrir l’écran d’ajout
+            ClientsAjoutFragmentViewModel ajoutVM =
+                    new ViewModelProvider(requireActivity()).get(ClientsAjoutFragmentViewModel.class);
+            ajoutVM.clear(); // :contentReference[oaicite:1]{index=1}
+
+            // Trouver le container qui héberge ce Fragment, puis remplacer par ClientsAjoutFragment
+            View parent = (View) requireView().getParent();
+            int containerId = parent != null ? parent.getId() : View.NO_ID;
+
+            if (containerId == View.NO_ID) {
+                // Fallback : si jamais le parent n'a pas d'ID, tu devras mettre ici l'ID du container de ton activity_main.xml
+                // ex: containerId = R.id.nav_host_fragment_activity_main;
+                throw new IllegalStateException("Impossible de trouver l'id du container parent pour la navigation.");
+            }
+
+            getParentFragmentManager()
+                    .beginTransaction()
+                    .replace(containerId, new ClientsAjoutFragment())
+                    .addToBackStack("clients_ajout")
+                    .commit();
+        });
+    }
+
+
+
 }
