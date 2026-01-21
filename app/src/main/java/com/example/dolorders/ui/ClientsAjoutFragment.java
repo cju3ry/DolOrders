@@ -100,7 +100,10 @@ public class ClientsAjoutFragment extends Fragment {
 
                 Toast.makeText(getContext(), "Client '" + nouveauClient.getNom() + "' ajouté !", Toast.LENGTH_SHORT).show();
 
-                // TODO: Ajouter la logique pour sauvegarder le client (ex: viewModel.sauvegarderClient(nouveauClient))
+                ClientsFragmentViewModel clientsVM =
+                        new ViewModelProvider(requireActivity()).get(ClientsFragmentViewModel.class);
+
+                clientsVM.publierClientCree(nouveauClient);
 
                 // Vide le ViewModel et retourne à l'accueil
                 viewModel.clear();

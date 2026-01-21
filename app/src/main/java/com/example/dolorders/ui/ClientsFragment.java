@@ -27,7 +27,8 @@ public class ClientsFragment extends Fragment {
 
     private ClientsFragmentViewModel viewModel;
 
-    private final List<Client> clients = new ArrayList<>();
+    private final List<Client> clientsSource = new ArrayList<>();
+    private final List<Client> clientsDisplayed = new ArrayList<>();
 
     private RecyclerView listeClients;
     private ClientAdapter clientAdapter;
@@ -55,7 +56,7 @@ public class ClientsFragment extends Fragment {
         setupViews(view);
         setupRecyclerView();
         setupListeners();
-        // observeViewModel();
+        observeViewModel();
     }
 
     private void setupViews(View view) {
@@ -69,8 +70,8 @@ public class ClientsFragment extends Fragment {
         listeClients.setLayoutManager(new LinearLayoutManager(getContext()));
 
         // 2) Données temporaires (remplacées plus tard par JSON/API)
-        clients.clear();
-        clients.add(new Client.Builder()
+        clientsSource.clear();
+        clientsSource.add(new Client.Builder()
                 .setId("1")
                 .setNom("Dupont")
                 .setAdresse("adresse")
@@ -80,9 +81,10 @@ public class ClientsFragment extends Fragment {
                 .setTelephone("0600000000")
                 .setUtilisateur("utilisateur")
                 .setDateSaisie(new Date())
+                .setFromApi(true)
                 .build()
         );
-        clients.add(new Client.Builder()
+        clientsSource.add(new Client.Builder()
                 .setId("2")
                 .setNom("Martin")
                 .setAdresse("2 Rue du Test")
@@ -92,9 +94,10 @@ public class ClientsFragment extends Fragment {
                 .setTelephone("0611111111")
                 .setUtilisateur("utilisateur")
                 .setDateSaisie(new Date())
+                .setFromApi(false)
                 .build()
         );
-        clients.add(new Client.Builder()
+        clientsSource.add(new Client.Builder()
                 .setId("3")
                 .setNom("Durand")
                 .setAdresse("adresse")
@@ -104,11 +107,15 @@ public class ClientsFragment extends Fragment {
                 .setTelephone("0622222222")
                 .setUtilisateur("utilisateur")
                 .setDateSaisie(new Date())
+                .setFromApi(false)
                 .build()
         );
 
+        clientsDisplayed.clear();
+        clientsDisplayed.addAll(clientsSource);
+
         // 3) Adapter
-        clientAdapter = new ClientAdapter(clients, new ClientAdapter.OnClientActionListener() {
+        clientAdapter = new ClientAdapter(clientsDisplayed, new ClientAdapter.OnClientActionListener() {
             @Override
             public void onDetails(Client client) {
                 ClientFormDialogFragment dialog = ClientFormDialogFragment.newInstance(
@@ -120,7 +127,7 @@ public class ClientsFragment extends Fragment {
             @Override
             public void onModifier(Client client) {
                 // On capture l'index avant d'ouvrir le dialog
-                int index = clients.indexOf(client);
+                int index = clientsDisplayed.indexOf(client);
                 if (index < 0) return;
 
                 ClientFormDialogFragment dialog = ClientFormDialogFragment.newInstance(
@@ -143,7 +150,7 @@ public class ClientsFragment extends Fragment {
                                 .build();
 
                         // 2) Remplacer dans la liste
-                        clients.set(index, updated);
+                        clientsDisplayed.set(index, updated);
 
                         // 3) Notifier l’adapter
                         clientAdapter.notifyItemChanged(index);
@@ -199,8 +206,67 @@ public class ClientsFragment extends Fragment {
                     .addToBackStack("clients_ajout")
                     .commit();
         });
+
+        btnFiltre.setOnClickListener(v -> showFilterDialog());
+
+    }
+
+    private void showFilterDialog() {
+        View dialogView = LayoutInflater.from(requireContext())
+                .inflate(R.layout.dialog_filter_clients, null, false);
+
+        com.google.android.material.textfield.TextInputEditText edtNom = dialogView.findViewById(R.id.filtreNom);
+        com.google.android.material.textfield.TextInputEditText edtAdresse = dialogView.findViewById(R.id.filtreAdresse);
+        com.google.android.material.textfield.TextInputEditText edtCP = dialogView.findViewById(R.id.filtreCodePostal);
+        com.google.android.material.textfield.TextInputEditText edtVille = dialogView.findViewById(R.id.filtreVille);
+        com.google.android.material.textfield.TextInputEditText edtTel = dialogView.findViewById(R.id.filtreTelephone);
+
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Filtrer les clients")
+                .setView(dialogView)
+                .setNegativeButton("Annuler", (d, w) -> d.dismiss())
+                .setNeutralButton("Réinitialiser", (d, w) -> resetFilter())
+                .setPositiveButton("Appliquer", (d, w) -> {
+                    ClientFilter f = new ClientFilter(
+                            ClientFilter.textOf(edtNom),
+                            ClientFilter.textOf(edtAdresse),
+                            ClientFilter.textOf(edtCP),
+                            ClientFilter.textOf(edtVille),
+                            ClientFilter.textOf(edtTel)
+                    );
+                    applyFilter(f);
+                })
+                .show();
+    }
+
+    private void applyFilter(ClientFilter f) {
+        clientsDisplayed.clear();
+
+        for (Client c : clientsSource) {
+            if (ClientFilter.matches(c, f)) {
+                clientsDisplayed.add(c);
+            }
+        }
+        clientAdapter.notifyDataSetChanged();
+    }
+
+    private void resetFilter() {
+        clientsDisplayed.clear();
+        clientsDisplayed.addAll(clientsSource);
+        clientAdapter.notifyDataSetChanged();
     }
 
 
+    private void observeViewModel() {
+        viewModel.getClientCree().observe(getViewLifecycleOwner(), client -> {
+            if (client == null) return;
 
+            clientsSource.add(client);
+            clientAdapter.notifyItemInserted(clientsSource.size() - 1);
+            listeClients.scrollToPosition(clientsSource.size() - 1);
+
+            // éviter un doublon si re-émission
+            viewModel.consommerClientCree();
+        });
+    }
 }

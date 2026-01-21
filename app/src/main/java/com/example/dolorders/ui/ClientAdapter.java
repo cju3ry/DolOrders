@@ -58,11 +58,15 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
         PopupMenu popup = new PopupMenu(anchor.getContext(), anchor);
         popup.getMenuInflater().inflate(R.menu.menu_actions_client, popup.getMenu());
 
+        // ✅ Clients venant de l'API : non modifiables => masquer "Modifier"
+        if (client.isFromApi()) {
+            popup.getMenu().findItem(R.id.action_modifier).setVisible(false);
+        }
+
         popup.setOnMenuItemClickListener(item -> handleMenuClick(item, client));
         popup.show();
     }
 
-    // ✅ 4) UTILISATION DU listener (là où tu avais l’erreur)
     private boolean handleMenuClick(MenuItem item, Client client) {
         int id = item.getItemId();
 
@@ -71,6 +75,7 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
             return true;
 
         } else if (id == R.id.action_modifier) {
+            if (client.isFromApi()) return true; // ignore
             if (listener != null) listener.onModifier(client);
             return true;
 

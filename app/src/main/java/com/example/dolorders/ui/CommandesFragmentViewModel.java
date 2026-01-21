@@ -8,8 +8,11 @@ import com.example.dolorders.Client;
 import com.example.dolorders.LigneCommande;
 import com.example.dolorders.Produit;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class CommandesFragmentViewModel extends ViewModel {
 
@@ -97,10 +100,10 @@ public class CommandesFragmentViewModel extends ViewModel {
 
     public void startNouvelleCommandePour(Client client) {
         clientSelectionne.setValue(client);
-        date.setValue(String.valueOf(new java.util.Date()));
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE);
+        date.setValue(sdf.format(new Date()));
         lignesCommande.setValue(new java.util.ArrayList<>());
     }
-
 
     public void chargerDonneesDeTest() {
         Client.Builder clientBuilder = new Client.Builder()
