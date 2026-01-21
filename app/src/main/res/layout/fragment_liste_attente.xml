@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F5F5F5">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_margin="16dp"
+        android:weightSum="3">
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp">
+
+            <com.google.android.material.tabs.TabLayout
+                android:id="@+id/tab_layout"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                app:tabBackground="@drawable/tab_background_selector"
+                app:tabTextColor="@color/blue_dolibarr"
+                app:tabSelectedTextColor="@android:color/white"
+                app:tabIndicatorHeight="0dp"
+                app:tabMode="fixed"
+                app:tabGravity="fill"
+                app:tabTextAppearance="@style/MyCustomTabText"/>
+        </androidx.cardview.widget.CardView>
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
+
+    </LinearLayout>
+
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/view_pager"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:background="@android:color/white"
+        android:elevation="8dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_envoyer_dolibarr"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="Envoyer vers Dolibarr"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            app:icon="@drawable/ic_send"
+            app:iconGravity="textStart"
+            android:backgroundTint="@color/blue_dolibarr"
+            app:cornerRadius="8dp"/>
+    </LinearLayout>
+
+</LinearLayout>
