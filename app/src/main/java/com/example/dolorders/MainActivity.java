@@ -18,6 +18,7 @@ import androidx.security.crypto.MasterKey;
 import com.example.dolorders.ui.ClientsFragment;
 import com.example.dolorders.ui.CommandesFragment;
 import com.example.dolorders.ui.HomeFragment;
+import com.example.dolorders.ui.ListeAttenteFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.io.IOException;
@@ -85,6 +86,8 @@ public class MainActivity extends AppCompatActivity {
                 selectedFragment = new CommandesFragment();
             } else if (id == R.id.nav_clients) {
                 selectedFragment = new ClientsFragment();
+            } else if (id == R.id.nav_en_attentes) {
+                selectedFragment = new ListeAttenteFragment();
             }
 
             if (selectedFragment != null) {
