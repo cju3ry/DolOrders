@@ -41,16 +41,9 @@ import java.security.GeneralSecurityException;
 @RunWith(AndroidJUnit4.class)
 public class LoginActivityTest {
 
-    // ========== VARIABLES GLOBALES DE TEST ==========
-    // À MODIFIER avec les vraies credentials de test
-//    private static final String TEST_URL = "stub";  // "stub" pu "bouchon" pour le mode bouchon
-//    private static final String TEST_USERNAME = "admin";
-//    private static final String TEST_PASSWORD = "admin123";
-
-    // Pour les tests avec de vraies credentials :
-     private static final String TEST_URL = "A MODIFIER";
-     private static final String TEST_USERNAME = "A MODIFIER";
-     private static final String TEST_PASSWORD = "A MODIFIER";
+    private static final String TEST_URL = BuildConfig.TEST_URL;
+    private static final String TEST_USERNAME = BuildConfig.TEST_USERNAME;
+    private static final String TEST_PASSWORD = BuildConfig.TEST_PASSWORD;
 
     @Rule
     public ActivityScenarioRule<LoginActivity> activityRule =

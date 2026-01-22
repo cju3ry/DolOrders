@@ -31,6 +31,7 @@ public class ClientsAjoutFragmentTest {
     public void setup() {
         ActivityScenario.launch(MainActivity.class);
         onView(withId(R.id.nav_clients)).perform(click());
+        onView(withId(R.id.btn_ajouter_client)).perform(click());
     }
 
     @Test

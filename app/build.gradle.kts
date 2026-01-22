@@ -1,6 +1,18 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
 }
+
+val localProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+
+fun secret(name: String): String =
+    System.getenv(name)
+        ?: localProps.getProperty(name)
+        ?: ""
 
 android {
     namespace = "com.example.dolorders"
@@ -16,6 +28,15 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Injection dans BuildConfig (disponible côté app + androidTest)
+        buildConfigField("String", "TEST_URL", "\"${secret("TEST_URL")}\"")
+        buildConfigField("String", "TEST_USERNAME", "\"${secret("TEST_USERNAME")}\"")
+        buildConfigField("String", "TEST_PASSWORD", "\"${secret("TEST_PASSWORD")}\"")
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     buildTypes {
