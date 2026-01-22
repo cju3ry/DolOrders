@@ -1,9 +1,11 @@
 package com.example.dolorders.ui;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -13,14 +15,13 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.dolorders.Client;
+import com.example.dolorders.ClientService;
 import com.example.dolorders.R;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.example.dolorders.data.storage.ClientStorageManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 public class ClientsFragment extends Fragment {
@@ -33,12 +34,15 @@ public class ClientsFragment extends Fragment {
     private RecyclerView listeClients;
     private ClientAdapter clientAdapter;
 
+    private ClientService clientService;
+
     private MaterialButton btnFiltre, btnAjoutClient;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         viewModel = new ViewModelProvider(requireActivity()).get(ClientsFragmentViewModel.class);
+        clientService = new ClientService(requireContext());
     }
 
     @Nullable
@@ -66,50 +70,16 @@ public class ClientsFragment extends Fragment {
     }
 
     private void setupRecyclerView() {
+        //TODO a modifier
         // 1) LayoutManager
         listeClients.setLayoutManager(new LinearLayoutManager(getContext()));
 
+        ClientStorageManager storageManager =
+                new ClientStorageManager(requireContext());
+
         // 2) Données temporaires (remplacées plus tard par JSON/API)
         clientsSource.clear();
-        clientsSource.add(new Client.Builder()
-                .setId("1")
-                .setNom("Dupont")
-                .setAdresse("adresse")
-                .setCodePostal("12000")
-                .setVille("Paris")
-                .setAdresseMail("mail@mail.com")
-                .setTelephone("0600000000")
-                .setUtilisateur("utilisateur")
-                .setDateSaisie(new Date())
-                .setFromApi(true)
-                .build()
-        );
-        clientsSource.add(new Client.Builder()
-                .setId("2")
-                .setNom("Martin")
-                .setAdresse("2 Rue du Test")
-                .setCodePostal("12000")
-                .setVille("Rodez")
-                .setAdresseMail("mail.martin@gmail.com")
-                .setTelephone("0611111111")
-                .setUtilisateur("utilisateur")
-                .setDateSaisie(new Date())
-                .setFromApi(false)
-                .build()
-        );
-        clientsSource.add(new Client.Builder()
-                .setId("3")
-                .setNom("Durand")
-                .setAdresse("adresse")
-                .setCodePostal("12000")
-                .setVille("Toulouse")
-                .setAdresseMail("mail@mail.com")
-                .setTelephone("0622222222")
-                .setUtilisateur("utilisateur")
-                .setDateSaisie(new Date())
-                .setFromApi(false)
-                .build()
-        );
+        clientsSource.addAll(storageManager.loadClients());
 
         clientsDisplayed.clear();
         clientsDisplayed.addAll(clientsSource);
@@ -156,6 +126,21 @@ public class ClientsFragment extends Fragment {
                         clientAdapter.notifyItemChanged(index);
 
                         // (optionnel) si tu veux aussi “sauvegarder” ailleurs (ViewModel/API), c’est ici.
+                        boolean modiffier = storageManager.modifierClient(updated);
+
+                        if (modiffier) {
+                            Toast.makeText(getContext(), "Client '" + updated.getNom() + "' modifié et enregistré localement !", Toast.LENGTH_SHORT)
+                                    .show();
+
+                            ClientsFragmentViewModel clientsVM = new ViewModelProvider(requireActivity())
+                                    .get(ClientsFragmentViewModel.class);
+
+                            clientsVM.publierClientCree(updated);
+                        } else {
+                            Toast.makeText(getContext(),
+                                    "Client '" + updated.getNom() + "' modifié et enregistré localement a échoué",
+                                    Toast.LENGTH_SHORT).show();
+                        }
 
                     } catch (IllegalStateException ex) {
                         android.widget.Toast.makeText(requireContext(),
@@ -227,32 +212,30 @@ public class ClientsFragment extends Fragment {
                 .setNegativeButton("Annuler", (d, w) -> d.dismiss())
                 .setNeutralButton("Réinitialiser", (d, w) -> resetFilter())
                 .setPositiveButton("Appliquer", (d, w) -> {
-                    ClientFilter f = new ClientFilter(
-                            ClientFilter.textOf(edtNom),
-                            ClientFilter.textOf(edtAdresse),
-                            ClientFilter.textOf(edtCP),
-                            ClientFilter.textOf(edtVille),
-                            ClientFilter.textOf(edtTel)
+                    applyFilter(
+                            edtNom.getText().toString(),
+                            edtAdresse.getText().toString(),
+                            edtCP.getText().toString(),
+                            edtVille.getText().toString(),
+                            edtTel.getText().toString()
                     );
-                    applyFilter(f);
                 })
                 .show();
     }
 
-    private void applyFilter(ClientFilter f) {
+    @SuppressLint("NotifyDataSetChanged")
+    private void applyFilter(String nom, String adresse, String cp, String ville, String tel) {
         clientsDisplayed.clear();
-
-        for (Client c : clientsSource) {
-            if (ClientFilter.matches(c, f)) {
-                clientsDisplayed.add(c);
-            }
-        }
+        clientsDisplayed.addAll(clientService.filter(nom, adresse, cp, ville, tel));
         clientAdapter.notifyDataSetChanged();
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     private void resetFilter() {
+        ClientStorageManager storageManager =
+                new ClientStorageManager(requireContext());
         clientsDisplayed.clear();
-        clientsDisplayed.addAll(clientsSource);
+        clientsDisplayed.addAll(storageManager.loadClients());
         clientAdapter.notifyDataSetChanged();
     }
 

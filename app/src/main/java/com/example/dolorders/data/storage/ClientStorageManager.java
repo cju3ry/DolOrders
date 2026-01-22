@@ -105,7 +105,8 @@ public class ClientStorageManager {
 
             // Conversion du JSON en liste d'objets Client
             String jsonData = jsonBuilder.toString();
-            Type listType = new TypeToken<List<Client>>(){}.getType();
+            Type listType = new TypeToken<List<Client>>() {
+            }.getType();
             List<Client> clients = gson.fromJson(jsonData, listType);
 
             if (clients == null) {
@@ -188,5 +189,47 @@ public class ClientStorageManager {
     public int getClientCount() {
         return loadClients().size();
     }
+
+    /**
+     * Modifie un client existant dans le stockage.
+     * Si le client n'existe pas (pas trouvé par ID), aucune modification n'est faite.
+     *
+     * @param updatedClient Le client contenant les nouvelles données (doit avoir un ID existant)
+     * @return true si le client a été trouvé et modifié, false sinon
+     */
+    /**
+     * Modifie un client existant.
+     *
+     * @param updatedClient Client avec les nouvelles données
+     * @return true si le client a été trouvé et modifié, false sinon
+     */
+    public boolean modifierClient(Client updatedClient) {
+        if (updatedClient == null) {
+            Log.w(TAG, "Tentative de modification d'un client null");
+            return false;
+        }
+
+        List<Client> clients = loadClients();
+        boolean modified = clients.stream()
+                .anyMatch(c -> c.getId() == updatedClient.getId());
+
+        if (!modified) {
+            Log.w(TAG, "Client à modifier non trouvé : ID=" + updatedClient.getId());
+            return false;
+        }
+
+        // Remplacer le client
+        for (int i = 0; i < clients.size(); i++) {
+            if (clients.get(i).getId() == updatedClient.getId()) {
+                clients.set(i, updatedClient);
+                break;
+            }
+        }
+
+        // Sauvegarde centralisée
+        return saveClients(clients);
+    }
+
+
 }
 

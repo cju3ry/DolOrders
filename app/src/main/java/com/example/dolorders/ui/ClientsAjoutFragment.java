@@ -17,6 +17,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.dolorders.Client;
 import com.example.dolorders.R;
+import com.example.dolorders.data.storage.ClientStorageManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
@@ -26,18 +27,22 @@ import java.util.Date;
 public class ClientsAjoutFragment extends Fragment {
 
     private ClientsAjoutFragmentViewModel viewModel;
-    private TextInputEditText editTextNom, editTextAdresse, editTextCodePostal, editTextVille, editTextEmail, editTextTelephone;
+    private ClientStorageManager storageManager;
+    private TextInputEditText editTextNom, editTextAdresse, editTextCodePostal, editTextVille, editTextEmail,
+            editTextTelephone;
     private MaterialButton btnAnnuler, btnValider;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         viewModel = new ViewModelProvider(requireActivity()).get(ClientsAjoutFragmentViewModel.class);
+        storageManager = new ClientStorageManager(requireContext());
     }
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_ajout_clients, container, false);
     }
 
@@ -61,12 +66,30 @@ public class ClientsAjoutFragment extends Fragment {
     }
 
     private void observeViewModel() {
-        viewModel.getNom().observe(getViewLifecycleOwner(), s -> { if (!s.equals(editTextNom.getText().toString())) editTextNom.setText(s); });
-        viewModel.getAdresse().observe(getViewLifecycleOwner(), s -> { if (!s.equals(editTextAdresse.getText().toString())) editTextAdresse.setText(s); });
-        viewModel.getCodePostal().observe(getViewLifecycleOwner(), s -> { if (!s.equals(editTextCodePostal.getText().toString())) editTextCodePostal.setText(s); });
-        viewModel.getVille().observe(getViewLifecycleOwner(), s -> { if (!s.equals(editTextVille.getText().toString())) editTextVille.setText(s); });
-        viewModel.getEmail().observe(getViewLifecycleOwner(), s -> { if (!s.equals(editTextEmail.getText().toString())) editTextEmail.setText(s); });
-        viewModel.getTelephone().observe(getViewLifecycleOwner(), s -> { if (!s.equals(editTextTelephone.getText().toString())) editTextTelephone.setText(s); });
+        viewModel.getNom().observe(getViewLifecycleOwner(), s -> {
+            if (!s.equals(editTextNom.getText().toString()))
+                editTextNom.setText(s);
+        });
+        viewModel.getAdresse().observe(getViewLifecycleOwner(), s -> {
+            if (!s.equals(editTextAdresse.getText().toString()))
+                editTextAdresse.setText(s);
+        });
+        viewModel.getCodePostal().observe(getViewLifecycleOwner(), s -> {
+            if (!s.equals(editTextCodePostal.getText().toString()))
+                editTextCodePostal.setText(s);
+        });
+        viewModel.getVille().observe(getViewLifecycleOwner(), s -> {
+            if (!s.equals(editTextVille.getText().toString()))
+                editTextVille.setText(s);
+        });
+        viewModel.getEmail().observe(getViewLifecycleOwner(), s -> {
+            if (!s.equals(editTextEmail.getText().toString()))
+                editTextEmail.setText(s);
+        });
+        viewModel.getTelephone().observe(getViewLifecycleOwner(), s -> {
+            if (!s.equals(editTextTelephone.getText().toString()))
+                editTextTelephone.setText(s);
+        });
     }
 
     private void setupListeners() {
@@ -94,16 +117,27 @@ public class ClientsAjoutFragment extends Fragment {
                         .setVille(viewModel.getVille().getValue())
                         .setAdresseMail(viewModel.getEmail().getValue())
                         .setTelephone(viewModel.getTelephone().getValue())
-                        .setUtilisateur("UtilisateurActuel") // TODO à remplacer par la gestion de l'utilisateur connecté
+                        .setUtilisateur("UtilisateurActuel") // TODO à remplacer par la gestion de l'utilisateur
+                        // connecté
                         .setDateSaisie(new Date())
                         .build();
 
-                Toast.makeText(getContext(), "Client '" + nouveauClient.getNom() + "' ajouté !", Toast.LENGTH_SHORT).show();
+                // Enregistrement du client en local
+                boolean sauvegarde = storageManager.addClient(nouveauClient);
 
-                ClientsFragmentViewModel clientsVM =
-                        new ViewModelProvider(requireActivity()).get(ClientsFragmentViewModel.class);
+                if (!sauvegarde) {
+                    Toast.makeText(getContext(), "Client '" + nouveauClient.getNom() + "' ajouté !", Toast.LENGTH_SHORT)
+                            .show();
 
-                clientsVM.publierClientCree(nouveauClient);
+                    ClientsFragmentViewModel clientsVM = new ViewModelProvider(requireActivity())
+                            .get(ClientsFragmentViewModel.class);
+
+                    clientsVM.publierClientCree(nouveauClient);
+                } else {
+                    Toast.makeText(getContext(),
+                            "Client '" + nouveauClient.getNom() + "' ajouté et enregistré localement a échoué",
+                            Toast.LENGTH_SHORT).show();
+                }
 
                 // Vide le ViewModel et retourne à l'accueil
                 viewModel.clear();
@@ -112,7 +146,8 @@ public class ClientsAjoutFragment extends Fragment {
             } catch (IllegalStateException e) {
                 new AlertDialog.Builder(requireContext())
                         .setTitle("Erreur de validation")
-                        .setMessage("Une erreur inattendue est survenue lors de la création du client : " + e.getMessage())
+                        .setMessage(
+                                "Une erreur inattendue est survenue lors de la création du client : " + e.getMessage())
                         .setPositiveButton("OK", null)
                         .show();
             }
@@ -120,7 +155,9 @@ public class ClientsAjoutFragment extends Fragment {
     }
 
     /**
-     * Valide les champs du formulaire et affiche des erreurs sur les champs invalides.
+     * Valide les champs du formulaire et affiche des erreurs sur les champs
+     * invalides.
+     *
      * @return true si tous les champs sont valides, false sinon.
      */
     private boolean isFormulaireValide() {
@@ -196,12 +233,20 @@ public class ClientsAjoutFragment extends Fragment {
         }
     }
 
-
     private TextWatcher createTextWatcher(TextUpdate action) {
         return new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { action.update(s.toString()); }
-            @Override public void afterTextChanged(Editable s) {}
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                action.update(s.toString());
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
         };
     }
 
