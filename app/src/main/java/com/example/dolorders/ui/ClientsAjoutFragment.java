@@ -16,13 +16,16 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.dolorders.Client;
+import com.example.dolorders.LoginActivity;
 import com.example.dolorders.R;
 import com.example.dolorders.data.storage.ClientStorageManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class ClientsAjoutFragment extends Fragment {
 
@@ -31,12 +34,16 @@ public class ClientsAjoutFragment extends Fragment {
     private TextInputEditText editTextNom, editTextAdresse, editTextCodePostal, editTextVille, editTextEmail,
             editTextTelephone;
     private MaterialButton btnAnnuler, btnValider;
+    private List<Client> listeClients;
+    private String nomUtilisateur;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         viewModel = new ViewModelProvider(requireActivity()).get(ClientsAjoutFragmentViewModel.class);
         storageManager = new ClientStorageManager(requireContext());
+        listeClients = new ArrayList<>();
+        nomUtilisateur = LoginActivity.getUsername(requireContext());
     }
 
     @Nullable
@@ -102,6 +109,23 @@ public class ClientsAjoutFragment extends Fragment {
 
         btnAnnuler.setOnClickListener(v -> showCancelConfirmationDialog());
 
+        int tempId = 1;
+        listeClients = storageManager.loadClients();
+
+        if (!listeClients.isEmpty()) {
+            Client dernierClient = listeClients.get(listeClients.size() - 1);
+            if (dernierClient != null && dernierClient.getId() != null) {
+                try {
+                    String lastIdStr = dernierClient.getId();
+                    tempId = Integer.parseInt(lastIdStr) + 1;
+                } catch (NumberFormatException e) {
+                    tempId = listeClients.size() + 1;
+                }
+            }
+        }
+
+        final int nouveauId = tempId;
+
         btnValider.setOnClickListener(v -> {
             // Validation côté UI
             if (!isFormulaireValide()) {
@@ -111,13 +135,14 @@ public class ClientsAjoutFragment extends Fragment {
             // Création de l'objet
             try {
                 Client nouveauClient = new Client.Builder()
+                        .setId(Integer.toString(nouveauId))
                         .setNom(viewModel.getNom().getValue())
                         .setAdresse(viewModel.getAdresse().getValue())
                         .setCodePostal(viewModel.getCodePostal().getValue())
                         .setVille(viewModel.getVille().getValue())
                         .setAdresseMail(viewModel.getEmail().getValue())
                         .setTelephone(viewModel.getTelephone().getValue())
-                        .setUtilisateur("UtilisateurActuel") // TODO à remplacer par la gestion de l'utilisateur
+                        .setUtilisateur(nomUtilisateur)
                         // connecté
                         .setDateSaisie(new Date())
                         .build();
@@ -125,7 +150,7 @@ public class ClientsAjoutFragment extends Fragment {
                 // Enregistrement du client en local
                 boolean sauvegarde = storageManager.addClient(nouveauClient);
 
-                if (!sauvegarde) {
+                if (sauvegarde) {
                     Toast.makeText(getContext(), "Client '" + nouveauClient.getNom() + "' ajouté !", Toast.LENGTH_SHORT)
                             .show();
 
