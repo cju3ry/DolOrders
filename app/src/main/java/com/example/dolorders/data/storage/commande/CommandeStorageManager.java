@@ -217,6 +217,7 @@ public class CommandeStorageManager {
      * @param commandeId ID de la commande recherchée
      * @return La commande trouvée, ou null si non trouvée
      */
+    //TODO A DEPLACER DANS LE FUTUR SERVICE POUR FILTRER ET AUTRES
     public Commande findCommandeById(String commandeId) {
         if (commandeId == null || commandeId.isEmpty()) {
             return null;
@@ -247,6 +248,7 @@ public class CommandeStorageManager {
      * @param clientId ID du client
      * @return Liste des commandes du client
      */
+    //TODO A DEPLACER DANS LE FUTUR SERVICE POUR FILTRER ET AUTRES
     public List<Commande> getCommandesByClient(String clientId) {
         List<Commande> result = new ArrayList<>();
 

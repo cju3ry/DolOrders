@@ -1,8 +1,7 @@
 package com.example.dolorders;
 
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;import java.util.Map;
+import java.util.List;
 
 public class Commande {
     private final String id;
@@ -11,7 +10,6 @@ public class Commande {
     private final List<LigneCommande> lignesCommande;
     private final double montantTotal;
     private final String utilisateur;
-    private final double remiseGlobale; // Non utilisé pour le moment
 
     private Commande(Builder builder) {
         this.id = builder.id;
@@ -20,7 +18,6 @@ public class Commande {
         this.lignesCommande = builder.lignesCommande;
         this.montantTotal = calculerMontantTotal();
         this.utilisateur = builder.utilisateur;
-        this.remiseGlobale = builder.remiseGlobale;
     }
 
     private double calculerMontantTotal() {
@@ -38,9 +35,8 @@ public class Commande {
     public Date getDateCommande() { return dateCommande; }
     public Client getClient() { return client; }
     public List<LigneCommande> getLignesCommande() { return lignesCommande; }
-    public double getMontantTotal() { return montantTotal * (1 - remiseGlobale / 100); }
+    public double getMontantTotal() { return montantTotal; }
     public String getUtilisateur() { return utilisateur; }
-    public double getRemiseGlobale() { return remiseGlobale; }
 
     public static class Builder {
         private String id;
@@ -48,7 +44,6 @@ public class Commande {
         private Client client;
         private List<LigneCommande> lignesCommande;
         private String utilisateur;
-        private double remiseGlobale;
 
         public Builder setId(String id) {
             this.id = id;
@@ -75,11 +70,6 @@ public class Commande {
             return this;
         }
 
-        public Builder setRemiseGlobale(double remise) {
-            this.remiseGlobale = remise;
-            return this;
-        }
-
         public Commande build() {
             if (client == null) {
                 throw new IllegalStateException("Une commande doit être associée à un client.");
@@ -87,14 +77,11 @@ public class Commande {
             if (dateCommande == null) {
                 this.dateCommande = new Date();
             }
-            if (lignesCommande == null || lignesCommande.isEmpty()) { // Modifié
+            if (lignesCommande == null || lignesCommande.isEmpty()) {
                 throw new IllegalStateException("Une commande doit contenir au moins un produit.");
             }
             if (utilisateur == null || utilisateur.isEmpty()) {
                 throw new IllegalStateException("Un utilisateur doit être renseigné.");
-            }
-            if (remiseGlobale < 0) { // Modifié
-                throw new IllegalStateException("La remise globale ne peut pas être négative.");
             }
 
             return new Commande(this);

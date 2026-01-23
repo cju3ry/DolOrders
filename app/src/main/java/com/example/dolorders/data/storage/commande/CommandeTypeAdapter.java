@@ -34,7 +34,6 @@ public class CommandeTypeAdapter extends TypeAdapter<Commande> {
         out.name("dateCommande").value(commande.getDateCommande() != null ? commande.getDateCommande().getTime() : 0);
         out.name("montantTotal").value(commande.getMontantTotal());
         out.name("utilisateur").value(commande.getUtilisateur());
-        out.name("remiseGlobale").value(commande.getRemiseGlobale());
 
         // Écriture du client
         if (commande.getClient() != null) {
@@ -119,9 +118,6 @@ public class CommandeTypeAdapter extends TypeAdapter<Commande> {
                     break;
                 case "utilisateur":
                     builder.setUtilisateur(in.nextString());
-                    break;
-                case "remiseGlobale":
-                    builder.setRemiseGlobale(in.nextDouble());
                     break;
                 case "client":
                     Client client = readClient(in);

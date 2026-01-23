@@ -67,7 +67,6 @@ public class CommandeStorageTest {
                 .setClient(clientTest)
                 .setDateCommande(maintenant)
                 .setLignesCommande(lignes)
-                .setRemiseGlobale(0.0)
                 .setUtilisateur("userTest")
                 .build();
     }
@@ -175,7 +174,6 @@ public class CommandeStorageTest {
                 .setClient(clientTest)
                 .setDateCommande(new Date())
                 .setLignesCommande(lignes2)
-                .setRemiseGlobale(5.0)
                 .setUtilisateur("userTest")
                 .build();
 
@@ -193,28 +191,25 @@ public class CommandeStorageTest {
      * Test : Vérification de la remise globale
      */
     @Test
-    public void creationCommande_AvecRemiseGlobale_CalculCorrect() {
+    public void creationCommande_CalculCorrect() {
         List<LigneCommande> lignes = new ArrayList<>();
         lignes.add(new LigneCommande(produit1, 10, 0.0)); // 10 x 1.50€ = 15.00€
 
-        Commande commandeAvecRemise = new Commande.Builder()
+        Commande commande = new Commande.Builder()
                 .setId("CMD-003")
                 .setClient(clientTest)
                 .setDateCommande(new Date())
                 .setLignesCommande(lignes)
-                .setRemiseGlobale(20.0) // -20%
                 .setUtilisateur("userTest")
                 .build();
 
-        // Montant total avec remise : 15.00€ - 20% = 12.00€
-        assertEquals(12.00, commandeAvecRemise.getMontantTotal(), 0.01);
+        assertEquals(15, commande.getMontantTotal(), 0.01);
 
-        // Sérialisation/désérialisation pour vérifier la conservation de la remise
-        String json = gson.toJson(commandeAvecRemise);
+        // Sérialisation/désérialisation
+        String json = gson.toJson(commande);
         Commande commandeDeserialise = gson.fromJson(json, Commande.class);
 
-        assertEquals(20.0, commandeDeserialise.getRemiseGlobale(), 0.01);
-        assertEquals(12.00, commandeDeserialise.getMontantTotal(), 0.01);
+        assertEquals(15, commandeDeserialise.getMontantTotal(), 0.01);
     }
 
     /**
@@ -227,7 +222,6 @@ public class CommandeStorageTest {
                 .setClient(clientTest)
                 .setDateCommande(new Date())
                 .setLignesCommande(new ArrayList<>())
-                .setRemiseGlobale(0.0)
                 .setUtilisateur("userTest")
                 .build();
     }
@@ -244,7 +238,6 @@ public class CommandeStorageTest {
                 .setId("CMD-INVALID")
                 .setDateCommande(new Date())
                 .setLignesCommande(lignes)
-                .setRemiseGlobale(0.0)
                 .setUtilisateur("userTest")
                 .build();
     }
@@ -262,7 +255,6 @@ public class CommandeStorageTest {
                 .setClient(clientTest)
                 .setDateCommande(new Date())
                 .setLignesCommande(lignes)
-                .setRemiseGlobale(0.0)
                 .build();
     }
 }

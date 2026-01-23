@@ -1,13 +1,14 @@
 package com.example.dolorders;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-
-import static org.junit.Assert.*;
 
 /**
  * Tests unitaires pour la classe Commande et son Builder.
@@ -57,7 +58,6 @@ public class CommandeTest {
                 .setLignesCommande(lignesValides)
                 .setDateCommande(dateValide)
                 .setUtilisateur(utilisateurValide)
-                .setRemiseGlobale(0.0) // Valeur par défaut explicite
                 .build();
 
         assertNotNull(commande);
@@ -85,21 +85,6 @@ public class CommandeTest {
         assertEquals(50.0, commande.getMontantTotal(), 0.01);
     }
 
-    @Test
-    public void build_calculeCorrectementAvecRemiseGlobale() {
-        // Test de la logique de remise globale du modèle (indépendant de l'UI)
-        Commande commande = new Commande.Builder()
-                .setClient(clientValide)
-                .setLignesCommande(lignesValides) // Total brut des lignes = 25.0
-                .setDateCommande(dateValide)
-                .setUtilisateur(utilisateurValide)
-                .setRemiseGlobale(10.0) // 10% de remise sur 25.0 -> -2.5€
-                .build();
-
-        assertNotNull(commande);
-        assertEquals(10.0, commande.getRemiseGlobale(), 0.01);
-        assertEquals(22.5, commande.getMontantTotal(), 0.01);
-    }
 
     @Test(expected = IllegalStateException.class)
     public void build_echoueSansClient() {
@@ -127,16 +112,5 @@ public class CommandeTest {
                 .setLignesCommande(lignesValides)
                 .setDateCommande(dateValide)
                 .build(); // Champ utilisateur manquant
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void build_echoueAvecRemiseGlobaleNegative() {
-        new Commande.Builder()
-                .setClient(clientValide)
-                .setLignesCommande(lignesValides)
-                .setDateCommande(dateValide)
-                .setUtilisateur(utilisateurValide)
-                .setRemiseGlobale(-5.0) // La remise ne peut pas être négative
-                .build();
     }
 }
