@@ -1,18 +1,18 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/nav_home"
-        android:icon="@drawable/maison_noir"
+        android:icon="@drawable/maison"
         android:title="@string/menu_accueil" />
     <item
         android:id="@+id/nav_clients"
-        android:icon="@drawable/client_ajout_noir"
+        android:icon="@drawable/client_recherche"
         android:title="@string/menu_client" />
     <item
         android:id="@+id/nav_commandes"
-        android:icon="@drawable/commande_noir"
+        android:icon="@drawable/commande"
         android:title="@string/menu_commande" />
     <item
         android:id="@+id/nav_en_attentes"
-        android:icon="@drawable/attente_noir"
+        android:icon="@drawable/attente"
         android:title="@string/menu_en_attente" />
 </menu>

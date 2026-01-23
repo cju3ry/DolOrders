@@ -7,16 +7,18 @@
     android:orientation="horizontal"
     android:paddingTop="8dp"
     android:paddingBottom="8dp"
-    android:background="@drawable/border_bottom"> <TextView
-    android:id="@+id/text_libelle_article"
-    android:layout_width="0dp"
-    android:layout_height="wrap_content"
-    android:layout_weight="3"
-    android:text="Nom Article"
-    android:textColor="@android:color/black"
-    android:textSize="14sp"
-    android:maxLines="2"
-    android:ellipsize="end"/>
+    android:background="@drawable/border_bottom">
+
+    <TextView
+        android:id="@+id/text_libelle_article"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="3"
+        android:text="@string/article_nom"
+        android:textColor="@android:color/black"
+        android:textSize="14sp"
+        android:maxLines="2"
+        android:ellipsize="end"/>
 
     <TextView
         android:id="@+id/text_prix_unitaire"
@@ -24,7 +26,7 @@
         android:layout_height="wrap_content"
         android:layout_weight="1.5"
         android:gravity="end"
-        android:text="10.00 €"
+        android:text="@string/article_pu_base"
         android:textSize="12sp"
         android:textColor="@android:color/darker_gray"/>
 

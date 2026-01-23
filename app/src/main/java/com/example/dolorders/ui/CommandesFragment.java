@@ -3,6 +3,7 @@ package com.example.dolorders.ui;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.content.Context;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -99,46 +100,50 @@ public class CommandesFragment extends Fragment {
     }
 
     private void observeViewModel() {
+        // Clients
         viewModel.getListeClients().observe(getViewLifecycleOwner(), clients -> {
             ArrayAdapter<Client> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, clients);
             autoCompleteClient.setAdapter(adapter);
         });
 
+        // Produits
         viewModel.getListeProduits().observe(getViewLifecycleOwner(), produits -> {
             ArrayAdapter<Produit> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, produits);
             autoCompleteArticle.setAdapter(adapter);
         });
 
+        // Client sélectionné
         viewModel.getClientSelectionne().observe(getViewLifecycleOwner(), client -> {
             if (client != null) {
-                if (!autoCompleteClient.getText().toString().equals(client.toString())) {
-                    autoCompleteClient.setText(client.toString(), false);
-                }
+                autoCompleteClient.setText(client.toString(), false);
+                autoCompleteClient.setEnabled(false); // Bloqué
+                autoCompleteClient.setTextColor(Color.BLACK);
                 autoCompleteClient.setError(null);
+
                 tvClientAdresse.setText(String.format("Adresse : %s, %s %s", client.getAdresse(), client.getCodePostal(), client.getVille()));
                 tvClientTel.setText(String.format("Tél : %s", client.getTelephone()));
 
                 layoutInfosClient.setVisibility(View.VISIBLE);
                 containerDetailsCommande.setVisibility(View.VISIBLE);
                 btnValider.setEnabled(true);
-
             } else {
-                if (!autoCompleteClient.hasFocus()) {
-                    autoCompleteClient.setText("", false);
-                }
+                autoCompleteClient.setEnabled(true); // Débloqué
+                autoCompleteClient.setText("", false);
+
                 layoutInfosClient.setVisibility(View.GONE);
                 containerDetailsCommande.setVisibility(View.GONE);
             }
         });
 
+        // Date
         viewModel.getDate().observe(getViewLifecycleOwner(), date -> editTextDate.setText(date));
 
-        // Observation de la liste des articles
+        // Articles
         viewModel.getLignesCommande().observe(getViewLifecycleOwner(), this::updateArticlesListView);
     }
 
     private void setupListeners() {
-        // --- CLIENT ---
+        // Client
         autoCompleteClient.setOnItemClickListener((parent, view, position, id) -> {
             Client client = (Client) parent.getItemAtPosition(position);
             viewModel.setClientSelectionne(client);
@@ -146,39 +151,24 @@ public class CommandesFragment extends Fragment {
             fermerClavier(view);
         });
 
-        autoCompleteClient.addTextChangedListener(new SimpleTextWatcher() {
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (autoCompleteClient.hasFocus()) {
-                    viewModel.setClientSelectionne(null);
-                }
-            }
-        });
-
-        // --- DATE ---
+        // Date
         editTextDate.setOnClickListener(v -> showDatePickerDialog());
 
-        // Afficher la liste complète au CLIC
+        // Article
         autoCompleteArticle.setOnClickListener(v -> autoCompleteArticle.showDropDown());
-
-        // Afficher la liste complète au FOCUS
         autoCompleteArticle.setOnFocusChangeListener((v, hasFocus) -> {
-            if (hasFocus) {
-                autoCompleteArticle.showDropDown();
-            }
+            if (hasFocus) autoCompleteArticle.showDropDown();
         });
 
-        // Sélection d'un article
         autoCompleteArticle.setOnItemClickListener((parent, view, position, id) -> {
             Produit produit = (Produit) parent.getItemAtPosition(position);
             viewModel.addArticle(produit);
-            autoCompleteArticle.setText("", false); // Vider le champ pour la prochaine saisie
+            autoCompleteArticle.setText("", false);
             autoCompleteArticle.setError(null);
             autoCompleteArticle.postDelayed(() -> autoCompleteArticle.showDropDown(), 100);
         });
 
-
-        // --- BOUTONS ---
+        // Boutons
         btnAnnuler.setOnClickListener(v -> showCancelConfirmationDialog());
 
         btnValider.setOnClickListener(v -> {
@@ -190,83 +180,131 @@ public class CommandesFragment extends Fragment {
     }
 
     private void updateArticlesListView(List<LigneCommande> lignes) {
-        layoutArticlesSelectionnes.removeAllViews();
         updateTotal();
 
-        // Compteur
+        // Compteur (inchangé)
         int count = (lignes != null) ? lignes.size() : 0;
-        String texteCompteur;
-        if (count == 0) {
-            texteCompteur = "0 article";
-        } else if (count == 1) {
-            texteCompteur = "1 article";
-        } else {
-            texteCompteur = count + " articles différents";
-        }
+        String texteCompteur = (count <= 1) ? count + " article" : count + " articles différents";
         tvNbArticles.setText(texteCompteur);
 
-        if (lignes == null || lignes.isEmpty()) {
-            return;
+        if (lignes == null) return;
+
+        // Si le nombre de lignes change, on refait tout (plus simple)
+        if (layoutArticlesSelectionnes.getChildCount() != lignes.size()) {
+            layoutArticlesSelectionnes.removeAllViews();
+            for (LigneCommande ligne : lignes) {
+                ajouterVueLigne(ligne);
+            }
+        } else {
+            // Sinon on met à jour intelligemment
+            for (int i = 0; i < lignes.size(); i++) {
+                View row = layoutArticlesSelectionnes.getChildAt(i);
+                LigneCommande nouvelleDonnee = lignes.get(i);
+
+                // On récupère l'ancienne donnée stockée sur la vue
+                LigneCommande ancienneDonnee = (LigneCommande) row.getTag();
+
+                // On vérifie si c'est bien le même produit (par ID)
+                if (ancienneDonnee != null && ancienneDonnee.getProduit().getId() == nouvelleDonnee.getProduit().getId()) {
+                    mettreAJourVueLigne(row, nouvelleDonnee);
+                } else {
+                    // L'ordre a changé ou c'est pas le bon produit -> On refait tout par sécurité
+                    layoutArticlesSelectionnes.removeAllViews();
+                    for (LigneCommande l : lignes) ajouterVueLigne(l);
+                    return;
+                }
+            }
         }
+    }
 
-        for (LigneCommande ligne : lignes) {
-            View row = LayoutInflater.from(getContext()).inflate(R.layout.item_article_commande, layoutArticlesSelectionnes, false);
+    // Méthode pour créer une nouvelle ligne (Appelée seulement à l'ajout)
+    private void ajouterVueLigne(LigneCommande ligne) {
+        View row = LayoutInflater.from(getContext()).inflate(R.layout.item_article_commande, layoutArticlesSelectionnes, false);
 
-            TextView tvLibelle = row.findViewById(R.id.text_libelle_article);
-            TextView tvPU = row.findViewById(R.id.text_prix_unitaire);
-            TextView tvTotal = row.findViewById(R.id.text_total_ligne);
-            EditText etQty = row.findViewById(R.id.edit_text_quantite_article);
-            EditText etRem = row.findViewById(R.id.edit_text_remise_ligne);
-            ImageButton btnDel = row.findViewById(R.id.btn_delete_article);
+        ImageButton btnDel = row.findViewById(R.id.btn_delete_article);
+        EditText etQty = row.findViewById(R.id.edit_text_quantite_article);
+        EditText etRem = row.findViewById(R.id.edit_text_remise_ligne);
 
-            tvLibelle.setText(ligne.getProduit().getLibelle());
-            tvPU.setText(String.format(Locale.FRANCE, "%.2f", ligne.getProduit().getPrixUnitaire()));
-            tvTotal.setText(String.format(Locale.FRANCE, "%.2f €", ligne.getMontantLigne()));
+        // On stocke l'objet ligne ACTUEL dans la vue
+        row.setTag(ligne);
 
+        btnDel.setOnClickListener(v -> {
+            // Pour supprimer, on prend aussi la version à jour
+            LigneCommande current = (LigneCommande) row.getTag();
+            viewModel.removeLigne(current);
+        });
+
+        etQty.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void afterTextChanged(Editable s) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (etQty.getTag() == null && s.length() > 0) {
+                    try {
+                        // On récupère la donnée À JOUR depuis le tag
+                        LigneCommande currentLigne = (LigneCommande) row.getTag();
+
+                        int newQ = Integer.parseInt(s.toString());
+                        // On compare et on update
+                        if (newQ != currentLigne.getQuantite()) {
+                            viewModel.updateLigne(currentLigne, newQ, currentLigne.getRemise());
+                        }
+                    } catch (NumberFormatException e) { }
+                }
+            }
+        });
+
+        etRem.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void afterTextChanged(Editable s) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (etRem.getTag() == null) {
+                    try {
+                        // On récupère la donnée À JOUR depuis le tag
+                        LigneCommande currentLigne = (LigneCommande) row.getTag();
+
+                        double newR = 0.0;
+                        if (s.length() > 0) newR = Double.parseDouble(s.toString());
+
+                        if (newR != currentLigne.getRemise()) {
+                            viewModel.updateLigne(currentLigne, currentLigne.getQuantite(), newR);
+                        }
+                    } catch (NumberFormatException e) { }
+                }
+            }
+        });
+
+        mettreAJourVueLigne(row, ligne);
+        layoutArticlesSelectionnes.addView(row);
+    }
+
+    // Méthode pour mettre à jour une ligne existante SANS voler le focus
+    private void mettreAJourVueLigne(View row, LigneCommande ligne) {
+        // On met à jour le tag avec la nouvelle version de l'objet
+        row.setTag(ligne);
+
+        TextView tvLibelle = row.findViewById(R.id.text_libelle_article);
+        TextView tvPU = row.findViewById(R.id.text_prix_unitaire);
+        TextView tvTotal = row.findViewById(R.id.text_total_ligne);
+        EditText etQty = row.findViewById(R.id.edit_text_quantite_article);
+        EditText etRem = row.findViewById(R.id.edit_text_remise_ligne);
+
+        tvLibelle.setText(ligne.getProduit().getLibelle());
+        tvPU.setText(String.format(Locale.FRANCE, "%.2f", ligne.getProduit().getPrixUnitaire()));
+        tvTotal.setText(String.format(Locale.FRANCE, "%.2f €", ligne.getMontantLigne()));
+
+        if (!etQty.hasFocus()) {
             etQty.setTag("UPDATING");
             etQty.setText(String.valueOf(ligne.getQuantite()));
             etQty.setTag(null);
+        }
 
+        if (!etRem.hasFocus()) {
             etRem.setTag("UPDATING");
             if(ligne.getRemise() == (long) ligne.getRemise())
                 etRem.setText(String.format(Locale.US, "%d", (long)ligne.getRemise()));
             else
                 etRem.setText(String.format(Locale.US, "%.1f", ligne.getRemise()));
             etRem.setTag(null);
-
-            btnDel.setOnClickListener(v -> viewModel.removeLigne(ligne));
-
-            etQty.addTextChangedListener(new SimpleTextWatcher() {
-                @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    if (etQty.getTag() == null && s.length() > 0) {
-                        try {
-                            int newQ = Integer.parseInt(s.toString());
-                            if (newQ != ligne.getQuantite()) {
-                                viewModel.updateLigne(ligne, newQ, ligne.getRemise());
-                            }
-                        } catch (NumberFormatException e) { }
-                    }
-                }
-            });
-
-            etRem.addTextChangedListener(new SimpleTextWatcher() {
-                @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    if (etRem.getTag() == null) {
-                        double newR = 0.0;
-                        try {
-                            if (s.length() > 0) newR = Double.parseDouble(s.toString());
-                        } catch (NumberFormatException e) { }
-
-                        if (newR != ligne.getRemise()) {
-                            viewModel.updateLigne(ligne, ligne.getQuantite(), newR);
-                        }
-                    }
-                }
-            });
-
-            layoutArticlesSelectionnes.addView(row);
         }
     }
 
@@ -276,40 +314,19 @@ public class CommandesFragment extends Fragment {
     }
 
     private boolean isFormulaireValide() {
-        autoCompleteClient.setError(null);
-        autoCompleteArticle.setError(null);
-        editTextDate.setError(null);
-
         boolean estValide = true;
-
         if (viewModel.getClientSelectionne().getValue() == null) {
-            autoCompleteClient.setError("Veuillez sélectionner un client");
-            if (estValide) autoCompleteClient.requestFocus();
+            autoCompleteClient.setError("Client requis");
             estValide = false;
         }
-
         List<LigneCommande> lignes = viewModel.getLignesCommande().getValue();
         if (lignes == null || lignes.isEmpty()) {
-            autoCompleteArticle.setError("Veuillez ajouter au moins un article");
-            if (estValide) autoCompleteArticle.requestFocus();
+            autoCompleteArticle.setError("Article requis");
             estValide = false;
         }
-
-        String dateStr = viewModel.getDate().getValue();
-        if (dateStr == null || dateStr.trim().isEmpty()) {
-            editTextDate.setError("La date est requise");
-            if (estValide) editTextDate.requestFocus();
+        if (viewModel.getDate().getValue() == null) {
+            editTextDate.setError("Date requise");
             estValide = false;
-        } else {
-            try {
-                SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE);
-                sdf.setLenient(false);
-                sdf.parse(dateStr);
-            } catch (ParseException e) {
-                editTextDate.setError("Format invalide");
-                if (estValide) editTextDate.requestFocus();
-                estValide = false;
-            }
         }
         return estValide;
     }
@@ -317,89 +334,55 @@ public class CommandesFragment extends Fragment {
     private void enregistrerCommande() {
         Client client = viewModel.getClientSelectionne().getValue();
         List<LigneCommande> lignes = viewModel.getLignesCommande().getValue();
-
         Date dateCommande;
         try {
             dateCommande = new SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE).parse(viewModel.getDate().getValue());
         } catch (ParseException e) { return; }
 
         try {
-            Commande nouvelleCommande = new Commande.Builder()
+            Commande cmd = new Commande.Builder()
                     .setId("CMD-" + System.currentTimeMillis())
                     .setClient(client)
                     .setDateCommande(dateCommande)
                     .setLignesCommande(lignes)
-                    .setRemiseGlobale(0.0) // Remise fixée à 0 car supprimée de l'UI
+                    .setRemiseGlobale(0.0)
                     .setUtilisateur("Admin")
                     .build();
 
-            Toast.makeText(getContext(),
-                    "Commande validée ! Total : " + String.format(Locale.FRANCE, "%.2f €", nouvelleCommande.getMontantTotal()),
-                    Toast.LENGTH_LONG).show();
-
+            Toast.makeText(getContext(), "Commande validée : " + String.format("%.2f €", cmd.getMontantTotal()), Toast.LENGTH_LONG).show();
             viewModel.clear();
             navigateToHome();
-
-        } catch (IllegalStateException e) {
-            new AlertDialog.Builder(requireContext())
-                    .setTitle("Erreur de validation")
-                    .setMessage(e.getMessage())
-                    .setPositiveButton("OK", null)
-                    .show();
+        } catch (Exception e) {
+            new AlertDialog.Builder(requireContext()).setMessage(e.getMessage()).setPositiveButton("OK", null).show();
         }
     }
 
     private void showCancelConfirmationDialog() {
         new AlertDialog.Builder(requireContext())
-                .setTitle("Annuler la saisie")
-                .setMessage("Voulez-vous vraiment annuler ?")
-                .setPositiveButton("Oui", (d, w) -> {
-                    viewModel.clear();
-                    navigateToHome();
-                })
+                .setTitle("Annuler")
+                .setMessage("Tout effacer ?")
+                .setPositiveButton("Oui", (d, w) -> { viewModel.clear(); navigateToHome(); })
                 .setNegativeButton("Non", null)
                 .show();
     }
 
     private void navigateToHome() {
         BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottomNavigation);
-        if (bottomNav != null) {
-            bottomNav.setSelectedItemId(R.id.nav_home);
-        }
+        if (bottomNav != null) bottomNav.setSelectedItemId(R.id.nav_home);
     }
 
     private void showDatePickerDialog() {
-        Calendar calendar = Calendar.getInstance();
-        try {
-            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE);
-            calendar.setTime(sdf.parse(viewModel.getDate().getValue()));
-        } catch (Exception e) { }
-
-        new DatePickerDialog(
-                requireContext(),
-                (view, year, month, dayOfMonth) -> {
-                    Calendar selectedDate = Calendar.getInstance();
-                    selectedDate.set(year, month, dayOfMonth);
-                    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE);
-                    viewModel.setDate(sdf.format(selectedDate.getTime()));
-                },
-                calendar.get(Calendar.YEAR),
-                calendar.get(Calendar.MONTH),
-                calendar.get(Calendar.DAY_OF_MONTH)
-        ).show();
+        Calendar c = Calendar.getInstance();
+        new DatePickerDialog(requireContext(), (v, y, m, d) -> {
+            c.set(y, m, d);
+            viewModel.setDate(new SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE).format(c.getTime()));
+        }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
     }
 
     private void fermerClavier(View view) {
         if (view != null) {
             InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-            if (imm != null) {
-                imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
-            }
+            if (imm != null) imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
         }
-    }
-
-    public abstract static class SimpleTextWatcher implements TextWatcher {
-        @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-        @Override public void afterTextChanged(Editable s) {}
     }
 }

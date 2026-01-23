@@ -138,7 +138,7 @@
                 android:paddingVertical="12dp"
                 android:text="@string/accueil_raccourci_attente"
                 android:textColor="@android:color/black"
-                app:icon="@drawable/commande_noir"
+                app:icon="@drawable/commande"
                 app:iconGravity="textStart"
                 app:iconPadding="16dp"
                 app:backgroundTint="#E0E0E0"

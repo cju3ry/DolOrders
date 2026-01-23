@@ -4,6 +4,7 @@
     <string name="menu_client">Client</string>
     <string name="menu_commande">Commande</string>
     <string name="menu_en_attente">En attente</string>
+    <string name="entete_user">Bienvenue</string>
 
     <string name="accueil_titre">Accueil :</string>
     <string name="accueil_tableau_entete">Données en attente</string>
@@ -16,21 +17,47 @@
     <string name="accueil_raccourci_attente">Données en attente</string>
 
     <string name="client_titre">Ajouter un client :</string>
-    <string name="client_champ_nom">Nom client :</string>
-    <string name="client_champ_adresse">Adresse :</string>
-    <string name="client_champ_code_postal">Code postal :</string>
-    <string name="client_champ_ville">Ville :</string>
-    <string name="client_champ_adresse_mail">Adresse mail :</string>
-    <string name="client_champ_telephone">Téléphone :</string>
+    <string name="client_hint_nom">Client</string>
+    <string name="client_hint_adresse">Adresse</string>
+    <string name="client_hint_code_postal">Code postal</string>
+    <string name="client_hint_ville">Ville</string>
+    <string name="client_hint_adresse_mail">Adresse mail</string>
+    <string name="client_hint_telephone">Téléphone</string>
 
     <string name="commande_titre">Ajouter une commande :</string>
-    <string name="commande_champ_client">Nom client :</string>
-    <string name="commande_champ_date">Date :</string>
-    <string name="commande_champ_article">Article(s) :</string>
-    <string name="commande_champ_remise">Remise éventuelle :</string>
+    <string name="commande_champ_client">Nom client</string>
+    <string name="commande_etiquette_adresse">Adresse : ...</string>
+    <string name="commande_etiquette_numTel">Tél : ...</string>
+    <string name="commande_champ_date">Date de commande</string>
+    <string name="commande_champ_article">Rechercher un article...</string>
 
-    <string name="bouton_valider">Ajouter un client</string>
-    <string name="bouton_annuler">Ajouter un client</string>
+    <string name="commande_article_col_libelle">Produit</string>
+    <string name="commande_article_col_pu">P.U.</string>
+    <string name="commande_article_col_qte">Qté</string>
+    <string name="commande_article_col_rem">Remise(%)</string>
+    <string name="commande_article_col_total">Total</string>
+    <string name="commande_champ_totalArticle">0 article</string>
+    <string name="commande_champ_total">TOTAL À PAYER</string>
+    <string name="commande_montant_total_base">0.00 €</string>
+
+    <string name="liste_attente_button_envoie">Envoyer vers Dolibarr</string>
+    <string name="liste_attente_client_titre">Liste des clients en attente :</string>
+    <string name="liste_attente_commande_titre">Liste des commandes en attente :</string>
+    <string name="attente_client_col_nom">Nom</string>
+    <string name="attente_client_col_email">Email</string>
+    <string name="attente_client_col_ville">Ville</string>
+    <string name="attente_client_col_dateSaisie">Date de saisie</string>
+    <string name="attente_commande_col_id">Id</string>
+    <string name="attente_commande_col_client">Client</string>
+    <string name="attente_commande_col_date">Date</string>
+
+    <string name="article_nom">Nom Article</string>
+    <string name="article_pu_base">0.00 €</string>
+
+    <string name="liste_client_col_nom">Nom</string>
+
+    <string name="bouton_valider">Valider</string>
+    <string name="bouton_annuler">Annuler</string>
 
     <string name="connexion_identifiant_placeholder">Identifiant</string>
     <string name="connexion_motdepasse_placeholder">Mot de passe</string>
