@@ -10,6 +10,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -25,8 +26,9 @@ import java.util.List;
 public class TabClientsFragment extends Fragment {
 
     private ClientsAttenteAdapter adapter;
-    private List<Client> ListeClients;
+    private List<Client> listeClients;
     private ClientStorageManager clientStorageManager;
+    private ClientFormDialogFragment dialog;
 
     @Nullable
     @Override
@@ -42,13 +44,14 @@ public class TabClientsFragment extends Fragment {
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
         clientStorageManager = new ClientStorageManager(requireContext());
+        dialog = new ClientFormDialogFragment();
 
         // --- Données factices ---
-        ListeClients = new ArrayList<>();
-        ListeClients = clientStorageManager.loadClients();
+        listeClients = new ArrayList<>();
+        listeClients = clientStorageManager.loadClients();
 
         // Initialisation de l'adapter avec le Listener
-        adapter = new ClientsAttenteAdapter(ListeClients, new ClientsAttenteAdapter.OnClientActionListener() {
+        adapter = new ClientsAttenteAdapter(listeClients, new ClientsAttenteAdapter.OnClientActionListener() {
             @Override
             public void onEdit(Client client) {
                 modifierClient(client);
@@ -69,7 +72,7 @@ public class TabClientsFragment extends Fragment {
                 .setMessage("Voulez-vous vraiment supprimer " + client.getNom() + " de la liste d'attente ?")
                 .setPositiveButton("Supprimer", (dialog, which) -> {
                     // Suppression de la liste visuelle
-                    ListeClients.remove(client);
+                    listeClients.remove(client);
                     adapter.notifyDataSetChanged();
                     // TODO: Supprimer aussi du fichier JSON
                     Toast.makeText(getContext(), "Client supprimé", Toast.LENGTH_SHORT).show();
@@ -79,30 +82,57 @@ public class TabClientsFragment extends Fragment {
     }
 
     private void modifierClient(Client client) {
-        // Préparer le fragment de destination
-        ClientsFragment clientsFragment = new ClientsFragment();
+        dialog = ClientFormDialogFragment.newInstance(
+                ClientFormDialogFragment.MODE_EDIT, client
+        );
 
-        // Transmettre les données via un Bundle
-        Bundle args = new Bundle();
-        args.putString("nom", client.getNom());
-        args.putString("adresse", client.getAdresse());
-        args.putString("codePostal", client.getCodePostal());
-        args.putString("ville", client.getVille());
-        args.putString("email", client.getAdresseMail());
-        args.putString("telephone", client.getTelephone());
-        // On pourrait passer l'ID aussi pour savoir que c'est une modif et pas une création
-        clientsFragment.setArguments(args);
+        int index = listeClients.indexOf(client);
 
-        // Remplacer le fragment actuel par le ClientsFragment
-        requireActivity().getSupportFragmentManager().beginTransaction()
-                .replace(R.id.fragment_container, clientsFragment)
-                .addToBackStack(null)
-                .commit();
+        dialog.setOnClientEditedListener((nom, adresse, cp, ville, tel, mail) -> {
+            try {
+                // Construire un NOUVEAU client
+                Client updated = new Client.Builder()
+                        .setId(client.getId())
+                        .setNom(nom)
+                        .setAdresse(adresse)
+                        .setCodePostal(cp)
+                        .setVille(ville)
+                        .setTelephone(tel)
+                        .setAdresseMail(mail)
+                        .setUtilisateur(client.getUtilisateur())
+                        .setDateSaisie(client.getDateSaisie())
+                        .build();
 
-        // Mettre à jour visuellement le BottomNavigation pour qu'il souligne "Clients"
-        BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottomNavigation);
-        if (bottomNav != null) {
-            bottomNav.setSelectedItemId(R.id.nav_clients);
-        }
+                // Remplacer dans la liste
+                listeClients.set(index, updated);
+
+                //notifier l'adaptateur
+                adapter.notifyItemChanged(index);
+
+                // Si tu veux aussi “sauvegarder” ailleurs (ViewModel/API)
+                boolean modiffier = clientStorageManager.modifierClient(updated);
+
+                if (modiffier) {
+                    Toast.makeText(getContext(), "Client '" + updated.getNom() + "' modifié et enregistré localement !", Toast.LENGTH_SHORT)
+                            .show();
+
+                    ClientsFragmentViewModel clientsVM = new ViewModelProvider(requireActivity())
+                            .get(ClientsFragmentViewModel.class);
+
+                    clientsVM.publierClientCree(updated);
+                } else {
+                    Toast.makeText(getContext(),
+                            "Client '" + updated.getNom() + "' modifié et enregistré localement a échoué",
+                            Toast.LENGTH_SHORT).show();
+                }
+
+            } catch (IllegalStateException ex) {
+                android.widget.Toast.makeText(requireContext(),
+                        ex.getMessage(),
+                        android.widget.Toast.LENGTH_LONG).show();
+            }
+        });
+
+        dialog.show(getParentFragmentManager(), "client_edit");
     }
 }
