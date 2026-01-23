@@ -23,7 +23,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
-                android:text="Ajouter un client :"
+                android:text="@string/client_titre"
                 android:textColor="@android:color/black"
                 android:textSize="22sp"
                 android:textStyle="bold" />
@@ -34,7 +34,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
-                android:hint="Nom client">
+                android:hint="@string/client_hint_nom">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edit_text_nom"
@@ -48,7 +48,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
-                android:hint="Adresse">
+                android:hint="@string/client_hint_adresse">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edit_text_adresse"
@@ -62,7 +62,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
-                android:hint="Code postal">
+                android:hint="@string/client_hint_code_postal">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edit_text_code_postal"
@@ -76,7 +76,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
-                android:hint="Ville">
+                android:hint="@string/client_hint_ville">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edit_text_ville"
@@ -90,7 +90,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
-                android:hint="Adresse mail">
+                android:hint="@string/client_hint_adresse_mail">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edit_text_email"
@@ -104,7 +104,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
-                android:hint="Téléphone">
+                android:hint="@string/client_hint_telephone">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edit_text_telephone"
@@ -127,7 +127,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="8dp"
                     android:layout_weight="1"
-                    android:text="Annuler"
+                    android:text="@string/bouton_annuler"
                     android:textColor="@android:color/darker_gray"
                     app:strokeColor="@android:color/darker_gray" />
 
@@ -138,7 +138,7 @@
                     android:layout_marginStart="8dp"
                     android:layout_weight="1"
                     android:backgroundTint="@color/blue_dolibarr"
-                    android:text="Valider" />
+                    android:text="@string/bouton_valider" />
             </LinearLayout>
 
         </LinearLayout>

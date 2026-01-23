@@ -22,7 +22,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
-                android:text="Nouvelle commande"
+                android:text="@string/commande_titre"
                 android:textColor="@android:color/black"
                 android:textSize="22sp"
                 android:textStyle="bold" />
@@ -32,7 +32,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
-                android:hint="Client">
+                android:hint="@string/client_hint_nom">
 
                 <AutoCompleteTextView
                     android:id="@+id/auto_complete_client"
@@ -56,7 +56,7 @@
                     android:id="@+id/tv_client_adresse"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Adresse : ..."
+                    android:text="@string/commande_etiquette_adresse"
                     android:textColor="#333333"
                     android:textSize="14sp"
                     android:gravity="center_vertical"
@@ -69,7 +69,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="Tél : ..."
+                    android:text="@string/commande_etiquette_numTel"
                     android:textColor="#333333"
                     android:textSize="14sp"
                     android:gravity="center_vertical"
@@ -84,7 +84,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
-                android:hint="Date de commande">
+                android:hint="@string/commande_champ_date">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edit_text_date"
@@ -108,7 +108,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="12dp"
-                    android:hint="Rechercher un article...">
+                    android:hint="@string/commande_champ_article">
 
                     <AutoCompleteTextView
                         android:id="@+id/auto_complete_article"
@@ -127,11 +127,11 @@
                     android:paddingStart="4dp"
                     android:paddingEnd="0dp">
 
-                    <TextView android:text="Produit" android:textStyle="bold" android:textColor="@android:color/black" android:layout_weight="3" android:layout_width="0dp" android:layout_height="wrap_content" android:textSize="12sp"/>
-                    <TextView android:text="P.U." android:gravity="end" android:textStyle="bold" android:textColor="@android:color/black" android:layout_weight="1.5" android:layout_width="0dp" android:layout_height="wrap_content" android:textSize="12sp"/>
-                    <TextView android:text="Qté" android:gravity="center" android:textStyle="bold" android:textColor="@android:color/black" android:layout_weight="1.2" android:layout_width="0dp" android:layout_height="wrap_content" android:textSize="12sp"/>
-                    <TextView android:text="Rem%" android:gravity="center" android:textStyle="bold" android:textColor="@android:color/black" android:layout_weight="1.2" android:layout_width="0dp" android:layout_height="wrap_content" android:textSize="12sp"/>
-                    <TextView android:text="Total" android:gravity="end" android:textStyle="bold" android:textColor="@android:color/black" android:layout_weight="1.8" android:layout_width="0dp" android:layout_height="wrap_content" android:textSize="12sp"/>
+                    <TextView android:text="@string/commande_article_col_libelle" android:textStyle="bold" android:textColor="@android:color/black" android:layout_weight="3" android:layout_width="0dp" android:layout_height="wrap_content" android:textSize="12sp"/>
+                    <TextView android:text="@string/commande_article_col_pu" android:gravity="end" android:textStyle="bold" android:textColor="@android:color/black" android:layout_weight="1.5" android:layout_width="0dp" android:layout_height="wrap_content" android:textSize="12sp"/>
+                    <TextView android:text="@string/commande_article_col_qte" android:gravity="center" android:textStyle="bold" android:textColor="@android:color/black" android:layout_weight="1.2" android:layout_width="0dp" android:layout_height="wrap_content" android:textSize="12sp"/>
+                    <TextView android:text="@string/commande_article_col_rem" android:gravity="center" android:textStyle="bold" android:textColor="@android:color/black" android:layout_weight="1.2" android:layout_width="0dp" android:layout_height="wrap_content" android:textSize="12sp"/>
+                    <TextView android:text="@string/commande_article_col_total" android:gravity="end" android:textStyle="bold" android:textColor="@android:color/black" android:layout_weight="1.8" android:layout_width="0dp" android:layout_height="wrap_content" android:textSize="12sp"/>
                     <View android:layout_width="34dp" android:layout_height="1dp"/>
                 </LinearLayout>
 
@@ -164,7 +164,7 @@
                         android:id="@+id/tv_nb_articles"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="0 article"
+                        android:text="@string/commande_champ_totalArticle"
                         android:textSize="16sp"
                         android:textStyle="italic"
                         android:textColor="@color/blue_dolibarr"/>
@@ -177,7 +177,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="TOTAL À PAYER"
+                        android:text="@string/commande_champ_total"
                         android:textAllCaps="true"
                         android:textSize="16sp"
                         android:textStyle="bold"
@@ -188,7 +188,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="16dp"
-                        android:text="0.00 €"
+                        android:text="@string/commande_montant_total_base"
                         android:textSize="20sp"
                         android:textStyle="bold"
                         android:textColor="@color/blue_dolibarr"/>
@@ -206,7 +206,7 @@
                         android:layout_height="60dp"
                         android:layout_marginEnd="8dp"
                         android:layout_weight="1"
-                        android:text="Annuler"
+                        android:text="@string/bouton_annuler"
                         android:textColor="@android:color/darker_gray"
                         app:strokeColor="@android:color/darker_gray" />
 
@@ -217,7 +217,7 @@
                         android:layout_marginStart="8dp"
                         android:layout_weight="1"
                         android:backgroundTint="@color/blue_dolibarr"
-                        android:text="Valider la commande"
+                        android:text="@string/bouton_valider"
                         android:textAllCaps="false"
                         android:textSize="16sp"
                         android:textColor="@android:color/white" />

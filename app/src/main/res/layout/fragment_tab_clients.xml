@@ -9,23 +9,11 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Liste des clients en attente :"
+        android:text="@string/liste_attente_client_titre"
         android:textSize="18sp"
         android:textStyle="bold"
         android:textColor="@android:color/black"
         android:layout_marginBottom="16dp" />
-
-    <Button
-        android:id="@+id/btn_filtrer"
-        android:layout_width="wrap_content"
-        android:layout_height="36dp"
-        android:text="Filtrer"
-        android:backgroundTint="#E0E0E0"
-        android:textColor="#000000"
-        android:textSize="12sp"
-        android:paddingHorizontal="16dp"
-        android:layout_marginBottom="16dp"
-        style="@style/Widget.MaterialComponents.Button.TextButton"/>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -35,7 +23,7 @@
         android:paddingEnd="32dp"
         android:paddingBottom="8dp">
         <TextView
-            android:text="Nom"
+            android:text="@string/attente_client_col_nom"
             android:textStyle="bold"
             android:textColor="#000000"
             android:layout_weight="1.2"
@@ -44,7 +32,7 @@
             android:textSize="12sp"/>
 
         <TextView
-            android:text="Email"
+            android:text="@string/attente_client_col_email"
             android:textStyle="bold"
             android:textColor="#000000"
             android:layout_weight="1.5"
@@ -54,7 +42,7 @@
             android:textSize="12sp"/>
 
         <TextView
-            android:text="Ville"
+            android:text="@string/attente_client_col_ville"
             android:textStyle="bold"
             android:textColor="#000000"
             android:layout_weight="1"
@@ -63,7 +51,7 @@
             android:textSize="12sp"/>
 
         <TextView
-            android:text="Date de saisie"
+            android:text="@string/attente_client_col_dateSaisie"
             android:gravity="end"
             android:textStyle="bold"
             android:textColor="#000000"

@@ -29,7 +29,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1.2"
-            android:text="Nom"
+            android:text="@string/liste_client_col_nom"
             android:textColor="#000000"
             android:textStyle="bold"
             android:textSize="13sp"

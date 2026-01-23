@@ -57,7 +57,7 @@
             android:id="@+id/btn_envoyer_dolibarr"
             android:layout_width="match_parent"
             android:layout_height="60dp"
-            android:text="Envoyer vers Dolibarr"
+            android:text="@string/liste_attente_button_envoie"
             android:textSize="18sp"
             android:textStyle="bold"
             app:icon="@drawable/ic_send"
