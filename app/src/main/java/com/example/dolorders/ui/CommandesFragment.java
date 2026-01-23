@@ -29,6 +29,7 @@ import com.example.dolorders.Commande;
 import com.example.dolorders.LigneCommande;
 import com.example.dolorders.Produit;
 import com.example.dolorders.R;
+import com.example.dolorders.data.storage.commande.CommandeStorageManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
@@ -43,6 +44,7 @@ import java.util.Locale;
 public class CommandesFragment extends Fragment {
 
     private CommandesFragmentViewModel viewModel;
+    private CommandeStorageManager commandeStorage;
 
     // Vues
     private AutoCompleteTextView autoCompleteClient, autoCompleteArticle;
@@ -59,6 +61,7 @@ public class CommandesFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         viewModel = new ViewModelProvider(requireActivity()).get(CommandesFragmentViewModel.class);
+        commandeStorage = new CommandeStorageManager(requireContext());
     }
 
     @Nullable
@@ -349,9 +352,20 @@ public class CommandesFragment extends Fragment {
                     .setUtilisateur("Admin")
                     .build();
 
-            Toast.makeText(getContext(), "Commande validée : " + String.format("%.2f €", cmd.getMontantTotal()), Toast.LENGTH_LONG).show();
-            viewModel.clear();
-            navigateToHome();
+            // Enregistrement de la commande en local
+            boolean saved = commandeStorage.addCommande(cmd);
+
+            if (saved) {
+                Toast.makeText(getContext(),
+                    "Commande enregistrée : " + String.format("%.2f €", cmd.getMontantTotal()),
+                    Toast.LENGTH_LONG).show();
+                viewModel.clear();
+                navigateToHome();
+            } else {
+                Toast.makeText(getContext(),
+                    "Erreur lors de l'enregistrement de la commande",
+                    Toast.LENGTH_LONG).show();
+            }
         } catch (Exception e) {
             new AlertDialog.Builder(requireContext()).setMessage(e.getMessage()).setPositiveButton("OK", null).show();
         }
