@@ -222,9 +222,10 @@ public class ClientStorageManager {
         for (int i = 0; i < clients.size(); i++) {
             if (clients.get(i).getId() == updatedClient.getId()) {
                 clients.set(i, updatedClient);
-                break;
+                i = clients.size(); // Forcer la sortie de la boucle
             }
         }
+
 
         // Sauvegarde centralisée
         return saveClients(clients);
