@@ -1,5 +1,7 @@
 package com.example.dolorders;
 
+import androidx.annotation.NonNull;
+
 import java.util.Date;
 import java.util.regex.Pattern;
 
@@ -25,6 +27,8 @@ public class Client {
     private final String utilisateur;
     private final Date dateSaisie;
 
+    private final boolean fromApi;
+
     private Client(Builder builder) {
         this.id = builder.id;
         this.nom = builder.nom;
@@ -35,19 +39,29 @@ public class Client {
         this.telephone = builder.telephone;
         this.utilisateur = builder.utilisateur;
         this.dateSaisie = builder.dateSaisie;
-
+        this.fromApi = builder.fromApi;
     }
 
     // --- Getters ---
     public String getId() { return id; }
+
     public String getNom() { return nom; }
+
     public String getAdresse() { return adresse; }
+
     public String getCodePostal() { return codePostal; }
+
     public String getVille() { return ville; }
+
     public String getAdresseMail() { return adresseMail; }
+
     public String getTelephone() { return telephone; }
+
     public String getUtilisateur() { return utilisateur; }
+
     public Date getDateSaisie() { return dateSaisie; }
+
+    public boolean isFromApi() { return fromApi; }
 
     // --- Builder ---
     public static class Builder {
@@ -60,6 +74,8 @@ public class Client {
         private String telephone;
         private String utilisateur;
         private Date dateSaisie;
+        private boolean fromApi;
+
 
         public Builder setId(String id) {
             this.id = id;
@@ -103,6 +119,11 @@ public class Client {
 
         public Builder setDateSaisie(Date dateSaisie) {
             this.dateSaisie = dateSaisie;
+            return this;
+        }
+
+        public Builder setFromApi(boolean fromApi) {
+            this.fromApi = fromApi;
             return this;
         }
 

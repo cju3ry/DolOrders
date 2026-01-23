@@ -1,10 +1,7 @@
 package com.example.dolorders.ui;
 
-import android.app.AlertDialog;
+import android.annotation.SuppressLint;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
-import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,203 +11,245 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.dolorders.Client;
+import com.example.dolorders.ClientService;
 import com.example.dolorders.R;
 import com.example.dolorders.data.storage.ClientStorageManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.textfield.TextInputEditText;
 
-import java.util.Date;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ClientsFragment extends Fragment {
 
     private ClientsFragmentViewModel viewModel;
-    private ClientStorageManager storageManager;
-    private TextInputEditText editTextNom, editTextAdresse, editTextCodePostal, editTextVille, editTextEmail, editTextTelephone;
-    private MaterialButton btnAnnuler, btnValider;
+
+    private final List<Client> clientsSource = new ArrayList<>();
+    private final List<Client> clientsDisplayed = new ArrayList<>();
+
+    private RecyclerView listeClients;
+    private ClientAdapter clientAdapter;
+
+    private ClientService clientService;
+
+    private MaterialButton btnFiltre, btnAjoutClient;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         viewModel = new ViewModelProvider(requireActivity()).get(ClientsFragmentViewModel.class);
-        storageManager = new ClientStorageManager(requireContext());
+        clientService = new ClientService(requireContext());
     }
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_clients, container, false);
+    public View onCreateView(@NonNull LayoutInflater inflater,
+                             @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.fragment_client, container, false);
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
         setupViews(view);
-        observeViewModel();
+        setupRecyclerView();
         setupListeners();
+        observeViewModel();
     }
 
     private void setupViews(View view) {
-        editTextNom = view.findViewById(R.id.edit_text_nom);
-        editTextAdresse = view.findViewById(R.id.edit_text_adresse);
-        editTextCodePostal = view.findViewById(R.id.edit_text_code_postal);
-        editTextVille = view.findViewById(R.id.edit_text_ville);
-        editTextEmail = view.findViewById(R.id.edit_text_email);
-        editTextTelephone = view.findViewById(R.id.edit_text_telephone);
-        btnAnnuler = view.findViewById(R.id.btn_annuler);
-        btnValider = view.findViewById(R.id.btn_valider);
+        listeClients = view.findViewById(R.id.listeClient);
+        btnFiltre = view.findViewById(R.id.btn_filtrer_clients);
+        btnAjoutClient = view.findViewById(R.id.btn_ajouter_client);
     }
 
-    private void observeViewModel() {
-        viewModel.getNom().observe(getViewLifecycleOwner(), s -> { if (!s.equals(editTextNom.getText().toString())) editTextNom.setText(s); });
-        viewModel.getAdresse().observe(getViewLifecycleOwner(), s -> { if (!s.equals(editTextAdresse.getText().toString())) editTextAdresse.setText(s); });
-        viewModel.getCodePostal().observe(getViewLifecycleOwner(), s -> { if (!s.equals(editTextCodePostal.getText().toString())) editTextCodePostal.setText(s); });
-        viewModel.getVille().observe(getViewLifecycleOwner(), s -> { if (!s.equals(editTextVille.getText().toString())) editTextVille.setText(s); });
-        viewModel.getEmail().observe(getViewLifecycleOwner(), s -> { if (!s.equals(editTextEmail.getText().toString())) editTextEmail.setText(s); });
-        viewModel.getTelephone().observe(getViewLifecycleOwner(), s -> { if (!s.equals(editTextTelephone.getText().toString())) editTextTelephone.setText(s); });
+    private void setupRecyclerView() {
+        //TODO a modifier
+        // 1) LayoutManager
+        listeClients.setLayoutManager(new LinearLayoutManager(getContext()));
+
+        ClientStorageManager storageManager =
+                new ClientStorageManager(requireContext());
+
+        // 2) Données temporaires (remplacées plus tard par JSON/API)
+        clientsSource.clear();
+        clientsSource.addAll(storageManager.loadClients());
+
+        clientsDisplayed.clear();
+        clientsDisplayed.addAll(clientsSource);
+
+        // 3) Adapter
+        clientAdapter = new ClientAdapter(clientsDisplayed, new ClientAdapter.OnClientActionListener() {
+            @Override
+            public void onDetails(Client client) {
+                ClientFormDialogFragment dialog = ClientFormDialogFragment.newInstance(
+                        ClientFormDialogFragment.MODE_DETAILS, client
+                );
+                dialog.show(getParentFragmentManager(), "client_details");
+            }
+
+            @Override
+            public void onModifier(Client client) {
+                // On capture l'index avant d'ouvrir le dialog
+                int index = clientsDisplayed.indexOf(client);
+                if (index < 0) return;
+
+                ClientFormDialogFragment dialog = ClientFormDialogFragment.newInstance(
+                        ClientFormDialogFragment.MODE_EDIT, client
+                );
+
+                dialog.setOnClientEditedListener((nom, adresse, cp, ville, tel, mail) -> {
+                    try {
+                        // 1) Construire un NOUVEAU client (car champs final)
+                        Client updated = new Client.Builder()
+                                .setId(client.getId())                 // conserve
+                                .setNom(nom)
+                                .setAdresse(adresse)
+                                .setCodePostal(cp)
+                                .setVille(ville)
+                                .setTelephone(tel)
+                                .setAdresseMail(mail)
+                                .setUtilisateur(client.getUtilisateur()) // conserve
+                                .setDateSaisie(client.getDateSaisie())   // conserve
+                                .build();
+
+                        // 2) Remplacer dans la liste
+                        clientsDisplayed.set(index, updated);
+
+                        // 3) Notifier l’adapter
+                        clientAdapter.notifyItemChanged(index);
+
+                        // (optionnel) si tu veux aussi “sauvegarder” ailleurs (ViewModel/API), c’est ici.
+                        boolean modiffier = storageManager.modifierClient(updated);
+
+                        if (modiffier) {
+                            Toast.makeText(getContext(), "Client '" + updated.getNom() + "' modifié et enregistré localement !", Toast.LENGTH_SHORT)
+                                    .show();
+
+                            ClientsFragmentViewModel clientsVM = new ViewModelProvider(requireActivity())
+                                    .get(ClientsFragmentViewModel.class);
+
+                            clientsVM.publierClientCree(updated);
+                        } else {
+                            Toast.makeText(getContext(),
+                                    "Client '" + updated.getNom() + "' modifié et enregistré localement a échoué",
+                                    Toast.LENGTH_SHORT).show();
+                        }
+
+                    } catch (IllegalStateException ex) {
+                        android.widget.Toast.makeText(requireContext(),
+                                ex.getMessage(),
+                                android.widget.Toast.LENGTH_LONG).show();
+                    }
+                });
+
+                dialog.show(getParentFragmentManager(), "client_edit");
+            }
+
+            @Override
+            public void onNouvelleCommande(Client client) {
+                CommandesFragmentViewModel commandesVM =
+                        new ViewModelProvider(requireActivity()).get(CommandesFragmentViewModel.class);
+
+                commandesVM.startNouvelleCommandePour(client);
+
+                BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottomNavigation);
+                if (bottomNav != null) {
+                    bottomNav.setSelectedItemId(R.id.nav_commandes);
+                }
+            }
+        });
+        listeClients.setAdapter(clientAdapter);
     }
 
     private void setupListeners() {
-        editTextNom.addTextChangedListener(createTextWatcher(viewModel::setNom));
-        editTextAdresse.addTextChangedListener(createTextWatcher(viewModel::setAdresse));
-        editTextCodePostal.addTextChangedListener(createTextWatcher(viewModel::setCodePostal));
-        editTextVille.addTextChangedListener(createTextWatcher(viewModel::setVille));
-        editTextEmail.addTextChangedListener(createTextWatcher(viewModel::setEmail));
-        editTextTelephone.addTextChangedListener(createTextWatcher(viewModel::setTelephone));
+        btnAjoutClient.setOnClickListener(v -> {
+            // (Optionnel mais propre) vider le formulaire avant d’ouvrir l’écran d’ajout
+            ClientsAjoutFragmentViewModel ajoutVM =
+                    new ViewModelProvider(requireActivity()).get(ClientsAjoutFragmentViewModel.class);
+            ajoutVM.clear(); // :contentReference[oaicite:1]{index=1}
 
-        btnAnnuler.setOnClickListener(v -> showCancelConfirmationDialog());
+            // Trouver le container qui héberge ce Fragment, puis remplacer par ClientsAjoutFragment
+            View parent = (View) requireView().getParent();
+            int containerId = parent != null ? parent.getId() : View.NO_ID;
 
-        btnValider.setOnClickListener(v -> {
-            // Validation côté UI
-            if (!isFormulaireValide()) {
-                return; // Arrête l'exécution si le formulaire est invalide
+            if (containerId == View.NO_ID) {
+                // Fallback : si jamais le parent n'a pas d'ID, tu devras mettre ici l'ID du container de ton activity_main.xml
+                // ex: containerId = R.id.nav_host_fragment_activity_main;
+                throw new IllegalStateException("Impossible de trouver l'id du container parent pour la navigation.");
             }
 
-            // Création de l'objet
-            try {
-                Client nouveauClient = new Client.Builder()
-                        .setNom(viewModel.getNom().getValue())
-                        .setAdresse(viewModel.getAdresse().getValue())
-                        .setCodePostal(viewModel.getCodePostal().getValue())
-                        .setVille(viewModel.getVille().getValue())
-                        .setAdresseMail(viewModel.getEmail().getValue())
-                        .setTelephone(viewModel.getTelephone().getValue())
-                        .setUtilisateur("UtilisateurActuel") // TODO à remplacer par la gestion de l'utilisateur connecté
-                        .setDateSaisie(new Date())
-                        .build();
-
-                // Enregistrement du client en local
-                boolean sauvegarde = storageManager.addClient(nouveauClient);
-
-                if (sauvegarde) {
-                    Toast.makeText(getContext(), "Client '" + nouveauClient.getNom() + "' ajouté et enregistré localement !", Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(getContext(), "Client '" + nouveauClient.getNom() + "' ajouté, mais l'enregistrement local a échoué", Toast.LENGTH_LONG).show();
-                }
-
-                // Vide le ViewModel et retourne à l'accueil
-                viewModel.clear();
-                navigateToHome();
-
-            } catch (IllegalStateException e) {
-                new AlertDialog.Builder(requireContext())
-                        .setTitle("Erreur de validation")
-                        .setMessage("Une erreur inattendue est survenue lors de la création du client : " + e.getMessage())
-                        .setPositiveButton("OK", null)
-                        .show();
-            }
+            getParentFragmentManager()
+                    .beginTransaction()
+                    .replace(containerId, new ClientsAjoutFragment())
+                    .addToBackStack("clients_ajout")
+                    .commit();
         });
+
+        btnFiltre.setOnClickListener(v -> showFilterDialog());
+
     }
 
-    /**
-     * Valide les champs du formulaire et affiche des erreurs sur les champs invalides.
-     * @return true si tous les champs sont valides, false sinon.
-     */
-    private boolean isFormulaireValide() {
-        // Nettoie les erreurs précédentes
-        editTextNom.setError(null);
-        editTextAdresse.setError(null);
-        editTextCodePostal.setError(null);
-        editTextVille.setError(null);
-        editTextEmail.setError(null);
-        editTextTelephone.setError(null);
+    private void showFilterDialog() {
+        View dialogView = LayoutInflater.from(requireContext())
+                .inflate(R.layout.dialog_filter_clients, null, false);
 
-        String nom = viewModel.getNom().getValue();
-        if (nom == null || nom.trim().isEmpty()) {
-            editTextNom.setError("Le nom du client est requis");
-            editTextNom.requestFocus();
-            return false;
-        }
+        com.google.android.material.textfield.TextInputEditText edtNom = dialogView.findViewById(R.id.filtreNom);
+        com.google.android.material.textfield.TextInputEditText edtAdresse = dialogView.findViewById(R.id.filtreAdresse);
+        com.google.android.material.textfield.TextInputEditText edtCP = dialogView.findViewById(R.id.filtreCodePostal);
+        com.google.android.material.textfield.TextInputEditText edtVille = dialogView.findViewById(R.id.filtreVille);
+        com.google.android.material.textfield.TextInputEditText edtTel = dialogView.findViewById(R.id.filtreTelephone);
 
-        String adresse = viewModel.getAdresse().getValue();
-        if (adresse == null || adresse.trim().isEmpty()) {
-            editTextAdresse.setError("L'adresse est requise");
-            editTextAdresse.requestFocus();
-            return false;
-        }
-
-        String codePostal = viewModel.getCodePostal().getValue();
-        if (codePostal == null || !codePostal.matches("\\d{5}")) {
-            editTextCodePostal.setError("Le code postal doit contenir 5 chiffres");
-            editTextCodePostal.requestFocus();
-            return false;
-        }
-
-        String ville = viewModel.getVille().getValue();
-        if (ville == null || ville.trim().isEmpty()) {
-            editTextVille.setError("La ville est requise");
-            editTextVille.requestFocus();
-            return false;
-        }
-
-        String email = viewModel.getEmail().getValue();
-        if (email == null || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            editTextEmail.setError("L'adresse e-mail n'est pas valide");
-            editTextEmail.requestFocus();
-            return false;
-        }
-
-        String telephone = viewModel.getTelephone().getValue();
-        if (telephone == null || !telephone.matches("\\d{10}")) {
-            editTextTelephone.setError("Le téléphone doit contenir 10 chiffres");
-            editTextTelephone.requestFocus();
-            return false;
-        }
-
-        return true;
-    }
-
-    private void showCancelConfirmationDialog() {
-        new AlertDialog.Builder(requireContext())
-                .setTitle("Annuler la saisie")
-                .setMessage("Voulez-vous vraiment annuler ? Toutes les données saisies seront perdues.")
-                .setPositiveButton("Oui, annuler", (dialog, which) -> {
-                    viewModel.clear();
-                    navigateToHome();
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Filtrer les clients")
+                .setView(dialogView)
+                .setNegativeButton("Annuler", (d, w) -> d.dismiss())
+                .setNeutralButton("Réinitialiser", (d, w) -> resetFilter())
+                .setPositiveButton("Appliquer", (d, w) -> {
+                    applyFilter(
+                            edtNom.getText().toString(),
+                            edtAdresse.getText().toString(),
+                            edtCP.getText().toString(),
+                            edtVille.getText().toString(),
+                            edtTel.getText().toString()
+                    );
                 })
-                .setNegativeButton("Non", null)
                 .show();
     }
 
-    private void navigateToHome() {
-        BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottomNavigation);
-        if (bottomNav != null) {
-            bottomNav.setSelectedItemId(R.id.nav_home);
-        }
+    @SuppressLint("NotifyDataSetChanged")
+    private void applyFilter(String nom, String adresse, String cp, String ville, String tel) {
+        clientsDisplayed.clear();
+        clientsDisplayed.addAll(clientService.filter(nom, adresse, cp, ville, tel));
+        clientAdapter.notifyDataSetChanged();
     }
 
-    private TextWatcher createTextWatcher(TextUpdate action) {
-        return new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { action.update(s.toString()); }
-            @Override public void afterTextChanged(Editable s) {}
-        };
+    @SuppressLint("NotifyDataSetChanged")
+    private void resetFilter() {
+        ClientStorageManager storageManager =
+                new ClientStorageManager(requireContext());
+        clientsDisplayed.clear();
+        clientsDisplayed.addAll(storageManager.loadClients());
+        clientAdapter.notifyDataSetChanged();
     }
 
-    @FunctionalInterface
-    interface TextUpdate {
-        void update(String text);
+
+    private void observeViewModel() {
+        viewModel.getClientCree().observe(getViewLifecycleOwner(), client -> {
+            if (client == null) return;
+
+            clientsSource.add(client);
+            clientAdapter.notifyItemInserted(clientsSource.size() - 1);
+            listeClients.scrollToPosition(clientsSource.size() - 1);
+
+            // éviter un doublon si re-émission
+            viewModel.consommerClientCree();
+        });
     }
 }

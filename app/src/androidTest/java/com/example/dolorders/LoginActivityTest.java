@@ -11,6 +11,7 @@ import static androidx.test.espresso.matcher.ViewMatchers.hasErrorText;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -41,16 +42,9 @@ import java.security.GeneralSecurityException;
 @RunWith(AndroidJUnit4.class)
 public class LoginActivityTest {
 
-    // ========== VARIABLES GLOBALES DE TEST ==========
-    // À MODIFIER avec les vraies credentials de test
-//    private static final String TEST_URL = "stub";  // "stub" pu "bouchon" pour le mode bouchon
-//    private static final String TEST_USERNAME = "admin";
-//    private static final String TEST_PASSWORD = "admin123";
-
-    // Pour les tests avec de vraies credentials :
-     private static final String TEST_URL = "A MODIFIER";
-     private static final String TEST_USERNAME = "A MODIFIER";
-     private static final String TEST_PASSWORD = "A MODIFIER";
+    private static final String TEST_URL = BuildConfig.TEST_URL;
+    private static final String TEST_USERNAME = BuildConfig.TEST_USERNAME;
+    private static final String TEST_PASSWORD = BuildConfig.TEST_PASSWORD;
 
     @Rule
     public ActivityScenarioRule<LoginActivity> activityRule =
@@ -126,7 +120,7 @@ public class LoginActivityTest {
         // ASSERT 2 : Vérifie que la clé API est stockée de manière CRYPTÉE
         String storedApiKey = securePrefs.getString("api_key", null);
         assertNotNull("La clé API devrait être stockée", storedApiKey);
-        assertTrue("La clé API ne devrait pas être vide", !storedApiKey.isEmpty());
+        assertFalse("La clé API ne devrait pas être vide", storedApiKey.isEmpty());
 
         // ASSERT 3 : Vérifie que les autres informations sont stockées
         String storedUrl = securePrefs.getString("base_url", null);

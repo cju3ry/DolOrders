@@ -1,127 +1,293 @@
+// java
 package com.example.dolorders.ui;
 
-import androidx.test.core.app.ActivityScenario;
-import androidx.test.espresso.matcher.ViewMatchers;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import com.example.dolorders.MainActivity;
-import com.example.dolorders.R;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-// Importations statiques pour Espresso
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.action.ViewActions.closeSoftKeyboard;
-import static androidx.test.espresso.action.ViewActions.typeText;
+import static androidx.test.espresso.action.ViewActions.replaceText;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 
+import android.os.Bundle;
+import android.os.SystemClock;
+import android.view.View;
+
+import androidx.annotation.NonNull;
+import androidx.fragment.app.FragmentFactory;
+import androidx.fragment.app.testing.FragmentScenario;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.test.core.app.ApplicationProvider;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+
+import com.example.dolorders.Client;
+import com.example.dolorders.R;
+import com.example.dolorders.data.storage.ClientStorageManager;
+
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+
 @RunWith(AndroidJUnit4.class)
 public class ClientsFragmentTest {
 
-    /**
-     * On lance la MainActivity directement. Elle se chargera de créer et d'afficher
-     * le ClientsFragment, avec le bon thème et le bon contexte.
-     */
+    private FragmentScenario<ClientsFragment> scenario;
+
     @Before
     public void setup() {
-        ActivityScenario.launch(MainActivity.class);
-        onView(withId(R.id.nav_clients)).perform(click());
+        // 1) On seed le stockage utilisé par ClientService.filter() et resetFilter()
+        seedLocalStorageWithKnownClients();
+
+        // 2) On lance le fragment après le seed
+        scenario = FragmentScenario.launchInContainer(
+                ClientsFragment.class,
+                (Bundle) null,
+                R.style.Theme_DolOrders, // adapte si besoin
+                (FragmentFactory) null
+        );
+    }
+
+    private void seedLocalStorageWithKnownClients() {
+        ClientStorageManager storage = new ClientStorageManager(
+                ApplicationProvider.getApplicationContext()
+        );
+
+        storage.clearClients();
+
+        List<Client> seeded = new ArrayList<>();
+        Date seedDate = new GregorianCalendar(2026, Calendar.JANUARY, 23).getTime();
+
+        seeded.add(new Client.Builder()
+                .setId("c1")
+                .setNom("DUPONT")
+                .setAdresse("1 rue de Test")
+                .setCodePostal("75000")
+                .setVille("Paris")
+                .setTelephone("0102030405")
+                .setAdresseMail("dupont@test.fr")
+                .setUtilisateur("ui-test")
+                .setDateSaisie(seedDate)
+                .build());
+
+        seeded.add(new Client.Builder()
+                .setId("c2")
+                .setNom("MARTIN")
+                .setAdresse("10 avenue République")
+                .setCodePostal("69000")
+                .setVille("Lyon")
+                .setTelephone("0607080910")
+                .setAdresseMail("martin@test.fr")
+                .setUtilisateur("ui-test")
+                .setDateSaisie(seedDate)
+                .build());
+
+        seeded.add(new Client.Builder()
+                .setId("c3")
+                .setNom("DURAND")
+                .setAdresse("5 place Bellecour")
+                .setCodePostal("69002")
+                .setVille("Lyon")
+                .setTelephone("0611111111")
+                .setAdresseMail("durand@test.fr")
+                .setUtilisateur("ui-test")
+                .setDateSaisie(seedDate)
+                .build());
+
+        boolean ok = storage.saveClients(seeded);
+        if (!ok) throw new AssertionError("Impossible de seed le fichier clients_data.json pour les tests.");
     }
 
     @Test
-    public void lesChampsEtBoutonsSontAffichesCorrectement() {
-        onView(withId(R.id.edit_text_nom)).check(matches(isDisplayed()));
-        onView(withId(R.id.edit_text_adresse)).check(matches(isDisplayed()));
-        onView(withId(R.id.edit_text_code_postal)).check(matches(isDisplayed()));
-        onView(withId(R.id.edit_text_ville)).check(matches(isDisplayed()));
-        onView(withId(R.id.edit_text_email)).check(matches(isDisplayed()));
-        onView(withId(R.id.edit_text_telephone)).check(matches(isDisplayed()));
-        onView(withId(R.id.btn_annuler)).check(matches(isDisplayed()));
-        onView(withId(R.id.btn_valider)).check(matches(isDisplayed()));
+    public void fragment_afficheRecyclerView_etBoutons() {
+        onView(withId(R.id.listeClient)).check(matches(isDisplayed()));
+        onView(withId(R.id.btn_filtrer_clients)).check(matches(isDisplayed()));
+        onView(withId(R.id.btn_ajouter_client)).check(matches(isDisplayed()));
     }
 
     @Test
-    public void validation_afficheErreurSiNomEstVide() {
-        onView(withId(R.id.btn_valider)).perform(click());
-        onView(withId(R.id.edit_text_nom)).check(matches(ViewMatchers.hasErrorText("Le nom du client est requis")));
+    public void ajoutClient_viaViewModel_ajouteUneLigneDansRecyclerView() {
+        // Given: on pousse un client via le ViewModel observé par le fragment
+        scenario.onFragment(fragment -> {
+            // utiliser le scope du fragment pour récupérer le même ViewModel que le fragment
+            ClientsFragmentViewModel vm =
+                    new ViewModelProvider(fragment).get(ClientsFragmentViewModel.class);
+
+            Client c = new Client.Builder()
+                    .setId("test-1")
+                    .setNom("DUPONT")
+                    .setAdresse("1 rue de Test")
+                    .setCodePostal("75000")
+                    .setVille("Paris")
+                    .setTelephone("0102030405")
+                    .setAdresseMail("dupont@test.fr")
+                    .setUtilisateur("ui-test")
+                    .setDateSaisie(new GregorianCalendar(2026, Calendar.JANUARY, 23).getTime())
+                    .build();
+
+            vm.publierClientCree(c);
+        });
+
+        // Petite attente pour laisser le LiveData notifier l'UI (simple et efficace en UI tests)
+        SystemClock.sleep(300);
+
+        // Then: le RecyclerView doit contenir au moins 1 item
+        onView(withId(R.id.listeClient)).check(new RecyclerViewItemCountAtLeastAssertion(1));
     }
 
     @Test
-    public void validation_afficheErreurSiAdresseEstVide() {
-        // On remplit le nom pour passer à la validation suivante
-        onView(withId(R.id.edit_text_nom)).perform(typeText("Client Test"));
-        onView(withId(R.id.btn_valider)).perform(click());
-        onView(withId(R.id.edit_text_adresse)).check(matches(ViewMatchers.hasErrorText("L'adresse est requise")));
+    public void filtre_ouvreDialog_etAfficheChamps() {
+        onView(withId(R.id.btn_filtrer_clients)).perform(click());
+
+        onView(withText("Filtrer les clients")).check(matches(isDisplayed()));
+        onView(withId(R.id.filtreNom)).check(matches(isDisplayed()));
+        onView(withId(R.id.filtreAdresse)).check(matches(isDisplayed()));
+        onView(withId(R.id.filtreCodePostal)).check(matches(isDisplayed()));
+        onView(withId(R.id.filtreVille)).check(matches(isDisplayed()));
+        onView(withId(R.id.filtreTelephone)).check(matches(isDisplayed()));
+
+        onView(withText("Annuler")).check(matches(isDisplayed()));
+        onView(withText("Réinitialiser")).check(matches(isDisplayed()));
+        onView(withText("Appliquer")).check(matches(isDisplayed()));
     }
 
     @Test
-    public void validation_afficheErreurSiCodePostalEstInvalide() {
-        onView(withId(R.id.edit_text_nom)).perform(typeText("Client Test"));
-        onView(withId(R.id.edit_text_adresse)).perform(typeText("123 rue du Test"));
-        onView(withId(R.id.edit_text_code_postal)).perform(typeText("123")); // CP invalide
-        onView(withId(R.id.btn_valider)).perform(click());
-        onView(withId(R.id.edit_text_code_postal)).check(matches(ViewMatchers.hasErrorText("Le code postal doit contenir 5 chiffres")));
+    public void filtre_appliquerPuisReset_retablitLaListe() {
+        // On s'assure qu'il y a au moins 1 client au départ via le ViewModel
+        scenario.onFragment(fragment -> {
+            ClientsFragmentViewModel vm =
+                    new ViewModelProvider(fragment).get(ClientsFragmentViewModel.class);
+
+            Client c = new Client.Builder()
+                    .setId("test-2")
+                    .setNom("MARTIN")
+                    .setAdresse("2 rue de Test")
+                    .setCodePostal("69000")
+                    .setVille("Lyon")
+                    .setTelephone("0607080910")
+                    .setAdresseMail("martin@test.fr")
+                    .setUtilisateur("ui-test")
+                    .setDateSaisie(new GregorianCalendar(2026, Calendar.JANUARY, 23).getTime())
+                    .build();
+
+            vm.publierClientCree(c);
+        });
+        SystemClock.sleep(300);
+
+        // Vérif initiale
+        onView(withId(R.id.listeClient)).check(new RecyclerViewItemCountAtLeastAssertion(1));
+
+        // Ouvrir filtre
+        onView(withId(R.id.btn_filtrer_clients)).perform(click());
+
+        // Mettre un critère improbable (supposé ne matcher personne)
+        onView(withId(R.id.filtreNom)).perform(replaceText("___NO_MATCH___"), closeSoftKeyboard());
+
+        // Appliquer
+        onView(withText("Appliquer")).perform(click());
+        SystemClock.sleep(300);
+
+        // Attendu: liste vide (si ton filter(...) renvoie bien 0 résultats quand aucun match)
+        onView(withId(R.id.listeClient)).check(new RecyclerViewItemCountAssertion(0));
+
+        // Réouvrir filtre et reset
+        onView(withId(R.id.btn_filtrer_clients)).perform(click());
+        onView(withText("Réinitialiser")).perform(click());
+        SystemClock.sleep(300);
+
+        // Attendu: la liste revient (au moins 1)
+        onView(withId(R.id.listeClient)).check(new RecyclerViewItemCountAtLeastAssertion(1));
     }
 
     @Test
-    public void validation_afficheErreurSiVilleEstVide() {
-        onView(withId(R.id.edit_text_nom)).perform(typeText("Client Test"));
-        onView(withId(R.id.edit_text_adresse)).perform(typeText("123 rue du Test"));
-        onView(withId(R.id.edit_text_code_postal)).perform(typeText("69001"));
-        onView(withId(R.id.btn_valider)).perform(click());
-        onView(withId(R.id.edit_text_ville)).check(matches(ViewMatchers.hasErrorText("La ville est requise")));
+    public void boutonAjouterClient_remplaceParClientsAjoutFragment() {
+        onView(withId(R.id.btn_ajouter_client)).perform(click());
+        SystemClock.sleep(300);
+
+        // Vérification "structurelle" : le Fragment courant est ClientsAjoutFragment
+        scenario.onFragment(fragment -> {
+            // Le fragment visible après replace est dans le parent FragmentManager.
+            // On récupère le dernier fragment ajouté.
+            int count = fragment.getParentFragmentManager().getFragments().size();
+            if (count == 0) throw new AssertionError("Aucun fragment trouvé après navigation.");
+
+            androidx.fragment.app.Fragment top =
+                    fragment.getParentFragmentManager().getFragments().get(count - 1);
+
+            if (!(top instanceof ClientsAjoutFragment)) {
+                throw new AssertionError("Fragment attendu: ClientsAjoutFragment, obtenu: " + top.getClass().getName());
+            }
+        });
     }
 
-    @Test
-    public void validation_afficheErreurSiEmailEstInvalide() {
-        onView(withId(R.id.edit_text_nom)).perform(typeText("Client Test"));
-        onView(withId(R.id.edit_text_adresse)).perform(typeText("123 rue du Test"));
-        onView(withId(R.id.edit_text_code_postal)).perform(typeText("69001"));
-        onView(withId(R.id.edit_text_ville)).perform(typeText("Lyon"));
-        onView(withId(R.id.edit_text_email)).perform(typeText("email-invalide")); // Email invalide
-        onView(withId(R.id.btn_valider)).perform(click());
-        onView(withId(R.id.edit_text_email)).check(matches(ViewMatchers.hasErrorText("L'adresse e-mail n'est pas valide")));
+    // -----------------------------
+    // Helpers RecyclerView assertions
+    // -----------------------------
+
+    private static class RecyclerViewItemCountAssertion implements androidx.test.espresso.ViewAssertion {
+        private final int expectedCount;
+
+        RecyclerViewItemCountAssertion(int expectedCount) {
+            this.expectedCount = expectedCount;
+        }
+
+        @Override
+        public void check(View view, androidx.test.espresso.NoMatchingViewException noViewFoundException) {
+            if (noViewFoundException != null) throw noViewFoundException;
+            RecyclerView rv = (RecyclerView) view;
+            RecyclerView.Adapter<?> adapter = rv.getAdapter();
+            if (adapter == null) throw new AssertionError("RecyclerView adapter est null");
+            if (adapter.getItemCount() != expectedCount) {
+                throw new AssertionError("ItemCount attendu=" + expectedCount + " obtenu=" + adapter.getItemCount());
+            }
+        }
     }
 
-    @Test
-    public void validation_afficheErreurSiTelephoneEstInvalide() {
-        onView(withId(R.id.edit_text_nom)).perform(typeText("Client Test"));
-        onView(withId(R.id.edit_text_adresse)).perform(typeText("123 rue du Test"));
-        onView(withId(R.id.edit_text_code_postal)).perform(typeText("69001"));
-        onView(withId(R.id.edit_text_ville)).perform(typeText("Lyon"));
-        onView(withId(R.id.edit_text_email)).perform(typeText("test@test.com"));
-        onView(withId(R.id.edit_text_telephone)).perform(typeText("010203")); // Tel invalide
-        onView(withId(R.id.btn_valider)).perform(click());
-        onView(withId(R.id.edit_text_telephone)).check(matches(ViewMatchers.hasErrorText("Le téléphone doit contenir 10 chiffres")));
+    private static class RecyclerViewItemCountAtLeastAssertion implements androidx.test.espresso.ViewAssertion {
+        private final int minCount;
+
+        RecyclerViewItemCountAtLeastAssertion(int minCount) {
+            this.minCount = minCount;
+        }
+
+        @Override
+        public void check(View view, androidx.test.espresso.NoMatchingViewException noViewFoundException) {
+            if (noViewFoundException != null) throw noViewFoundException;
+            RecyclerView rv = (RecyclerView) view;
+            RecyclerView.Adapter<?> adapter = rv.getAdapter();
+            if (adapter == null) throw new AssertionError("RecyclerView adapter est null");
+            int count = adapter.getItemCount();
+            if (count < minCount) {
+                throw new AssertionError("ItemCount attendu >= " + minCount + " obtenu=" + count);
+            }
+        }
     }
 
-    @Test
-    public void validation_reussitAvecTousLesChampsValides() {
-        onView(withId(R.id.edit_text_nom)).check(matches(isDisplayed()));
+    // (Optionnel) matcher utile si tu veux cibler un item spécifique plus tard
+    @NonNull
+    private static Matcher<View> withRecyclerViewSizeAtLeast(int minSize) {
+        return new TypeSafeMatcher<View>() {
+            @Override
+            protected boolean matchesSafely(View view) {
+                if (!(view instanceof RecyclerView)) return false;
+                RecyclerView rv = (RecyclerView) view;
+                return rv.getAdapter() != null && rv.getAdapter().getItemCount() >= minSize;
+            }
 
-        onView(withId(R.id.edit_text_nom)).perform(typeText("Martin SARL"), closeSoftKeyboard());
-        onView(withId(R.id.edit_text_adresse)).perform(typeText("123 Avenue du Test"), closeSoftKeyboard());
-        onView(withId(R.id.edit_text_code_postal)).perform(typeText("69001"), closeSoftKeyboard());
-        onView(withId(R.id.edit_text_ville)).perform(typeText("Lyon"), closeSoftKeyboard());
-        onView(withId(R.id.edit_text_email)).perform(typeText("contact@martin.fr"), closeSoftKeyboard());
-        onView(withId(R.id.edit_text_telephone)).perform(typeText("0401020304"), closeSoftKeyboard());
-
-        onView(withId(R.id.btn_valider)).perform(click());
-
-        onView(withId(R.id.nav_home)).check(matches(isDisplayed()));
-    }
-
-    @Test
-    public void boutonAnnuler_afficheLaBoiteDeDialogueDeConfirmation() {
-        onView(withId(R.id.btn_annuler)).perform(click());
-        onView(withText("Annuler la saisie")).check(matches(isDisplayed()));
-        onView(withText("Voulez-vous vraiment annuler ? Toutes les données saisies seront perdues.")).check(matches(isDisplayed()));
-        onView(withText("Oui, annuler")).check(matches(isDisplayed()));
-        onView(withText("Non")).check(matches(isDisplayed()));
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("RecyclerView avec taille >= " + minSize);
+            }
+        };
     }
 }

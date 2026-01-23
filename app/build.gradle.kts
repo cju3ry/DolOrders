@@ -1,6 +1,18 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
 }
+
+val localProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+
+fun secret(name: String): String =
+    System.getenv(name)
+        ?: localProps.getProperty(name)
+        ?: ""
 
 android {
     namespace = "com.example.dolorders"
@@ -16,6 +28,15 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Injection dans BuildConfig (disponible côté app + androidTest)
+        buildConfigField("String", "TEST_URL", "\"${secret("TEST_URL")}\"")
+        buildConfigField("String", "TEST_USERNAME", "\"${secret("TEST_USERNAME")}\"")
+        buildConfigField("String", "TEST_PASSWORD", "\"${secret("TEST_PASSWORD")}\"")
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     buildTypes {
@@ -35,6 +56,7 @@ android {
 
 dependencies {
     implementation(libs.firebase.crashlytics.buildtools)
+    implementation(libs.recyclerview)
     val lifecycleVersion = "2.8.3"
     val activityVersion = "1.11.0"
     val fragmentVersion = "1.8.1"
@@ -69,6 +91,9 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation("org.mockito:mockito-core:4.8.0")
     testImplementation("org.mockito:mockito-inline:4.8.0")
+    testImplementation("org.robolectric:robolectric:4.12.2")
+    testImplementation("androidx.test:core:1.5.0")
+    testImplementation("com.google.truth:truth:1.4.2")
 
     // Tests instrumentés (AndroidTest)
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
@@ -76,6 +101,7 @@ dependencies {
     androidTestImplementation ("androidx.test.espresso:espresso-intents:3.5.1")
     androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.test:rules:1.5.0")
+
 
     // FragmentScenario -> version compatible avec AndroidX Test 1.5.x
     debugImplementation("androidx.fragment:fragment-testing:1.6.2")
