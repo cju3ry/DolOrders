@@ -11,6 +11,7 @@ import static androidx.test.espresso.matcher.ViewMatchers.hasErrorText;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -119,7 +120,7 @@ public class LoginActivityTest {
         // ASSERT 2 : Vérifie que la clé API est stockée de manière CRYPTÉE
         String storedApiKey = securePrefs.getString("api_key", null);
         assertNotNull("La clé API devrait être stockée", storedApiKey);
-        assertTrue("La clé API ne devrait pas être vide", !storedApiKey.isEmpty());
+        assertFalse("La clé API ne devrait pas être vide", storedApiKey.isEmpty());
 
         // ASSERT 3 : Vérifie que les autres informations sont stockées
         String storedUrl = securePrefs.getString("base_url", null);

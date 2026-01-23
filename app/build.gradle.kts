@@ -91,6 +91,9 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation("org.mockito:mockito-core:4.8.0")
     testImplementation("org.mockito:mockito-inline:4.8.0")
+    testImplementation("org.robolectric:robolectric:4.12.2")
+    testImplementation("androidx.test:core:1.5.0")
+    testImplementation("com.google.truth:truth:1.4.2")
 
     // Tests instrumentés (AndroidTest)
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
@@ -98,6 +101,7 @@ dependencies {
     androidTestImplementation ("androidx.test.espresso:espresso-intents:3.5.1")
     androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.test:rules:1.5.0")
+
 
     // FragmentScenario -> version compatible avec AndroidX Test 1.5.x
     debugImplementation("androidx.fragment:fragment-testing:1.6.2")

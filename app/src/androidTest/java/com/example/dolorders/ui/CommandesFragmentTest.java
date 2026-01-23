@@ -82,8 +82,8 @@ public class CommandesFragmentTest {
 
         onView(withId(R.id.auto_complete_client))
                 .check(matches(hasErrorText("Veuillez sélectionner un client")));
-    }
         }
+    }
 
 //    @Test
 //    public void validation_afficheErreurSiArticlesSontVides() {
