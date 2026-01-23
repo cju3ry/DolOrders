@@ -105,26 +105,16 @@ public class CommandesFragmentViewModel extends ViewModel {
         lignesCommande.setValue(new java.util.ArrayList<>());
     }
 
-    public void chargerDonneesDeTest() {
-        Client.Builder clientBuilder = new Client.Builder()
-                .setId("001")
-                .setNom("Dupont")
-                .setAdresse("10 rue de la Paix")
-                .setCodePostal("75002")
-                .setVille("Paris")
-                .setAdresseMail("test@example.com")
-                .setTelephone("0123456789")
-                .setUtilisateur("userTest")
-                .setDateSaisie(new java.util.Date());
-        List<Client> clientsFactices = new ArrayList<>();
-        clientsFactices.add(clientBuilder.build());
-        listeClients.setValue(clientsFactices);
-
+    public void chargerProduitsDeTest() {
         List<Produit> produitsFactices = new ArrayList<>();
         produitsFactices.add(new Produit(101, "Stylo Bleu", 1.50));
         produitsFactices.add(new Produit(102, "Cahier A4", 3.20));
         produitsFactices.add(new Produit(103, "Clavier USB", 25.00));
         produitsFactices.add(new Produit(104, "Souris sans fil", 18.50));
         listeProduits.setValue(produitsFactices);
+    }
+
+    public void setListeClients(List<Client> clients) {
+        this.listeClients.setValue(clients);
     }
 }
