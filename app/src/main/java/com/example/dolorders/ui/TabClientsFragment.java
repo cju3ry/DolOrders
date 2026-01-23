@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.dolorders.Client;
 import com.example.dolorders.R;
+import com.example.dolorders.data.storage.ClientStorageManager;
 import com.example.dolorders.ui.adapters.ClientsAttenteAdapter;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
@@ -24,7 +25,8 @@ import java.util.List;
 public class TabClientsFragment extends Fragment {
 
     private ClientsAttenteAdapter adapter;
-    private List<Client> fakeList; // Liste locale pour l'exemple
+    private List<Client> ListeClients;
+    private ClientStorageManager clientStorageManager;
 
     @Nullable
     @Override
@@ -39,16 +41,14 @@ public class TabClientsFragment extends Fragment {
         RecyclerView recyclerView = view.findViewById(R.id.recycler_clients_attente);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
+        clientStorageManager = new ClientStorageManager(requireContext());
+
         // --- Données factices ---
-        fakeList = new ArrayList<>();
-        try {
-            fakeList.add(new Client.Builder().setId("1").setNom("Jean Dupont").setVille("Paris").setAdresse("Rue A").setCodePostal("75000").setAdresseMail("a@a.com").setTelephone("0101010101").setUtilisateur("Admin").setDateSaisie(new java.util.Date()).build());
-            fakeList.add(new Client.Builder().setId("2").setNom("Marie Curie").setVille("Lyon").setAdresse("Rue B").setCodePostal("69000").setAdresseMail("b@b.com").setTelephone("0202020202").setUtilisateur("Admin").setDateSaisie(new java.util.Date()).build());
-        } catch (Exception e) { e.printStackTrace(); }
-        // ------------------------
+        ListeClients = new ArrayList<>();
+        ListeClients = clientStorageManager.loadClients();
 
         // Initialisation de l'adapter avec le Listener
-        adapter = new ClientsAttenteAdapter(fakeList, new ClientsAttenteAdapter.OnClientActionListener() {
+        adapter = new ClientsAttenteAdapter(ListeClients, new ClientsAttenteAdapter.OnClientActionListener() {
             @Override
             public void onEdit(Client client) {
                 modifierClient(client);
@@ -69,7 +69,7 @@ public class TabClientsFragment extends Fragment {
                 .setMessage("Voulez-vous vraiment supprimer " + client.getNom() + " de la liste d'attente ?")
                 .setPositiveButton("Supprimer", (dialog, which) -> {
                     // Suppression de la liste visuelle
-                    fakeList.remove(client);
+                    ListeClients.remove(client);
                     adapter.notifyDataSetChanged();
                     // TODO: Supprimer aussi du fichier JSON
                     Toast.makeText(getContext(), "Client supprimé", Toast.LENGTH_SHORT).show();
