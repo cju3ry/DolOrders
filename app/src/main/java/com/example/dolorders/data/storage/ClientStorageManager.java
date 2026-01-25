@@ -18,6 +18,7 @@ import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Gestionnaire de stockage des clients dans un fichier JSON local.
@@ -210,17 +211,10 @@ public class ClientStorageManager {
         }
 
         List<Client> clients = loadClients();
-        boolean modified = clients.stream()
-                .anyMatch(c -> c.getId() == updatedClient.getId());
-
-        if (!modified) {
-            Log.w(TAG, "Client à modifier non trouvé : ID=" + updatedClient.getId());
-            return false;
-        }
 
         // Remplacer le client
         for (int i = 0; i < clients.size(); i++) {
-            if (clients.get(i).getId() == updatedClient.getId()) {
+            if (Objects.equals(clients.get(i).getId(), updatedClient.getId())) {
                 clients.set(i, updatedClient);
                 break;
             }
