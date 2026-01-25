@@ -21,6 +21,8 @@ public class CommandesFragmentViewModel extends ViewModel {
     private final MutableLiveData<String> date = new MutableLiveData<>();
     private final MutableLiveData<List<Client>> listeClients = new MutableLiveData<>();
     private final MutableLiveData<List<Produit>> listeProduits = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> fromAccueil = new MutableLiveData<>(false);
+    private final MutableLiveData<Boolean> fromListeClients = new MutableLiveData<>(false);
 
     // --- Getters ---
     public LiveData<List<LigneCommande>> getLignesCommande() { return lignesCommande; }
@@ -28,6 +30,30 @@ public class CommandesFragmentViewModel extends ViewModel {
     public LiveData<String> getDate() { return date; }
     public LiveData<List<Client>> getListeClients() { return listeClients; }
     public LiveData<List<Produit>> getListeProduits() { return listeProduits; }
+    public LiveData<Boolean> getFromAccueil() { return fromAccueil; }
+    public LiveData<Boolean> getFromListeClients() { return fromListeClients; }
+
+    public void setFromAccueil() {
+        fromAccueil.setValue(true);
+        fromListeClients.setValue(false);
+    }
+
+    public void setFromListeClients() {
+        fromListeClients.setValue(true);
+        fromAccueil.setValue(false);
+    }
+
+    public boolean consumeFromAccueil() {
+        Boolean value = fromAccueil.getValue();
+        fromAccueil.setValue(false);
+        return value != null && value;
+    }
+
+    public boolean consumeFromListeClients() {
+        Boolean value = fromListeClients.getValue();
+        fromListeClients.setValue(false);
+        return value != null && value;
+    }
 
     public void setClientSelectionne(Client client) {
         this.clientSelectionne.setValue(client);

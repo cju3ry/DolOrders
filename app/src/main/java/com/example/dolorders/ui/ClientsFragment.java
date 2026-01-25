@@ -157,6 +157,7 @@ public class ClientsFragment extends Fragment {
                 CommandesFragmentViewModel commandesVM =
                         new ViewModelProvider(requireActivity()).get(CommandesFragmentViewModel.class);
 
+                commandesVM.setFromListeClients();
                 commandesVM.startNouvelleCommandePour(client);
 
                 BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottomNavigation);
@@ -252,4 +253,5 @@ public class ClientsFragment extends Fragment {
             viewModel.consommerClientCree();
         });
     }
+
 }

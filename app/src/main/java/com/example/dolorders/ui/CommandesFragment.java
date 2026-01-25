@@ -24,6 +24,9 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.example.dolorders.ui.ClientsFragment;
+import com.example.dolorders.ui.HomeFragment;
+
 import com.example.dolorders.Client;
 import com.example.dolorders.Commande;
 import com.example.dolorders.LigneCommande;
@@ -391,7 +394,22 @@ public class CommandesFragment extends Fragment {
 
     private void navigateToHome() {
         BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottomNavigation);
-        if (bottomNav != null) bottomNav.setSelectedItemId(R.id.nav_home);
+
+        if (bottomNav == null) {
+            return;
+        }
+
+        boolean fromListeClients = viewModel.consumeFromListeClients();
+        boolean fromAccueil = viewModel.consumeFromAccueil(); 
+
+        if (fromListeClients) {
+            bottomNav.setSelectedItemId(R.id.nav_clients);
+            return;
+        }
+
+        if (fromAccueil) {
+            bottomNav.setSelectedItemId(R.id.nav_home);
+        }
     }
 
     private void showDatePickerDialog() {
