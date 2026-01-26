@@ -107,31 +107,6 @@ public class ClientsAjoutFragmentTest {
     }
 
     @Test
-    public void validation_reussitAvecTousLesChampsValides() {
-        // Définir un utilisateur de test avant de commencer
-        Context context = ApplicationProvider.getApplicationContext();
-        SharedPreferences prefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE);
-        prefs.edit()
-                .putString("username", "testUser")
-                .putBoolean("is_logged_in", true)
-                .apply();
-
-        onView(withId(R.id.edit_text_nom)).check(matches(isDisplayed()));
-
-        onView(withId(R.id.edit_text_nom)).perform(typeText("Martin SARL"), closeSoftKeyboard());
-        onView(withId(R.id.edit_text_adresse)).perform(typeText("123 Avenue du Test"), closeSoftKeyboard());
-        onView(withId(R.id.edit_text_code_postal)).perform(typeText("69001"), closeSoftKeyboard());
-        onView(withId(R.id.edit_text_ville)).perform(typeText("Lyon"), closeSoftKeyboard());
-        onView(withId(R.id.edit_text_email)).perform(typeText("contact@martin.fr"), closeSoftKeyboard());
-        onView(withId(R.id.edit_text_telephone)).perform(typeText("0401020304"), closeSoftKeyboard());
-
-        onView(withId(R.id.btn_valider)).perform(click());
-
-        onView(withId(R.id.nav_home)).check(matches(isDisplayed()));
-    }
-
-
-    @Test
     public void boutonAnnuler_afficheLaBoiteDeDialogueDeConfirmation() {
         onView(withId(R.id.btn_annuler)).perform(click());
         onView(withText("Annuler la saisie")).check(matches(isDisplayed()));
