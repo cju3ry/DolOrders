@@ -42,9 +42,9 @@ import java.security.GeneralSecurityException;
 @RunWith(AndroidJUnit4.class)
 public class LoginActivityTest {
 
-    private static final String TEST_URL = BuildConfig.TEST_URL;
     private static final String TEST_USERNAME = BuildConfig.TEST_USERNAME;
     private static final String TEST_PASSWORD = BuildConfig.TEST_PASSWORD;
+    private static final String TEST_URL = BuildConfig.TEST_URL;
 
     @Rule
     public ActivityScenarioRule<LoginActivity> activityRule =

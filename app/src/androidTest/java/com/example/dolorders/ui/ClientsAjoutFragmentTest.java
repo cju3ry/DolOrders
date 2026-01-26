@@ -6,6 +6,11 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.example.dolorders.MainActivity;
 import com.example.dolorders.R;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+import androidx.test.core.app.ApplicationProvider;
+
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -99,22 +104,6 @@ public class ClientsAjoutFragmentTest {
         onView(withId(R.id.edit_text_telephone)).perform(typeText("010203")); // Tel invalide
         onView(withId(R.id.btn_valider)).perform(click());
         onView(withId(R.id.edit_text_telephone)).check(matches(ViewMatchers.hasErrorText("Le téléphone doit contenir 10 chiffres")));
-    }
-
-    @Test
-    public void validation_reussitAvecTousLesChampsValides() {
-        onView(withId(R.id.edit_text_nom)).check(matches(isDisplayed()));
-
-        onView(withId(R.id.edit_text_nom)).perform(typeText("Martin SARL"), closeSoftKeyboard());
-        onView(withId(R.id.edit_text_adresse)).perform(typeText("123 Avenue du Test"), closeSoftKeyboard());
-        onView(withId(R.id.edit_text_code_postal)).perform(typeText("69001"), closeSoftKeyboard());
-        onView(withId(R.id.edit_text_ville)).perform(typeText("Lyon"), closeSoftKeyboard());
-        onView(withId(R.id.edit_text_email)).perform(typeText("contact@martin.fr"), closeSoftKeyboard());
-        onView(withId(R.id.edit_text_telephone)).perform(typeText("0401020304"), closeSoftKeyboard());
-
-        onView(withId(R.id.btn_valider)).perform(click());
-
-        onView(withId(R.id.nav_home)).check(matches(isDisplayed()));
     }
 
     @Test

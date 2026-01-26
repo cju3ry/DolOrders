@@ -24,11 +24,15 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.example.dolorders.ui.ClientsFragment;
+import com.example.dolorders.ui.HomeFragment;
+
 import com.example.dolorders.Client;
 import com.example.dolorders.Commande;
 import com.example.dolorders.LigneCommande;
 import com.example.dolorders.Produit;
 import com.example.dolorders.R;
+import com.example.dolorders.data.storage.ClientStorageManager;
 import com.example.dolorders.data.storage.commande.CommandeStorageManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
@@ -36,6 +40,7 @@ import com.google.android.material.textfield.TextInputEditText;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -45,6 +50,10 @@ public class CommandesFragment extends Fragment {
 
     private CommandesFragmentViewModel viewModel;
     private CommandeStorageManager commandeStorage;
+
+    private ClientStorageManager clientStorageManager;
+
+    private List<Client> listeClients;
 
     // Vues
     private AutoCompleteTextView autoCompleteClient, autoCompleteArticle;
@@ -74,11 +83,15 @@ public class CommandesFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         setupViews(view);
-        observeViewModel();
         setupListeners();
+        clientStorageManager = new ClientStorageManager(requireContext());
+        listeClients = clientStorageManager.loadClients();
 
+        viewModel.setListeClients(listeClients);
+        viewModel.chargerProduitsDeTest();
+
+        observeViewModel();
         if (viewModel.getClientSelectionne().getValue() == null) {
-            viewModel.chargerDonneesDeTest();
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE);
             viewModel.setDate(sdf.format(new Date()));
         }
@@ -382,7 +395,22 @@ public class CommandesFragment extends Fragment {
 
     private void navigateToHome() {
         BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottomNavigation);
-        if (bottomNav != null) bottomNav.setSelectedItemId(R.id.nav_home);
+
+        if (bottomNav == null) {
+            return;
+        }
+
+        boolean fromListeClients = viewModel.consumeFromListeClients();
+        boolean fromAccueil = viewModel.consumeFromAccueil(); 
+
+        if (fromListeClients) {
+            bottomNav.setSelectedItemId(R.id.nav_clients);
+            return;
+        }
+
+        if (fromAccueil) {
+            bottomNav.setSelectedItemId(R.id.nav_home);
+        }
     }
 
     private void showDatePickerDialog() {

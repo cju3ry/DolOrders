@@ -21,6 +21,8 @@ public class CommandesFragmentViewModel extends ViewModel {
     private final MutableLiveData<String> date = new MutableLiveData<>();
     private final MutableLiveData<List<Client>> listeClients = new MutableLiveData<>();
     private final MutableLiveData<List<Produit>> listeProduits = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> fromAccueil = new MutableLiveData<>(false);
+    private final MutableLiveData<Boolean> fromListeClients = new MutableLiveData<>(false);
 
     // --- Getters ---
     public LiveData<List<LigneCommande>> getLignesCommande() { return lignesCommande; }
@@ -28,6 +30,30 @@ public class CommandesFragmentViewModel extends ViewModel {
     public LiveData<String> getDate() { return date; }
     public LiveData<List<Client>> getListeClients() { return listeClients; }
     public LiveData<List<Produit>> getListeProduits() { return listeProduits; }
+    public LiveData<Boolean> getFromAccueil() { return fromAccueil; }
+    public LiveData<Boolean> getFromListeClients() { return fromListeClients; }
+
+    public void setFromAccueil() {
+        fromAccueil.setValue(true);
+        fromListeClients.setValue(false);
+    }
+
+    public void setFromListeClients() {
+        fromListeClients.setValue(true);
+        fromAccueil.setValue(false);
+    }
+
+    public boolean consumeFromAccueil() {
+        Boolean value = fromAccueil.getValue();
+        fromAccueil.setValue(false);
+        return value != null && value;
+    }
+
+    public boolean consumeFromListeClients() {
+        Boolean value = fromListeClients.getValue();
+        fromListeClients.setValue(false);
+        return value != null && value;
+    }
 
     public void setClientSelectionne(Client client) {
         this.clientSelectionne.setValue(client);
@@ -105,26 +131,16 @@ public class CommandesFragmentViewModel extends ViewModel {
         lignesCommande.setValue(new java.util.ArrayList<>());
     }
 
-    public void chargerDonneesDeTest() {
-        Client.Builder clientBuilder = new Client.Builder()
-                .setId("001")
-                .setNom("Dupont")
-                .setAdresse("10 rue de la Paix")
-                .setCodePostal("75002")
-                .setVille("Paris")
-                .setAdresseMail("test@example.com")
-                .setTelephone("0123456789")
-                .setUtilisateur("userTest")
-                .setDateSaisie(new java.util.Date());
-        List<Client> clientsFactices = new ArrayList<>();
-        clientsFactices.add(clientBuilder.build());
-        listeClients.setValue(clientsFactices);
-
+    public void chargerProduitsDeTest() {
         List<Produit> produitsFactices = new ArrayList<>();
         produitsFactices.add(new Produit(101, "Stylo Bleu", 1.50));
         produitsFactices.add(new Produit(102, "Cahier A4", 3.20));
         produitsFactices.add(new Produit(103, "Clavier USB", 25.00));
         produitsFactices.add(new Produit(104, "Souris sans fil", 18.50));
         listeProduits.setValue(produitsFactices);
+    }
+
+    public void setListeClients(List<Client> clients) {
+        this.listeClients.setValue(clients);
     }
 }

@@ -9,6 +9,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.example.dolorders.R;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -18,6 +19,7 @@ public class HomeFragment extends Fragment {
 
     private TextView textClients, textCommandes, textTotal;
     private MaterialButton btnNewClient, btnNewCommande, btnPendingData;
+    private CommandesFragmentViewModel commandesViewModel;
 
     @Nullable
     @Override
@@ -32,6 +34,7 @@ public class HomeFragment extends Fragment {
         btnNewClient = view.findViewById(R.id.btnNewClient);
         btnNewCommande = view.findViewById(R.id.btnNewCommande);
         btnPendingData = view.findViewById(R.id.btnPendingData);
+        commandesViewModel = new ViewModelProvider(requireActivity()).get(CommandesFragmentViewModel.class);
 
         // Exemple de données fictives
         updateStats(28, 96);
@@ -43,6 +46,7 @@ public class HomeFragment extends Fragment {
         });
 
         btnNewCommande.setOnClickListener(v -> {
+            commandesViewModel.setFromAccueil();
             BottomNavigationView bottomNav = getActivity().findViewById(R.id.bottomNavigation);
             bottomNav.setSelectedItemId(R.id.nav_commandes);
         });
