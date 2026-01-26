@@ -88,6 +88,7 @@ public class CommandesFragment extends Fragment {
         listeClients = clientStorageManager.loadClients();
 
         viewModel.setListeClients(listeClients);
+        viewModel.chargerProduitsDeTest();
 
         observeViewModel();
         if (viewModel.getClientSelectionne().getValue() == null) {

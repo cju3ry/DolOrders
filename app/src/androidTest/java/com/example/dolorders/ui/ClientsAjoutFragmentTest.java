@@ -6,6 +6,11 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.example.dolorders.MainActivity;
 import com.example.dolorders.R;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+import androidx.test.core.app.ApplicationProvider;
+
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -103,6 +108,14 @@ public class ClientsAjoutFragmentTest {
 
     @Test
     public void validation_reussitAvecTousLesChampsValides() {
+        // Définir un utilisateur de test avant de commencer
+        Context context = ApplicationProvider.getApplicationContext();
+        SharedPreferences prefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE);
+        prefs.edit()
+                .putString("username", "testUser")
+                .putBoolean("is_logged_in", true)
+                .apply();
+
         onView(withId(R.id.edit_text_nom)).check(matches(isDisplayed()));
 
         onView(withId(R.id.edit_text_nom)).perform(typeText("Martin SARL"), closeSoftKeyboard());
@@ -116,6 +129,7 @@ public class ClientsAjoutFragmentTest {
 
         onView(withId(R.id.nav_home)).check(matches(isDisplayed()));
     }
+
 
     @Test
     public void boutonAnnuler_afficheLaBoiteDeDialogueDeConfirmation() {
