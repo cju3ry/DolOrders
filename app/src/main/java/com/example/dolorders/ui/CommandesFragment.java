@@ -30,6 +30,7 @@ import com.example.dolorders.ui.HomeFragment;
 import com.example.dolorders.Client;
 import com.example.dolorders.Commande;
 import com.example.dolorders.LigneCommande;
+import com.example.dolorders.LoginActivity;
 import com.example.dolorders.Produit;
 import com.example.dolorders.R;
 import com.example.dolorders.data.storage.ClientStorageManager;
@@ -66,11 +67,16 @@ public class CommandesFragment extends Fragment {
     private LinearLayout layoutInfosClient, containerDetailsCommande;
     private TextView tvTotalFinal, tvNbArticles;
 
+    private String nomUtilisateur;
+
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         viewModel = new ViewModelProvider(requireActivity()).get(CommandesFragmentViewModel.class);
         commandeStorage = new CommandeStorageManager(requireContext());
+        nomUtilisateur = LoginActivity.getUsername(requireContext());
+
     }
 
     @Nullable
@@ -361,8 +367,7 @@ public class CommandesFragment extends Fragment {
                     .setClient(client)
                     .setDateCommande(dateCommande)
                     .setLignesCommande(lignes)
-                    .setRemiseGlobale(0.0)
-                    .setUtilisateur("Admin")
+                    .setUtilisateur(nomUtilisateur)
                     .build();
 
             // Enregistrement de la commande en local
