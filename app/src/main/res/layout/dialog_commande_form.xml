@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Client"
+            android:textStyle="bold" />
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/edtClientNom"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:enabled="false"
+            android:textColor="@android:color/black"
+            android:text="Nom du Client" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Date de la commande"
+            android:textStyle="bold"/>
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/edtDateCommande"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="date"
+            android:focusable="false"
+            android:clickable="true"
+            android:drawableEnd="@android:drawable/ic_menu_my_calendar" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#E0E0E0"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Ajouter un article"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp"/>
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp">
+
+            <AutoCompleteTextView
+                android:id="@+id/autoCompleteAjoutArticle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Rechercher un produit..."
+                android:inputType="text" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="#E0E0E0"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="0dp">
+
+            <TextView android:text="@string/commande_article_col_libelle" android:textStyle="bold" android:textColor="@android:color/black" android:layout_weight="3" android:layout_width="0dp" android:layout_height="wrap_content" android:textSize="11sp"/>
+            <TextView android:text="@string/commande_article_col_pu" android:gravity="end" android:textStyle="bold" android:textColor="@android:color/black" android:layout_weight="1.5" android:layout_width="0dp" android:layout_height="wrap_content" android:textSize="11sp"/>
+            <TextView android:text="@string/commande_article_col_qte" android:gravity="center" android:textStyle="bold" android:textColor="@android:color/black" android:layout_weight="1.2" android:layout_width="0dp" android:layout_height="wrap_content" android:textSize="11sp"/>
+            <TextView android:text="@string/commande_article_col_rem" android:gravity="center" android:textStyle="bold" android:textColor="@android:color/black" android:layout_weight="1.2" android:layout_width="0dp" android:layout_height="wrap_content" android:textSize="11sp"/>
+            <TextView android:text="@string/commande_article_col_total" android:gravity="end" android:textStyle="bold" android:textColor="@android:color/black" android:layout_weight="1.8" android:layout_width="0dp" android:layout_height="wrap_content" android:textSize="11sp"/>
+            <View android:layout_width="34dp" android:layout_height="1dp"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/containerLignesCommande"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:divider="?android:dividerHorizontal"
+            android:showDividers="middle"
+            android:background="@drawable/bg_border_gray"
+            android:minHeight="100dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="16dp"
+            android:padding="8dp"
+            android:background="#F5F5F5">
+
+            <TextView
+                android:id="@+id/tvDialogNbArticles"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 article"
+                android:textSize="14sp"
+                android:textStyle="italic"/>
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="TOTAL :"
+                android:textStyle="bold"
+                android:textColor="@color/blue_dolibarr"/>
+
+            <TextView
+                android:id="@+id/tvDialogTotalFinal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="0.00 €"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/blue_dolibarr"/>
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

@@ -4,6 +4,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -20,9 +21,17 @@ import java.util.Locale;
 public class CommandesAttenteAdapteur extends RecyclerView.Adapter<CommandesAttenteAdapteur.ViewHolder> {
 
     private final List<Commande> commandes;
+    private final OnCommandeActionListener listener; // Interface de callback
 
-    public CommandesAttenteAdapteur(List<Commande> commandes) {
+    // Définition de l'interface pour communiquer avec le Fragment
+    public interface OnCommandeActionListener {
+        void onEdit(Commande commande);
+        void onDelete(Commande commande);
+    }
+
+    public CommandesAttenteAdapteur(List<Commande> commandes, OnCommandeActionListener listener) {
         this.commandes = commandes;
+        this.listener = listener;
     }
 
     @NonNull
@@ -37,16 +46,35 @@ public class CommandesAttenteAdapteur extends RecyclerView.Adapter<CommandesAtte
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Commande cmd = commandes.get(position);
 
+        // Affichage des données (ID, Nom Client, Date)
         holder.tvId.setText(cmd.getId());
         holder.tvNom.setText(cmd.getClient().getNom());
 
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE);
         holder.tvDate.setText(sdf.format(cmd.getDateCommande()));
 
-        // Gestion du menu 3 points
+        // GESTION DU MENU 3 POINTS (Popup)
         holder.btnMore.setOnClickListener(v -> {
-            // Ici tu pourras implémenter un PopupMenu (Modifier, Supprimer)
-            Toast.makeText(v.getContext(), "Options pour " + cmd.getId(), Toast.LENGTH_SHORT).show();
+            PopupMenu popup = new PopupMenu(v.getContext(), v);
+
+            // On réutilise le même fichier de menu que pour les clients
+            // Assure-toi que res/menu/menu_options_item.xml existe bien
+            popup.inflate(R.menu.menu_options_item);
+
+            popup.setOnMenuItemClickListener(item -> {
+                int id = item.getItemId();
+                if (id == R.id.action_edit) {
+                    // On appelle la méthode onEdit du fragment
+                    if (listener != null) listener.onEdit(cmd);
+                    return true;
+                } else if (id == R.id.action_delete) {
+                    // On appelle la méthode onDelete du fragment
+                    if (listener != null) listener.onDelete(cmd);
+                    return true;
+                }
+                return false;
+            });
+            popup.show();
         });
     }
 
