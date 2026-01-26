@@ -46,7 +46,7 @@ public class TabClientsFragment extends Fragment {
         clientStorageManager = new ClientStorageManager(requireContext());
         dialog = new ClientFormDialogFragment();
 
-        // --- Données ---
+        // --- Données factices ---
         listeClients = new ArrayList<>();
         listeClients = clientStorageManager.loadClients();
 
@@ -71,11 +71,23 @@ public class TabClientsFragment extends Fragment {
                 .setTitle("Suppression")
                 .setMessage("Voulez-vous vraiment supprimer " + client.getNom() + " de la liste d'attente ?")
                 .setPositiveButton("Supprimer", (dialog, which) -> {
-                    // Suppression de la liste visuelle
-                    listeClients.remove(client);
-                    adapter.notifyDataSetChanged();
-                    // TODO: Supprimer aussi du fichier JSON
-                    Toast.makeText(getContext(), "Client supprimé", Toast.LENGTH_SHORT).show();
+
+                    // 1. On essaie d'abord de supprimer du fichier
+                    boolean success = clientStorageManager.deleteClient(client);
+
+                    if (success) {
+                        // 2. Si ça a marché dans le fichier, on met à jour l'écran
+                        listeClients.remove(client);
+                        adapter.notifyDataSetChanged();
+                        Toast.makeText(getContext(), "Client supprimé définitivement", Toast.LENGTH_SHORT).show();
+                    } else {
+                        // 3. Sinon, on avertit l'utilisateur (probablement que le client n'était pas dans le fichier)
+                        Toast.makeText(getContext(), "Erreur : Client introuvable dans le fichier (ID: " + client.getId() + ")", Toast.LENGTH_LONG).show();
+
+                        // Optionnel : Si c'était juste une donnée en mémoire (fake), on le supprime quand même de la vue
+                        // listeClients.remove(client);
+                        // adapter.notifyDataSetChanged();
+                    }
                 })
                 .setNegativeButton("Annuler", null)
                 .show();
@@ -109,7 +121,7 @@ public class TabClientsFragment extends Fragment {
                 //notifier l'adaptateur
                 adapter.notifyItemChanged(index);
 
-                // Si tu veux aussi “sauvegarder” ailleurs (ViewModel/API)
+                // Si tu veux aussi “sauvegarder” ailleurs
                 boolean modiffier = clientStorageManager.modifierClient(updated);
 
                 if (modiffier) {

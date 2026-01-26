@@ -216,15 +216,56 @@ public class ClientStorageManager {
         for (int i = 0; i < clients.size(); i++) {
             if (Objects.equals(clients.get(i).getId(), updatedClient.getId())) {
                 clients.set(i, updatedClient);
-                break;
+                i = clients.size(); // Forcer la sortie de la boucle
             }
         }
-
 
         // Sauvegarde centralisée
         return saveClients(clients);
     }
 
+    /**
+     * Supprime un client existant du stockage.
+     *
+     * @param client Client à supprimer (identifié par son ID)
+     * @return true si le client a été trouvé et supprimé, false sinon
+     */
+    /**
+     * Supprime un client existant du stockage.
+     *
+     * @param client Client à supprimer (identifié par son ID)
+     * @return true si le client a été trouvé et supprimé, false sinon
+     */
+    public boolean deleteClient(Client client) {
+        if (client == null) {
+            Log.w(TAG, "Tentative de suppression d'un client null");
+            return false;
+        }
 
+        List<Client> clients = loadClients();
+        int indexToDelete = -1;
+
+        // On parcourt la liste pour trouver l'index du client
+        for (int i = 0; i < clients.size(); i++) {
+            Client c = clients.get(i);
+            // Vérification sécurisée de l'ID
+            if (c.getId() != null && c.getId().equals(client.getId())) {
+                indexToDelete = i;
+            }
+        }
+
+        // Si l'index est resté à -1, c'est qu'on n'a rien trouvé
+        if (indexToDelete == -1) {
+            Log.w(TAG, "Client à supprimer non trouvé : ID=" + client.getId());
+            return false;
+        }
+
+        // Suppression effective
+        clients.remove(indexToDelete);
+        Log.d(TAG, "Client supprimé avec succès : ID=" + client.getId());
+
+        // Sauvegarde de la liste mise à jour
+        return saveClients(clients);
+    }
 }
 
