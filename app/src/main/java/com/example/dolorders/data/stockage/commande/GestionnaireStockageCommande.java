@@ -214,6 +214,38 @@ public class GestionnaireStockageCommande {
     }
 
     /**
+     * Supprime toutes les commandes associées à un client
+     *
+     * @param clientId ID du client dont les commandes doivent être supprimées
+     * @return true si la suppression a réussi, false sinon
+     */
+    public boolean deleteCommandesByClient(String clientId) {
+        if (clientId == null || clientId.isEmpty()) {
+            Log.w(TAG, "Tentative de suppression avec un ID client null ou vide");
+            return false;
+        }
+
+        List<Commande> commandes = loadCommandes();
+        boolean modified = false;
+
+        for (int i = commandes.size() - 1; i >= 0; i--) {
+            if (commandes.get(i).getClient() != null &&
+                    clientId.equals(commandes.get(i).getClient().getId())) {
+                commandes.remove(i);
+                modified = true;
+            }
+        }
+
+        if (modified) {
+            Log.d(TAG, "Commandes du client " + clientId + " supprimées");
+            return saveCommandes(commandes);
+        } else {
+            Log.d(TAG, "Aucune commande trouvée pour le client : " + clientId);
+            return true;
+        }
+    }
+
+    /**
      * Recherche une commande par son ID.
      *
      * @param commandeId ID de la commande recherchée

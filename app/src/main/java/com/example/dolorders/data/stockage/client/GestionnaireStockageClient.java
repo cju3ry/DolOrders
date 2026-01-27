@@ -3,6 +3,7 @@ package com.example.dolorders.data.stockage.client;
 import android.content.Context;
 import android.util.Log;
 
+import com.example.dolorders.data.stockage.commande.GestionnaireStockageCommande;
 import com.example.dolorders.objet.Client;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -32,6 +33,8 @@ public class GestionnaireStockageClient {
 
     private final Context context;
     private final Gson gson;
+
+    private boolean isCommandeClientSuppr;
 
     public GestionnaireStockageClient(Context context) {
         this.context = context;
@@ -230,13 +233,8 @@ public class GestionnaireStockageClient {
      * @param client Client à supprimer (identifié par son ID)
      * @return true si le client a été trouvé et supprimé, false sinon
      */
-    /**
-     * Supprime un client existant du stockage.
-     *
-     * @param client Client à supprimer (identifié par son ID)
-     * @return true si le client a été trouvé et supprimé, false sinon
-     */
     public boolean deleteClient(Client client) {
+        isCommandeClientSuppr = false;
         if (client == null) {
             Log.w(TAG, "Tentative de suppression d'un client null");
             return false;
@@ -260,7 +258,17 @@ public class GestionnaireStockageClient {
             return false;
         }
 
-        // Suppression effective
+        // Suppression des commandes associées au client
+        GestionnaireStockageCommande gestionnaireCommande = new GestionnaireStockageCommande(context);
+        isCommandeClientSuppr = gestionnaireCommande.deleteCommandesByClient(client.getId());
+        if (isCommandeClientSuppr) {
+            Log.d(TAG, "Les commandes du client ont été supprimées : ID=" + client.getId());
+        } else {
+            Log.w(TAG, "Échec de la suppression des commandes du client : ID=" + client.getId());
+            return false;
+        }
+
+        // Suppression effective du client
         clients.remove(indexToDelete);
         Log.d(TAG, "Client supprimé avec succès : ID=" + client.getId());
 
