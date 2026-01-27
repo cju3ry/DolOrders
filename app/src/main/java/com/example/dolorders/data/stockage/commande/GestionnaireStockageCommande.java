@@ -1,6 +1,7 @@
 package com.example.dolorders.data.stockage.commande;
 
 import android.content.Context;
+import android.os.Build;
 import android.util.Log;
 
 import com.example.dolorders.objet.Commande;
@@ -232,6 +233,40 @@ public class GestionnaireStockageCommande {
         }
 
         return null;
+    }
+
+    /**
+     * Modifie une commande existante dans la liste.
+     * La commande est identifiée par son ID.
+     *
+     * @param updatedCommande La commande avec les nouvelles données.
+     * @return true si la commande a été trouvée et la liste sauvegardée, false sinon.
+     */
+    public boolean modifierCommande(Commande updatedCommande) {
+        if (updatedCommande == null || updatedCommande.getId() == null) {
+            Log.w(TAG, "Tentative de modification avec une commande ou un ID null");
+            return false;
+        }
+
+        List<Commande> commandes = loadCommandes();
+        boolean found = false;
+
+        // On parcourt la liste pour trouver la commande et la remplacer
+        for (int i = 0; i < commandes.size(); i++) {
+            if (updatedCommande.getId().equals(commandes.get(i).getId())) {
+                commandes.set(i, updatedCommande);
+                found = true;
+                break; // On a trouvé, on peut arrêter la boucle
+            }
+        }
+
+        if (found) {
+            // Si on a trouvé la commande, on sauvegarde la liste complète mise à jour
+            return saveCommandes(commandes);
+        } else {
+            Log.w(TAG, "Aucune commande à modifier trouvée avec l'ID : " + updatedCommande.getId());
+            return false; // La commande n'a pas été trouvée, on ne sauvegarde rien
+        }
     }
 
     /**

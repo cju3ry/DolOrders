@@ -21,13 +21,14 @@ import com.example.dolorders.ui.CommandeFormDialogFragment;
 import com.example.dolorders.ui.adapteur.CommandesAttenteAdapteur;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class TabCommandesFragment extends Fragment {
 
     private GestionnaireStockageCommande commandeStorage;
     private CommandesAttenteAdapteur adapter;
-    private List<Commande> commandes;
+    private List<Commande> listeCommandes;
     private CommandeFormDialogFragment dialog;
 
     @Nullable
@@ -45,127 +46,139 @@ public class TabCommandesFragment extends Fragment {
         RecyclerView recyclerView = view.findViewById(R.id.recycler_commandes_attente);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        commandes = new ArrayList<>();
+        listeCommandes = new ArrayList<>();
         dialog = new CommandeFormDialogFragment();
 
         // Initialisation de l'adapter
-        adapter = new CommandesAttenteAdapteur(commandes, new CommandesAttenteAdapteur.OnCommandeActionListener() {
+        adapter = new CommandesAttenteAdapteur(listeCommandes, new CommandesAttenteAdapteur.OnCommandeActionListener() {
             @Override
             public void onEdit(Commande commande) {
+                // L'adapter nous dit qu'il faut éditer cette commande
                 ouvrirPopupModification(commande);
             }
 
             @Override
             public void onDelete(Commande commande) {
+                // L'adapter nous dit qu'il faut supprimer cette commande
                 confirmerSuppression(commande);
             }
         });
 
         recyclerView.setAdapter(adapter);
-
-        chargerCommandes();
+        // chargerCommandes() est appelé dans onResume, pas besoin de le faire ici.
     }
 
     @Override
     public void onResume() {
         super.onResume();
+        // onResume est le meilleur endroit pour rafraîchir la liste,
+        // car il est appelé à chaque fois que le fragment redevient visible.
         chargerCommandes();
     }
 
     private void chargerCommandes() {
         List<Commande> chargement = commandeStorage.loadCommandes();
-        commandes.clear();
+        listeCommandes.clear();
         if (chargement != null) {
-            commandes.addAll(chargement);
+            listeCommandes.addAll(chargement);
         }
         if (adapter != null) {
+            // Utiliser notifyDataSetChanged ici est acceptable car on recharge toute la liste.
             adapter.notifyDataSetChanged();
         }
     }
 
     private void confirmerSuppression(Commande commande) {
         new AlertDialog.Builder(requireContext())
-                .setTitle("Suppression")
+                .setTitle("Confirmation de suppression")
                 .setMessage("Supprimer la commande de " + commande.getClient().getNom() + " ?")
                 .setPositiveButton("Supprimer", (dialog, which) -> {
-
-                    /*
-                    boolean success = commandeStorage.deleteCommande(commande);
+                    // 1. On essaie de supprimer du fichier
+                    boolean success = commandeStorage.deleteCommande(commande.getId());
 
                     if (success) {
-                        commandes.remove(commande);
-                        adapter.notifyDataSetChanged();
+                        // 2. Si la suppression a réussi, on met à jour la liste et l'UI
+                        int index = trouverIndexCommandeParId(commande.getId());
+                        if (index != -1) {
+                            listeCommandes.remove(index);
+                            // Notifie l'adapter que l'élément à cette position a été retiré
+                            adapter.notifyItemRemoved(index);
+                        }
                         Toast.makeText(getContext(), "Commande supprimée", Toast.LENGTH_SHORT).show();
                     } else {
-                        Toast.makeText(getContext(), "Erreur lors de la suppression", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "Erreur lors de la suppression de la commande", Toast.LENGTH_SHORT).show();
                     }
-                    */
                 })
                 .setNegativeButton("Annuler", null)
                 .show();
     }
 
+    // Cette méthode est la nouvelle version, alignée sur votre logique "Client"
     private void ouvrirPopupModification(Commande commande) {
+        // Crée une instance du dialogue en lui passant la commande à modifier
         dialog = CommandeFormDialogFragment.newInstance();
-        dialog.setCommandeInitiale(commande);
+        dialog.setCommandeInitiale(commande); // On passe la commande initiale pour le pré-remplissage
+        dialog.setListeProduits(getListeProduitsDisponibles()); // On fournit la liste des produits
 
-        // IMPORTANT : On fournit la liste des produits pour l'ajout
-        dialog.setListeProduits(getListeProduitsDisponibles());
+        int index = trouverIndexCommandeParId(commande.getId());
+        if (index == -1) {
+            Toast.makeText(getContext(), "Erreur: Commande introuvable dans la liste.", Toast.LENGTH_SHORT).show();
+            return; // On ne peut pas modifier une commande qui n'est pas dans la liste
+        }
 
-        dialog.setOnCommandeEditedListener((date, lignes) -> {
+        // On écoute le résultat du dialogue
+        dialog.setOnCommandeEditedListener((dateModifiee, lignesModifiees) -> {
             try {
-                // Reconstruire la commande
+                // On reconstruit l'objet Commande avec les nouvelles informations
                 Commande updatedCommande = new Commande.Builder()
-                        .setId(commande.getId())
-                        .setClient(commande.getClient()) // Client inchangé
-                        .setDateCommande(date)           // Date inchangée (ou modifiée si tu as activé le champ)
-                        .setLignesCommande(lignes)       // Nouvelles lignes
-                        .setUtilisateur(commande.getUtilisateur())
+                        .setId(commande.getId()) // L'ID ne change pas
+                        .setClient(commande.getClient()) // Le client ne change pas
+                        .setDateCommande(dateModifiee) // La nouvelle date
+                        .setLignesCommande(lignesModifiees) // Les nouvelles lignes de commande
+                        .setUtilisateur(commande.getUtilisateur()) // L'utilisateur ne change pas
                         .build();
 
-                // Sauvegarde
-                // boolean success = commandeStorage.updateCommande(updatedCommande);
+                // On sauvegarde la commande modifiée dans le fichier
+                boolean success = commandeStorage.modifierCommande(updatedCommande);
 
-                /*
                 if (success) {
-                    // Mise à jour locale
-                    int index = trouverIndexCommande(commande);
-                    if (index != -1) {
-                        commandes.set(index, updatedCommande);
-                        adapter.notifyItemChanged(index);
-                    }
+                    // Si la sauvegarde a réussi, on met à jour la liste et l'UI
+                    listeCommandes.set(index, updatedCommande);
+                    // Notifie l'adapter que juste cet item a changé (plus performant)
+                    adapter.notifyItemChanged(index);
                     Toast.makeText(getContext(), "Commande mise à jour !", Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(getContext(), "Erreur sauvegarde commande", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Erreur lors de la sauvegarde de la commande", Toast.LENGTH_SHORT).show();
                 }
-                */
 
-            } catch (Exception e) {
-                Toast.makeText(getContext(), "Erreur : " + e.getMessage(), Toast.LENGTH_LONG).show();
+            } catch (IllegalStateException ex) {
+                // Attrape les erreurs du Commande.Builder (ex: panier vide)
+                Toast.makeText(requireContext(), ex.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
 
-        dialog.show(getParentFragmentManager(), "EditCommande");
+        // On affiche le dialogue
+        dialog.show(getParentFragmentManager(), "EditCommandeDialog");
     }
 
-    private int trouverIndexCommande(Commande c) {
-        for (int i = 0; i < commandes.size(); i++) {
-            if (commandes.get(i).getId().equals(c.getId())) {
+    private int trouverIndexCommandeParId(String commandeId) {
+        if (commandeId == null) return -1;
+        for (int i = 0; i < listeCommandes.size(); i++) {
+            if (commandeId.equals(listeCommandes.get(i).getId())) {
                 return i;
             }
         }
-        return -1;
+        return -1; // Retourne -1 si non trouvé
     }
 
-    // Méthode helper pour avoir les produits (copie de celle du ViewModel, ou à récupérer d'un Repository)
+    // Méthode utilitaire pour fournir la liste des produits disponibles au dialogue.
+    // À l'avenir, cela pourrait venir d'un ProduitStorageManager.
     private List<Produit> getListeProduitsDisponibles() {
         List<Produit> produits = new ArrayList<>();
-        // À terme, ça devrait venir d'un ProduitStorageManager
         produits.add(new Produit(101, "Stylo Bleu", 1.50));
         produits.add(new Produit(102, "Cahier A4", 3.20));
         produits.add(new Produit(103, "Clavier USB", 25.00));
         produits.add(new Produit(104, "Souris sans fil", 18.50));
-        // ... ajoute tes autres produits ici
         return produits;
     }
 }
