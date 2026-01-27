@@ -69,7 +69,7 @@ public class TableauClientsFragment extends Fragment {
     private void supprimerClient(Client client) {
         new AlertDialog.Builder(requireContext())
                 .setTitle("Suppression")
-                .setMessage("Voulez-vous vraiment supprimer " + client.getNom() + " de la liste d'attente ?")
+                .setMessage("Voulez-vous vraiment supprimer " + client.getNom() + " de la liste d'attente ?\nCela supprimera aussi les commandes associées.")
                 .setPositiveButton("Supprimer", (dialog, which) -> {
 
                     // 1. On essaie d'abord de supprimer du fichier
