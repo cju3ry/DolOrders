@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class TabCommandesFragment extends Fragment {
+public class TableauCommandesFragment extends Fragment {
 
     private GestionnaireStockageCommande commandeStorage;
     private CommandesAttenteAdapteur adapter;

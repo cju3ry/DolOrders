@@ -17,9 +17,9 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.DialogFragment;
 
-import com.example.dolorders.Commande;
-import com.example.dolorders.LigneCommande;
-import com.example.dolorders.Produit;
+import com.example.dolorders.objet.Commande;
+import com.example.dolorders.objet.LigneCommande;
+import com.example.dolorders.objet.Produit;
 import com.example.dolorders.R;
 import com.google.android.material.textfield.TextInputEditText;
 
