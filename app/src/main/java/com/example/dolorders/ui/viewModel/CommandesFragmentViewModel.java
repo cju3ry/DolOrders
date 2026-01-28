@@ -126,7 +126,8 @@ public class CommandesFragmentViewModel extends ViewModel {
                 if (l.getProduit().getId().equals(oldLigne.getProduit().getId())) {
                     if (newQty > 0 && newRemise >= 0 && newRemise <= 100) {
                         try {
-                            newList.add(new LigneCommande(l.getProduit(), newQty, newRemise));
+                            // Conserver l'état validé lors de la mise à jour
+                        newList.add(new LigneCommande(l.getProduit(), newQty, newRemise, l.isValidee()));
                         } catch (IllegalArgumentException e) {
                             // Si la création échoue, on garde l'ancienne ligne
                             newList.add(l);
@@ -135,6 +136,26 @@ public class CommandesFragmentViewModel extends ViewModel {
                         // Valeurs invalides, on garde l'ancienne ligne
                         newList.add(l);
                     }
+                } else {
+                    newList.add(l);
+                }
+            }
+            lignesCommande.setValue(newList);
+        }
+    }
+
+    /**
+     * Bascule l'état de validation d'une ligne (validée ↔ non validée).
+     * Une ligne validée ne peut plus être modifiée jusqu'à ce qu'elle soit dévalidée.
+     */
+    public void toggleValidationLigne(LigneCommande ligneToToggle) {
+        List<LigneCommande> currentList = lignesCommande.getValue();
+        if (currentList != null) {
+            List<LigneCommande> newList = new ArrayList<>();
+            for (LigneCommande l : currentList) {
+                if (l.getProduit().getId().equals(ligneToToggle.getProduit().getId())) {
+                    // Inverser l'état de validation
+                    newList.add(new LigneCommande(l.getProduit(), l.getQuantite(), l.getRemise(), !l.isValidee()));
                 } else {
                     newList.add(l);
                 }
