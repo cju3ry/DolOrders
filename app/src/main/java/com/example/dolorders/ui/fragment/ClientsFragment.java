@@ -19,6 +19,7 @@ import com.example.dolorders.data.stockage.client.GestionnaireStockageClient;
 import com.example.dolorders.objet.Client;
 import com.example.dolorders.service.ServiceClient;
 import com.example.dolorders.ui.adapteur.ClientAdapteur;
+import com.example.dolorders.ui.util.NavigationUtils;
 import com.example.dolorders.ui.viewModel.ClientsAjoutFragmentViewModel;
 import com.example.dolorders.ui.viewModel.ClientsFragmentViewModel;
 import com.example.dolorders.ui.viewModel.CommandesFragmentViewModel;
@@ -41,6 +42,13 @@ public class ClientsFragment extends Fragment {
     private ServiceClient serviceClient;
 
     private MaterialButton btnFiltre, btnAjoutClient;
+
+    // Champs de filtre mémorisés
+    private String filtreNom = "";
+    private String filtreAdresse = "";
+    private String filtreCP = "";
+    private String filtreVille = "";
+    private String filtreTel = "";
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -175,30 +183,15 @@ public class ClientsFragment extends Fragment {
 
     private void setupListeners() {
         btnAjoutClient.setOnClickListener(v -> {
-            // (Optionnel mais propre) vider le formulaire avant d’ouvrir l’écran d’ajout
-            ClientsAjoutFragmentViewModel ajoutVM =
-                    new ViewModelProvider(requireActivity()).get(ClientsAjoutFragmentViewModel.class);
-            ajoutVM.clear(); // :contentReference[oaicite:1]{index=1}
-
-            // Trouver le container qui héberge ce Fragment, puis remplacer par ClientsAjoutFragment
-            View parent = (View) requireView().getParent();
-            int containerId = parent != null ? parent.getId() : View.NO_ID;
-
-            if (containerId == View.NO_ID) {
-                // Fallback : si jamais le parent n'a pas d'ID, tu devras mettre ici l'ID du container de ton activity_main.xml
-                // ex: containerId = R.id.nav_host_fragment_activity_main;
-                throw new IllegalStateException("Impossible de trouver l'id du container parent pour la navigation.");
-            }
-
-            getParentFragmentManager()
-                    .beginTransaction()
-                    .replace(containerId, new ClientsAjoutFragment())
-                    .addToBackStack("clients_ajout")
-                    .commit();
+            createNewClient();
         });
 
         btnFiltre.setOnClickListener(v -> showFilterDialog());
 
+    }
+
+    private void createNewClient() {
+        NavigationUtils.navigateToClientAjout(this);
     }
 
     private void showFilterDialog() {
@@ -211,19 +204,28 @@ public class ClientsFragment extends Fragment {
         com.google.android.material.textfield.TextInputEditText edtVille = dialogView.findViewById(R.id.filtreVille);
         com.google.android.material.textfield.TextInputEditText edtTel = dialogView.findViewById(R.id.filtreTelephone);
 
+        // Remplir les champs avec les valeurs précédentes
+        edtNom.setText(filtreNom);
+        edtAdresse.setText(filtreAdresse);
+        edtCP.setText(filtreCP);
+        edtVille.setText(filtreVille);
+        edtTel.setText(filtreTel);
+
         new androidx.appcompat.app.AlertDialog.Builder(requireContext())
                 .setTitle("Filtrer les clients")
                 .setView(dialogView)
                 .setNegativeButton("Annuler", (d, w) -> d.dismiss())
-                .setNeutralButton("Réinitialiser", (d, w) -> resetFilter())
+                .setNeutralButton("Réinitialiser", (d, w) -> {
+                    resetFilter();
+                })
                 .setPositiveButton("Appliquer", (d, w) -> {
-                    applyFilter(
-                            edtNom.getText().toString(),
-                            edtAdresse.getText().toString(),
-                            edtCP.getText().toString(),
-                            edtVille.getText().toString(),
-                            edtTel.getText().toString()
-                    );
+                    // Mémoriser les valeurs saisies
+                    filtreNom = edtNom.getText().toString();
+                    filtreAdresse = edtAdresse.getText().toString();
+                    filtreCP = edtCP.getText().toString();
+                    filtreVille = edtVille.getText().toString();
+                    filtreTel = edtTel.getText().toString();
+                    applyFilter(filtreNom, filtreAdresse, filtreCP, filtreVille, filtreTel);
                 })
                 .show();
     }
@@ -237,6 +239,11 @@ public class ClientsFragment extends Fragment {
 
     @SuppressLint("NotifyDataSetChanged")
     private void resetFilter() {
+        filtreNom = "";
+        filtreAdresse = "";
+        filtreCP = "";
+        filtreVille = "";
+        filtreTel = "";
         GestionnaireStockageClient storageManager =
                 new GestionnaireStockageClient(requireContext());
         clientsDisplayed.clear();

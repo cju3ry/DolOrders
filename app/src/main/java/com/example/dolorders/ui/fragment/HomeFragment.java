@@ -12,6 +12,10 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.dolorders.R;
+import com.example.dolorders.data.stockage.client.GestionnaireStockageClient;
+import com.example.dolorders.data.stockage.commande.GestionnaireStockageCommande;
+import com.example.dolorders.ui.util.NavigationUtils;
+import com.example.dolorders.ui.viewModel.ClientsAjoutFragmentViewModel;
 import com.example.dolorders.ui.viewModel.CommandesFragmentViewModel;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
@@ -37,13 +41,18 @@ public class HomeFragment extends Fragment {
         btnPendingData = view.findViewById(R.id.btnPendingData);
         commandesViewModel = new ViewModelProvider(requireActivity()).get(CommandesFragmentViewModel.class);
 
-        // Exemple de données fictives
-        updateStats(28, 96);
+        // Récupération réelle des données
+        GestionnaireStockageClient gestionnaireClient = new GestionnaireStockageClient(requireContext());
+        GestionnaireStockageCommande gestionnaireCommande = new GestionnaireStockageCommande(requireContext());
+        int nbClients = gestionnaireClient.loadClients().size();
+        int nbCommandes = gestionnaireCommande.loadCommandes().size();
+        updateStats(nbClients, nbCommandes);
 
         // Navigation via les boutons
         btnNewClient.setOnClickListener(v -> {
             BottomNavigationView bottomNav = getActivity().findViewById(R.id.bottomNavigation);
             bottomNav.setSelectedItemId(R.id.nav_clients);
+            NavigationUtils.navigateToClientAjout(this);
         });
 
         btnNewCommande.setOnClickListener(v -> {
