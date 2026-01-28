@@ -1,5 +1,8 @@
 package com.example.dolorders.ui.viewModel;
 
+import android.content.Context;
+import android.util.Log;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
@@ -7,6 +10,7 @@ import androidx.lifecycle.ViewModel;
 import com.example.dolorders.objet.Client;
 import com.example.dolorders.objet.LigneCommande;
 import com.example.dolorders.objet.Produit;
+import com.example.dolorders.repository.ProduitRepository;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -16,6 +20,8 @@ import java.util.Locale;
 
 public class CommandesFragmentViewModel extends ViewModel {
 
+    private static final String TAG = "CommandesFragmentVM";
+
     private final MutableLiveData<List<LigneCommande>> lignesCommande = new MutableLiveData<>(new ArrayList<>());
     private final MutableLiveData<Client> clientSelectionne = new MutableLiveData<>();
     private final MutableLiveData<String> date = new MutableLiveData<>();
@@ -23,6 +29,8 @@ public class CommandesFragmentViewModel extends ViewModel {
     private final MutableLiveData<List<Produit>> listeProduits = new MutableLiveData<>();
     private final MutableLiveData<Boolean> fromAccueil = new MutableLiveData<>(false);
     private final MutableLiveData<Boolean> fromListeClients = new MutableLiveData<>(false);
+
+    private ProduitRepository produitRepository;
 
     // --- Getters ---
     public LiveData<List<LigneCommande>> getLignesCommande() {
@@ -89,7 +97,7 @@ public class CommandesFragmentViewModel extends ViewModel {
 
         // Vérifier si le produit existe déjà
         for (LigneCommande ligne : currentList) {
-            if (ligne.getProduit().getId() == produit.getId()) {
+            if (ligne.getProduit().getId().equals(produit.getId())) {
                 return;
             }
         }
@@ -105,7 +113,7 @@ public class CommandesFragmentViewModel extends ViewModel {
         if (currentList != null) {
             List<LigneCommande> newList = new ArrayList<>(currentList);
             // Suppression basée sur l'égalité des objets ou ID
-            newList.removeIf(l -> l.getProduit().getId() == ligneToDelete.getProduit().getId());
+            newList.removeIf(l -> l.getProduit().getId().equals(ligneToDelete.getProduit().getId()));
             lignesCommande.setValue(newList);
         }
     }
@@ -115,7 +123,7 @@ public class CommandesFragmentViewModel extends ViewModel {
         if (currentList != null) {
             List<LigneCommande> newList = new ArrayList<>();
             for (LigneCommande l : currentList) {
-                if (l.getProduit().getId() == oldLigne.getProduit().getId()) {
+                if (l.getProduit().getId().equals(oldLigne.getProduit().getId())) {
                     if (newQty > 0 && newRemise >= 0 && newRemise <= 100) {
                         try {
                             newList.add(new LigneCommande(l.getProduit(), newQty, newRemise));
@@ -159,6 +167,40 @@ public class CommandesFragmentViewModel extends ViewModel {
         lignesCommande.setValue(new java.util.ArrayList<>());
     }
 
+    /**
+     * Charge les produits depuis l'API Dolibarr via le repository.
+     * Les produits sont d'abord chargés depuis le cache local, puis synchronisés avec l'API.
+     *
+     * @param context Le contexte nécessaire pour initialiser le repository
+     */
+    public void chargerProduits(Context context) {
+        if (produitRepository == null) {
+            produitRepository = new ProduitRepository(context);
+        }
+
+        produitRepository.getProduits(new ProduitRepository.ProduitCallback() {
+            @Override
+            public void onSuccess(List<Produit> produits) {
+                Log.d(TAG, "Produits chargés avec succès : " + produits.size());
+                listeProduits.postValue(produits);
+            }
+
+            @Override
+            public void onError(String message) {
+                Log.e(TAG, "Erreur lors du chargement des produits : " + message);
+                // En cas d'erreur, on garde une liste vide (ou l'ancienne liste en cache)
+                List<Produit> current = listeProduits.getValue();
+                if (current == null || current.isEmpty()) {
+                    listeProduits.postValue(new ArrayList<>());
+                }
+            }
+        });
+    }
+
+    /**
+     * @deprecated Utiliser chargerProduits(Context) à la place
+     */
+    @Deprecated
     public void chargerProduitsDeTest() {
         List<Produit> produitsFactices = new ArrayList<>();
         produitsFactices.add(new Produit(101, "Stylo Bleu", 1.50));

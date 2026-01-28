@@ -32,6 +32,7 @@ import com.example.dolorders.objet.Client;
 import com.example.dolorders.objet.Commande;
 import com.example.dolorders.objet.LigneCommande;
 import com.example.dolorders.objet.Produit;
+import com.example.dolorders.ui.adapteur.ProduitAdapter;
 import com.example.dolorders.ui.viewModel.CommandesFragmentViewModel;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
@@ -39,6 +40,7 @@ import com.google.android.material.textfield.TextInputEditText;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -52,6 +54,9 @@ public class CommandesFragment extends Fragment {
     private GestionnaireStockageClient gestionnaireStockageClient;
 
     private List<Client> listeClients;
+
+    // Adapter pour les produits
+    private ProduitAdapter produitAdapter;
 
     // Vues
     private AutoCompleteTextView autoCompleteClient, autoCompleteArticle;
@@ -91,7 +96,9 @@ public class CommandesFragment extends Fragment {
         listeClients = gestionnaireStockageClient.loadClients();
 
         viewModel.setListeClients(listeClients);
-        viewModel.chargerProduitsDeTest();
+
+        // Ne pas charger automatiquement les produits
+        // L'utilisateur doit cliquer sur "Synchroniser les produits" dans l'accueil
 
         observeViewModel();
         if (viewModel.getClientSelectionne().getValue() == null) {
@@ -125,10 +132,16 @@ public class CommandesFragment extends Fragment {
             autoCompleteClient.setAdapter(adapter);
         });
 
-        // Produits
+        // Produits - Utilisation du ProduitAdapter personnalisé
         viewModel.getListeProduits().observe(getViewLifecycleOwner(), produits -> {
-            ArrayAdapter<Produit> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, produits);
-            autoCompleteArticle.setAdapter(adapter);
+            if (produits != null) {
+                if (produitAdapter == null) {
+                    produitAdapter = new ProduitAdapter(requireContext(), new ArrayList<>());
+                    autoCompleteArticle.setAdapter(produitAdapter);
+                    autoCompleteArticle.setThreshold(1); // Déclenche la recherche après 1 caractère
+                }
+                produitAdapter.updateProduits(produits);
+            }
         });
 
         // Client sélectionné

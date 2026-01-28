@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -23,7 +24,7 @@ import com.google.android.material.button.MaterialButton;
 public class HomeFragment extends Fragment {
 
     private TextView textClients, textCommandes, textTotal;
-    private MaterialButton btnNewClient, btnNewCommande, btnPendingData;
+    private MaterialButton btnNewClient, btnNewCommande, btnPendingData, btnSyncProduits;
     private CommandesFragmentViewModel commandesViewModel;
 
     @Nullable
@@ -39,6 +40,7 @@ public class HomeFragment extends Fragment {
         btnNewClient = view.findViewById(R.id.btnNewClient);
         btnNewCommande = view.findViewById(R.id.btnNewCommande);
         btnPendingData = view.findViewById(R.id.btnPendingData);
+        btnSyncProduits = view.findViewById(R.id.btnSyncProduits);
         commandesViewModel = new ViewModelProvider(requireActivity()).get(CommandesFragmentViewModel.class);
 
         // Récupération réelle des données
@@ -47,6 +49,32 @@ public class HomeFragment extends Fragment {
         int nbClients = gestionnaireClient.loadClients().size();
         int nbCommandes = gestionnaireCommande.loadCommandes().size();
         updateStats(nbClients, nbCommandes);
+
+        // Bouton de synchronisation des produits
+        btnSyncProduits.setOnClickListener(v -> {
+            btnSyncProduits.setEnabled(false);
+            btnSyncProduits.setText("Synchronisation...");
+
+            Toast.makeText(requireContext(),
+                "Synchronisation des produits en cours...",
+                Toast.LENGTH_SHORT).show();
+
+            commandesViewModel.chargerProduits(requireContext());
+
+            // Observer le résultat de la synchronisation
+            commandesViewModel.getListeProduits().observe(getViewLifecycleOwner(), produits -> {
+                if (produits != null) {
+                    btnSyncProduits.setEnabled(true);
+                    btnSyncProduits.setText("Synchroniser les produits");
+
+                    if (!produits.isEmpty()) {
+                        Toast.makeText(requireContext(),
+                            produits.size() + " produit(s) synchronisé(s) avec succès !",
+                            Toast.LENGTH_LONG).show();
+                    }
+                }
+            });
+        });
 
         // Navigation via les boutons
         btnNewClient.setOnClickListener(v -> {
