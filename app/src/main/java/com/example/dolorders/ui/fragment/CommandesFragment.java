@@ -97,8 +97,10 @@ public class CommandesFragment extends Fragment {
 
         viewModel.setListeClients(listeClients);
 
-        // Ne pas charger automatiquement les produits
-        // L'utilisateur doit cliquer sur "Synchroniser les produits" dans l'accueil
+        // Charger les produits depuis le fichier local (pas d'appel API automatique)
+        // Si le fichier existe, les produits seront disponibles immédiatement
+        // Pour synchroniser depuis l'API, l'utilisateur doit cliquer sur "Synchroniser les produits" dans l'accueil
+        viewModel.chargerProduitsDepuisCache(requireContext());
 
         observeViewModel();
         if (viewModel.getClientSelectionne().getValue() == null) {
@@ -197,7 +199,10 @@ public class CommandesFragment extends Fragment {
             viewModel.addArticle(produit);
             autoCompleteArticle.setText("", false);
             autoCompleteArticle.setError(null);
-            autoCompleteArticle.postDelayed(() -> autoCompleteArticle.showDropDown(), 100);
+
+            // Fermer la liste déroulante après la sélection
+            autoCompleteArticle.dismissDropDown();
+            autoCompleteArticle.clearFocus();
         });
 
         // Boutons

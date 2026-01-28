@@ -11,7 +11,6 @@ import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.Volley;
 import com.example.dolorders.data.dto.ProduitApiReponseDto;
-import com.example.dolorders.data.stockage.produit.ProduitStorageManager;
 import com.example.dolorders.mapper.ProduitMapper;
 import com.example.dolorders.objet.Produit;
 import com.google.gson.Gson;
@@ -27,15 +26,15 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Repository pour gérer la récupération et le stockage des produits.
- * Coordonne l'API Dolibarr et le cache local.
+ * Repository pour gérer la récupération des produits depuis l'API Dolibarr.
+ * Ce repository se concentre uniquement sur l'appel API.
+ * Le cache local est géré directement par le ViewModel via ProduitStorageManager.
  */
 public class ProduitRepository {
 
     private static final String TAG = "ProduitRepository";
 
     private final Context context;
-    private final ProduitStorageManager storageManager;
     private final RequestQueue requestQueue;
     private final Gson gson;
 
@@ -49,31 +48,14 @@ public class ProduitRepository {
 
     public ProduitRepository(Context context) {
         this.context = context.getApplicationContext();
-        this.storageManager = new ProduitStorageManager(context);
         this.requestQueue = Volley.newRequestQueue(context);
         this.gson = new Gson();
     }
 
     /**
-     * Récupère les produits : d'abord depuis le cache, puis synchronise avec l'API.
-     *
-     * @param callback Callback pour notifier du résultat
-     */
-    public void getProduits(ProduitCallback callback) {
-        // 1. Charger d'abord depuis le cache local (rapide)
-        List<Produit> produitsLocaux = storageManager.loadProduits();
-
-        if (!produitsLocaux.isEmpty()) {
-            Log.d(TAG, "Produits chargés depuis le cache : " + produitsLocaux.size());
-            callback.onSuccess(produitsLocaux);
-        }
-
-        // 2. Synchroniser avec l'API en arrière-plan
-        synchroniserDepuisApi(callback);
-    }
-
-    /**
-     * Force une synchronisation avec l'API (sans passer par le cache).
+     * Synchronise les produits avec l'API Dolibarr.
+     * Cette méthode appelle uniquement l'API et retourne les produits via callback.
+     * La sauvegarde dans le cache est gérée par le ViewModel.
      *
      * @param callback Callback pour notifier du résultat
      */
@@ -103,10 +85,8 @@ public class ProduitRepository {
                     try {
                         List<Produit> produits = parseJsonResponse(response);
 
-                        // Sauvegarder dans le cache
-                        storageManager.saveProduits(produits);
-
-                        Log.d(TAG, "Produits récupérés et sauvegardés : " + produits.size());
+                        // La sauvegarde dans le cache est gérée par le ViewModel
+                        Log.d(TAG, "Produits récupérés depuis l'API : " + produits.size());
                         callback.onSuccess(produits);
 
                     } catch (Exception e) {
@@ -205,14 +185,6 @@ public class ProduitRepository {
             Log.e(TAG, "Erreur lors de la récupération de la clé API", e);
             return null;
         }
-    }
-
-    /**
-     * Nettoie le cache des produits.
-     */
-    public void clearCache() {
-        storageManager.clearProduits();
-        Log.d(TAG, "Cache des produits nettoyé");
     }
 }
 

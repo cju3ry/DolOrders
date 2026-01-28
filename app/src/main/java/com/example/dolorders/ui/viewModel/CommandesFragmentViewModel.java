@@ -7,6 +7,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.example.dolorders.data.stockage.produit.ProduitStorageManager;
 import com.example.dolorders.objet.Client;
 import com.example.dolorders.objet.LigneCommande;
 import com.example.dolorders.objet.Produit;
@@ -31,6 +32,7 @@ public class CommandesFragmentViewModel extends ViewModel {
     private final MutableLiveData<Boolean> fromListeClients = new MutableLiveData<>(false);
 
     private ProduitRepository produitRepository;
+    private ProduitStorageManager produitStorageManager;
 
     // --- Getters ---
     public LiveData<List<LigneCommande>> getLignesCommande() {
@@ -189,8 +191,32 @@ public class CommandesFragmentViewModel extends ViewModel {
     }
 
     /**
-     * Charge les produits depuis l'API Dolibarr via le repository.
-     * Les produits sont d'abord chargés depuis le cache local, puis synchronisés avec l'API.
+     * Charge les produits depuis le cache local uniquement (pas d'appel API).
+     * Utilisé au démarrage du fragment pour avoir les produits immédiatement disponibles.
+     * Pour synchroniser depuis l'API, utiliser chargerProduits().
+     *
+     * @param context Le contexte nécessaire pour initialiser le storage manager
+     */
+    public void chargerProduitsDepuisCache(Context context) {
+        if (produitStorageManager == null) {
+            produitStorageManager = new ProduitStorageManager(context);
+        }
+
+        // Charger directement depuis le fichier local (pas de Repository)
+        List<Produit> produitsCache = produitStorageManager.loadProduits();
+
+        if (produitsCache != null && !produitsCache.isEmpty()) {
+            Log.d(TAG, "Produits chargés depuis le cache : " + produitsCache.size());
+            listeProduits.postValue(produitsCache);
+        } else {
+            Log.d(TAG, "Aucun produit en cache. Utilisez 'Synchroniser les produits' depuis l'accueil.");
+            listeProduits.postValue(new ArrayList<>());
+        }
+    }
+
+    /**
+     * Synchronise les produits avec l'API et les sauvegarde dans le cache.
+     * Utilisé lors de la synchronisation manuelle depuis l'accueil.
      *
      * @param context Le contexte nécessaire pour initialiser le repository
      */
@@ -198,38 +224,39 @@ public class CommandesFragmentViewModel extends ViewModel {
         if (produitRepository == null) {
             produitRepository = new ProduitRepository(context);
         }
+        if (produitStorageManager == null) {
+            produitStorageManager = new ProduitStorageManager(context);
+        }
 
-        produitRepository.getProduits(new ProduitRepository.ProduitCallback() {
+        // Appeler l'API via le Repository (qui s'occupe uniquement de l'API)
+        produitRepository.synchroniserDepuisApi(new ProduitRepository.ProduitCallback() {
             @Override
             public void onSuccess(List<Produit> produits) {
-                Log.d(TAG, "Produits chargés avec succès : " + produits.size());
+                Log.d(TAG, "Produits synchronisés depuis l'API : " + produits.size());
+
+                // Sauvegarder dans le cache
+                produitStorageManager.saveProduits(produits);
+
+                // Mettre à jour le LiveData
                 listeProduits.postValue(produits);
             }
 
             @Override
             public void onError(String message) {
-                Log.e(TAG, "Erreur lors du chargement des produits : " + message);
-                // En cas d'erreur, on garde une liste vide (ou l'ancienne liste en cache)
-                List<Produit> current = listeProduits.getValue();
-                if (current == null || current.isEmpty()) {
+                Log.e(TAG, "Erreur lors de la synchronisation des produits : " + message);
+
+                // En cas d'erreur API, charger depuis le cache si disponible
+                List<Produit> produitsCache = produitStorageManager.loadProduits();
+                if (produitsCache != null && !produitsCache.isEmpty()) {
+                    Log.d(TAG, "Fallback sur le cache : " + produitsCache.size() + " produits");
+                    listeProduits.postValue(produitsCache);
+                } else {
                     listeProduits.postValue(new ArrayList<>());
                 }
             }
         });
     }
 
-    /**
-     * @deprecated Utiliser chargerProduits(Context) à la place
-     */
-    @Deprecated
-    public void chargerProduitsDeTest() {
-        List<Produit> produitsFactices = new ArrayList<>();
-        produitsFactices.add(new Produit(101, "Stylo Bleu", 1.50));
-        produitsFactices.add(new Produit(102, "Cahier A4", 3.20));
-        produitsFactices.add(new Produit(103, "Clavier USB", 25.00));
-        produitsFactices.add(new Produit(104, "Souris sans fil", 18.50));
-        listeProduits.setValue(produitsFactices);
-    }
 
     public void setListeClients(List<Client> clients) {
         this.listeClients.setValue(clients);
