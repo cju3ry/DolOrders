@@ -467,11 +467,10 @@ public class CommandesFragment extends Fragment {
 
         if (fromListeClients) {
             bottomNav.setSelectedItemId(R.id.nav_clients);
-            return;
-        }
-
-        if (fromAccueil) {
+        } else if (fromAccueil) {
             bottomNav.setSelectedItemId(R.id.nav_home);
+        } else {
+            bottomNav.setSelectedItemId(R.id.nav_commandes);
         }
     }
 
