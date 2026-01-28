@@ -17,11 +17,9 @@ import com.example.dolorders.R;
 import com.example.dolorders.data.stockage.commande.GestionnaireStockageCommande;
 import com.example.dolorders.objet.Commande;
 import com.example.dolorders.objet.Produit;
-import com.example.dolorders.ui.CommandeFormDialogFragment;
 import com.example.dolorders.ui.adapteur.CommandesAttenteAdapteur;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 public class TableauCommandesFragment extends Fragment {

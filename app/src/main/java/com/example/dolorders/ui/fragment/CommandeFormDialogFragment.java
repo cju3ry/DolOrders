@@ -1,4 +1,4 @@
-package com.example.dolorders.ui;
+package com.example.dolorders.ui.fragment;
 
 import android.app.DatePickerDialog; // Import for DatePicker
 import android.app.Dialog;
@@ -23,7 +23,6 @@ import com.example.dolorders.objet.Produit;
 import com.example.dolorders.R;
 import com.google.android.material.textfield.TextInputEditText;
 
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
