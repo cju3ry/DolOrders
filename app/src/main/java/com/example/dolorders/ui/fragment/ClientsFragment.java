@@ -19,6 +19,7 @@ import com.example.dolorders.data.stockage.client.GestionnaireStockageClient;
 import com.example.dolorders.objet.Client;
 import com.example.dolorders.service.ServiceClient;
 import com.example.dolorders.ui.adapteur.ClientAdapteur;
+import com.example.dolorders.ui.util.NavigationUtils;
 import com.example.dolorders.ui.viewModel.ClientsAjoutFragmentViewModel;
 import com.example.dolorders.ui.viewModel.ClientsFragmentViewModel;
 import com.example.dolorders.ui.viewModel.CommandesFragmentViewModel;
@@ -175,30 +176,15 @@ public class ClientsFragment extends Fragment {
 
     private void setupListeners() {
         btnAjoutClient.setOnClickListener(v -> {
-            // (Optionnel mais propre) vider le formulaire avant d’ouvrir l’écran d’ajout
-            ClientsAjoutFragmentViewModel ajoutVM =
-                    new ViewModelProvider(requireActivity()).get(ClientsAjoutFragmentViewModel.class);
-            ajoutVM.clear(); // :contentReference[oaicite:1]{index=1}
-
-            // Trouver le container qui héberge ce Fragment, puis remplacer par ClientsAjoutFragment
-            View parent = (View) requireView().getParent();
-            int containerId = parent != null ? parent.getId() : View.NO_ID;
-
-            if (containerId == View.NO_ID) {
-                // Fallback : si jamais le parent n'a pas d'ID, tu devras mettre ici l'ID du container de ton activity_main.xml
-                // ex: containerId = R.id.nav_host_fragment_activity_main;
-                throw new IllegalStateException("Impossible de trouver l'id du container parent pour la navigation.");
-            }
-
-            getParentFragmentManager()
-                    .beginTransaction()
-                    .replace(containerId, new ClientsAjoutFragment())
-                    .addToBackStack("clients_ajout")
-                    .commit();
+            createNewClient();
         });
 
         btnFiltre.setOnClickListener(v -> showFilterDialog());
 
+    }
+
+    private void createNewClient() {
+        NavigationUtils.navigateToClientAjout(this);
     }
 
     private void showFilterDialog() {

@@ -116,8 +116,16 @@ public class CommandesFragmentViewModel extends ViewModel {
             List<LigneCommande> newList = new ArrayList<>();
             for (LigneCommande l : currentList) {
                 if (l.getProduit().getId() == oldLigne.getProduit().getId()) {
-                    if (newQty > 0) {
-                        newList.add(new LigneCommande(l.getProduit(), newQty, newRemise));
+                    if (newQty > 0 && newRemise >= 0 && newRemise <= 100) {
+                        try {
+                            newList.add(new LigneCommande(l.getProduit(), newQty, newRemise));
+                        } catch (IllegalArgumentException e) {
+                            // Si la création échoue, on garde l'ancienne ligne
+                            newList.add(l);
+                        }
+                    } else {
+                        // Valeurs invalides, on garde l'ancienne ligne
+                        newList.add(l);
                     }
                 } else {
                     newList.add(l);

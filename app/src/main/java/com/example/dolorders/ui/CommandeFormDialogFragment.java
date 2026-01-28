@@ -39,6 +39,7 @@ public class CommandeFormDialogFragment extends DialogFragment {
     // New variable to track the modified date. Initialize with original date.
     private Date dateModifiee;
 
+
     public interface OnCommandeEditedListener {
         void onCommandeEdited(Date dateCommande, List<LigneCommande> lignes);
     }
@@ -119,14 +120,33 @@ public class CommandeFormDialogFragment extends DialogFragment {
                 .setView(v)
                 .setTitle("Modifier la commande")
                 .setNegativeButton("Annuler", (dialog, which) -> dialog.dismiss())
-                .setPositiveButton("Enregistrer", (dialog, which) -> {
-                    if (listener != null) {
-                        // Pass the MODIFIED date, not the original one
-                        listener.onCommandeEdited(dateModifiee, lignesEditees);
-                    }
-                });
+                .setPositiveButton("Enregistrer", null); // On gère le clic plus bas
 
-        return builder.create();
+        AlertDialog dialog = builder.create();
+        dialog.setOnShowListener(dlg -> {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
+                // Vérification des erreurs sur tous les champs quantité/remise
+                boolean hasError = false;
+                for (int i = 0; i < containerLignes.getChildCount(); i++) {
+                    View row = containerLignes.getChildAt(i);
+                    EditText etQty = row.findViewById(R.id.edit_text_quantite_article);
+                    EditText etRem = row.findViewById(R.id.edit_text_remise_ligne);
+                    if ((etQty != null && etQty.getError() != null) || (etRem != null && etRem.getError() != null)) {
+                        hasError = true;
+                        break;
+                    }
+                }
+                if (hasError) {
+                    android.widget.Toast.makeText(requireContext(), "Corrigez les champs en erreur avant d'enregistrer", android.widget.Toast.LENGTH_LONG).show();
+                    return;
+                }
+                if (listener != null) {
+                    listener.onCommandeEdited(dateModifiee, lignesEditees);
+                }
+                dialog.dismiss();
+            });
+        });
+        return dialog;
     }
 
     private void updateDateField(EditText edt) {
@@ -200,6 +220,15 @@ public class CommandeFormDialogFragment extends DialogFragment {
                     if (etQty.hasFocus() && s.length() > 0) {
                         try {
                             int newQ = Integer.parseInt(s.toString());
+
+                            // Validation : la quantité doit être positive
+                            if (newQ <= 0) {
+                                etQty.setError("Quantité min : 1");
+                                return;
+                            } else {
+                                etQty.setError(null);
+                            }
+
                             LigneCommande current = (LigneCommande) row.getTag();
                             if (newQ != current.getQuantite()) {
                                 // CRASH FIX: Pass 'row' directly instead of finding it
@@ -219,6 +248,18 @@ public class CommandeFormDialogFragment extends DialogFragment {
                     if (etRem.hasFocus() && s.length() > 0) {
                         try {
                             double newR = Double.parseDouble(s.toString());
+
+                            // Validation : la remise doit être entre 0 et 100%
+                            if (newR > 100) {
+                                etRem.setError("Remise max : 100%");
+                                return;
+                            } else if (newR < 0) {
+                                etRem.setError("Remise min : 0%");
+                                return;
+                            } else {
+                                etRem.setError(null);
+                            }
+
                             LigneCommande current = (LigneCommande) row.getTag();
                             if (newR != current.getRemise()) {
                                 // CRASH FIX: Pass 'row' directly
@@ -261,3 +302,4 @@ public class CommandeFormDialogFragment extends DialogFragment {
         tvTotal.setText(String.format(Locale.FRANCE, "%.2f €", total));
     }
 }
+

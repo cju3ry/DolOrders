@@ -192,6 +192,21 @@ public class CommandesFragment extends Fragment {
 
         btnValider.setOnClickListener(v -> {
             fermerClavier(v);
+            // Vérification des erreurs sur tous les champs quantité/remise
+            boolean hasError = false;
+            for (int i = 0; i < layoutArticlesSelectionnes.getChildCount(); i++) {
+                View row = layoutArticlesSelectionnes.getChildAt(i);
+                EditText etQty = row.findViewById(R.id.edit_text_quantite_article);
+                EditText etRem = row.findViewById(R.id.edit_text_remise_ligne);
+                if ((etQty != null && etQty.getError() != null) || (etRem != null && etRem.getError() != null)) {
+                    hasError = true;
+                    break;
+                }
+            }
+            if (hasError) {
+                Toast.makeText(requireContext(), "Corrigez les champs en erreur avant d'enregistrer", Toast.LENGTH_LONG).show();
+                return;
+            }
             if (isFormulaireValide()) {
                 enregistrerCommande();
             }
@@ -270,11 +285,21 @@ public class CommandesFragment extends Fragment {
                         LigneCommande currentLigne = (LigneCommande) row.getTag();
 
                         int newQ = Integer.parseInt(s.toString());
+
+                        // Validation : la quantité doit être positive
+                        if (newQ <= 0) {
+                            etQty.setError("Quantité min : 1");
+                            return;
+                        } else {
+                            etQty.setError(null);
+                        }
+
                         // On compare et on update
                         if (newQ != currentLigne.getQuantite()) {
                             viewModel.updateLigne(currentLigne, newQ, currentLigne.getRemise());
                         }
                     } catch (NumberFormatException e) {
+                        // Ignorer les saisies invalides
                     }
                 }
             }
@@ -297,12 +322,26 @@ public class CommandesFragment extends Fragment {
                         LigneCommande currentLigne = (LigneCommande) row.getTag();
 
                         double newR = 0.0;
-                        if (s.length() > 0) newR = Double.parseDouble(s.toString());
+                        if (s.length() > 0) {
+                            newR = Double.parseDouble(s.toString());
+
+                            // Validation : la remise ne peut pas dépasser 100%
+                            if (newR > 100) {
+                                etRem.setError("Remise max : 100%");
+                                return;
+                            } else if (newR < 0) {
+                                etRem.setError("Remise min : 0%");
+                                return;
+                            } else {
+                                etRem.setError(null);
+                            }
+                        }
 
                         if (newR != currentLigne.getRemise()) {
                             viewModel.updateLigne(currentLigne, currentLigne.getQuantite(), newR);
                         }
                     } catch (NumberFormatException e) {
+                        // Ignorer les saisies invalides
                     }
                 }
             }
