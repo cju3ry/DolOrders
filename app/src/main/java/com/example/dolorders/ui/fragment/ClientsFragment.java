@@ -43,6 +43,13 @@ public class ClientsFragment extends Fragment {
 
     private MaterialButton btnFiltre, btnAjoutClient;
 
+    // Champs de filtre mémorisés
+    private String filtreNom = "";
+    private String filtreAdresse = "";
+    private String filtreCP = "";
+    private String filtreVille = "";
+    private String filtreTel = "";
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -197,19 +204,28 @@ public class ClientsFragment extends Fragment {
         com.google.android.material.textfield.TextInputEditText edtVille = dialogView.findViewById(R.id.filtreVille);
         com.google.android.material.textfield.TextInputEditText edtTel = dialogView.findViewById(R.id.filtreTelephone);
 
+        // Remplir les champs avec les valeurs précédentes
+        edtNom.setText(filtreNom);
+        edtAdresse.setText(filtreAdresse);
+        edtCP.setText(filtreCP);
+        edtVille.setText(filtreVille);
+        edtTel.setText(filtreTel);
+
         new androidx.appcompat.app.AlertDialog.Builder(requireContext())
                 .setTitle("Filtrer les clients")
                 .setView(dialogView)
                 .setNegativeButton("Annuler", (d, w) -> d.dismiss())
-                .setNeutralButton("Réinitialiser", (d, w) -> resetFilter())
+                .setNeutralButton("Réinitialiser", (d, w) -> {
+                    resetFilter();
+                })
                 .setPositiveButton("Appliquer", (d, w) -> {
-                    applyFilter(
-                            edtNom.getText().toString(),
-                            edtAdresse.getText().toString(),
-                            edtCP.getText().toString(),
-                            edtVille.getText().toString(),
-                            edtTel.getText().toString()
-                    );
+                    // Mémoriser les valeurs saisies
+                    filtreNom = edtNom.getText().toString();
+                    filtreAdresse = edtAdresse.getText().toString();
+                    filtreCP = edtCP.getText().toString();
+                    filtreVille = edtVille.getText().toString();
+                    filtreTel = edtTel.getText().toString();
+                    applyFilter(filtreNom, filtreAdresse, filtreCP, filtreVille, filtreTel);
                 })
                 .show();
     }
@@ -223,6 +239,11 @@ public class ClientsFragment extends Fragment {
 
     @SuppressLint("NotifyDataSetChanged")
     private void resetFilter() {
+        filtreNom = "";
+        filtreAdresse = "";
+        filtreCP = "";
+        filtreVille = "";
+        filtreTel = "";
         GestionnaireStockageClient storageManager =
                 new GestionnaireStockageClient(requireContext());
         clientsDisplayed.clear();
