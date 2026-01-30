@@ -16,7 +16,7 @@ import com.example.dolorders.R;
 import com.example.dolorders.data.stockage.client.GestionnaireStockageClient;
 import com.example.dolorders.data.stockage.commande.GestionnaireStockageCommande;
 import com.example.dolorders.ui.util.NavigationUtils;
-import com.example.dolorders.ui.viewModel.ClientsAjoutFragmentViewModel;
+import com.example.dolorders.ui.viewModel.ClientsFragmentViewModel;
 import com.example.dolorders.ui.viewModel.CommandesFragmentViewModel;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
@@ -24,8 +24,9 @@ import com.google.android.material.button.MaterialButton;
 public class HomeFragment extends Fragment {
 
     private TextView textClients, textCommandes, textTotal;
-    private MaterialButton btnNewClient, btnNewCommande, btnPendingData, btnSyncProduits;
+    private MaterialButton btnNewClient, btnNewCommande, btnPendingData, btnSyncProduits, btnSyncClients;
     private CommandesFragmentViewModel commandesViewModel;
+    private ClientsFragmentViewModel clientsViewModel;
 
     @Nullable
     @Override
@@ -41,7 +42,9 @@ public class HomeFragment extends Fragment {
         btnNewCommande = view.findViewById(R.id.btnNewCommande);
         btnPendingData = view.findViewById(R.id.btnPendingData);
         btnSyncProduits = view.findViewById(R.id.btnSyncProduits);
+        btnSyncClients = view.findViewById(R.id.btnSyncClients);
         commandesViewModel = new ViewModelProvider(requireActivity()).get(CommandesFragmentViewModel.class);
+        clientsViewModel = new ViewModelProvider(requireActivity()).get(ClientsFragmentViewModel.class);
 
         // Récupération réelle des données
         GestionnaireStockageClient gestionnaireClient = new GestionnaireStockageClient(requireContext());
@@ -49,6 +52,35 @@ public class HomeFragment extends Fragment {
         int nbClients = gestionnaireClient.loadClients().size();
         int nbCommandes = gestionnaireCommande.loadCommandes().size();
         updateStats(nbClients, nbCommandes);
+
+        // Bouton de synchronisation des clients
+        btnSyncClients.setOnClickListener(v -> {
+            btnSyncClients.setEnabled(false);
+            btnSyncClients.setText("Synchronisation...");
+
+            Toast.makeText(requireContext(),
+                "Synchronisation des clients en cours...",
+                Toast.LENGTH_SHORT).show();
+
+            clientsViewModel.synchroniserClientsDepuisApi(requireContext());
+
+            // Observer le résultat de la synchronisation
+            clientsViewModel.getListeClients().observe(getViewLifecycleOwner(), clients -> {
+                if (clients != null) {
+                    btnSyncClients.setEnabled(true);
+                    btnSyncClients.setText("Synchroniser les clients");
+
+                    if (!clients.isEmpty()) {
+                        Toast.makeText(requireContext(),
+                            clients.size() + " client(s) total (locaux + API) !",
+                            Toast.LENGTH_LONG).show();
+
+                        // Rafraîchir les stats
+                        updateStats(clients.size(), nbCommandes);
+                    }
+                }
+            });
+        });
 
         // Bouton de synchronisation des produits
         btnSyncProduits.setOnClickListener(v -> {

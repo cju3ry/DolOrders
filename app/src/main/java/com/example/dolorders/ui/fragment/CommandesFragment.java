@@ -51,7 +51,6 @@ public class CommandesFragment extends Fragment {
     private CommandesFragmentViewModel viewModel;
     private GestionnaireStockageCommande commandeStorage;
 
-    private GestionnaireStockageClient gestionnaireStockageClient;
 
     private List<Client> listeClients;
 
@@ -92,8 +91,20 @@ public class CommandesFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         setupViews(view);
         setupListeners();
-        gestionnaireStockageClient = new GestionnaireStockageClient(requireContext());
-        listeClients = gestionnaireStockageClient.loadClients();
+
+        // ✅ Charger et fusionner les clients locaux et API (sans dédoublonnage)
+        GestionnaireStockageClient gestionnaireLocal = new GestionnaireStockageClient(requireContext());
+        GestionnaireStockageClient gestionnaireApi = new GestionnaireStockageClient(
+            requireContext(),
+            GestionnaireStockageClient.API_CLIENTS_FILE
+        );
+
+        List<Client> clientsLocaux = gestionnaireLocal.loadClients();
+        List<Client> clientsApi = gestionnaireApi.loadClients();
+
+        // Fusionner : clients locaux d'abord, puis clients API
+        listeClients = new ArrayList<>(clientsLocaux);
+        listeClients.addAll(clientsApi);
 
         viewModel.setListeClients(listeClients);
 

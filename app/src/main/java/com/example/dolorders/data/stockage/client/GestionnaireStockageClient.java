@@ -22,23 +22,44 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Gestionnaire de stockage des clients dans un fichier JSON local.
+ * Gestionnaire unifié de stockage des clients dans un fichier JSON local.
+ * Gère à la fois les clients créés localement et ceux provenant de l'API Dolibarr.
  * Le fichier est stocké dans le répertoire interne de l'application
  * et sera automatiquement supprimé si l'application est désinstallée.
  */
 public class GestionnaireStockageClient {
 
-    private static final String FILE_NAME = "clients_data.json";
+    private static final String DEFAULT_FILE_NAME = "clients_data.json";
+    public static final String API_CLIENTS_FILE = "clients_api_data.json";
     private static final String TAG = "ClientStorage";
 
     private final Context context;
     private final Gson gson;
+    private final String fileName;
 
     private boolean isCommandeClientSuppr;
 
+    /**
+     * Constructeur par défaut utilisant le fichier de clients locaux.
+     *
+     * @param context Contexte de l'application
+     */
     public GestionnaireStockageClient(Context context) {
+        this(context, DEFAULT_FILE_NAME);
+    }
+
+    /**
+     * Constructeur avec nom de fichier personnalisé.
+     * Permet de créer des gestionnaires pour différents types de stockage
+     * (clients locaux, clients API, etc.)
+     *
+     * @param context Contexte de l'application
+     * @param fileName Nom du fichier de stockage
+     */
+    public GestionnaireStockageClient(Context context, String fileName) {
         this.context = context;
-        // Configuration de Gson avec l'adaptateur personnalisé pour Client
+        this.fileName = fileName;
+        // Configuration de Gson avec l'adaptateur unifié pour Client
         this.gson = new GsonBuilder()
                 .registerTypeAdapter(Client.class, new AdaptateurStockageClient())
                 .create();
@@ -143,7 +164,7 @@ public class GestionnaireStockageClient {
      * @return Le nom du fichier de stockage
      */
     protected String getFileName() {
-        return FILE_NAME;
+        return fileName;
     }
 
     /**
@@ -199,12 +220,6 @@ public class GestionnaireStockageClient {
      * Si le client n'existe pas (pas trouvé par ID), aucune modification n'est faite.
      *
      * @param updatedClient Le client contenant les nouvelles données (doit avoir un ID existant)
-     * @return true si le client a été trouvé et modifié, false sinon
-     */
-    /**
-     * Modifie un client existant.
-     *
-     * @param updatedClient Client avec les nouvelles données
      * @return true si le client a été trouvé et modifié, false sinon
      */
     public boolean modifierClient(Client updatedClient) {

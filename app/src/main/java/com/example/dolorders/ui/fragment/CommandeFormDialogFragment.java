@@ -269,7 +269,6 @@ public class CommandeFormDialogFragment extends DialogFragment {
                             // Ne pas mettre à jour si la ligne est validée
                             if (current.isValidee()) return;
 
-                            int newQ = Integer.parseInt(s.toString());
                             if (newQ != current.getQuantite()) {
                                 updateLigneLocale(row, current, newQ, current.getRemise(), current.isValidee());
                                 tvTotalLigne.setText(String.format(Locale.FRANCE, "%.2f €", ((LigneCommande)row.getTag()).getMontantLigne()));
@@ -304,7 +303,7 @@ public class CommandeFormDialogFragment extends DialogFragment {
                             // Ne pas mettre à jour si la ligne est validée
                             if (current.isValidee()) return;
 
-                            double newR = Double.parseDouble(s.toString());
+                            newR = Double.parseDouble(s.toString());
                             if (newR != current.getRemise()) {
                                 updateLigneLocale(row, current, current.getQuantite(), newR, current.isValidee());
                                 tvTotalLigne.setText(String.format(Locale.FRANCE, "%.2f €", ((LigneCommande)row.getTag()).getMontantLigne()));
