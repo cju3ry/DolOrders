@@ -92,7 +92,7 @@ public class CommandesFragment extends Fragment {
         setupViews(view);
         setupListeners();
 
-        // ✅ Charger et fusionner les clients locaux et API (sans dédoublonnage)
+        //Charge et fusionner les clients locaux et API
         GestionnaireStockageClient gestionnaireLocal = new GestionnaireStockageClient(requireContext());
         GestionnaireStockageClient gestionnaireApi = new GestionnaireStockageClient(
             requireContext(),
