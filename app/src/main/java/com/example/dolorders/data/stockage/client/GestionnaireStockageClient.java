@@ -3,7 +3,6 @@ package com.example.dolorders.data.stockage.client;
 import android.content.Context;
 import android.util.Log;
 
-import com.example.dolorders.data.stockage.commande.GestionnaireStockageCommande;
 import com.example.dolorders.objet.Client;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -274,14 +273,15 @@ public class GestionnaireStockageClient {
         }
 
         // Suppression des commandes associées au client
-        GestionnaireStockageCommande gestionnaireCommande = new GestionnaireStockageCommande(context);
-        isCommandeClientSuppr = gestionnaireCommande.deleteCommandesByClient(client.getId());
-        if (isCommandeClientSuppr) {
-            Log.d(TAG, "Les commandes du client ont été supprimées : ID=" + client.getId());
-        } else {
-            Log.w(TAG, "Échec de la suppression des commandes du client : ID=" + client.getId());
-            return false;
-        }
+        // GestionnaireStockageCommande gestionnaireCommande = new GestionnaireStockageCommande(context);
+        // TODO Décommenter cette ligne lorsque la méthode sera implémentée
+//        isCommandeClientSuppr = gestionnaireCommande.deleteCommandesByClient(client.getId());
+//        if (isCommandeClientSuppr) {
+//            Log.d(TAG, "Les commandes du client ont été supprimées : ID=" + client.getId());
+//        } else {
+//            Log.w(TAG, "Échec de la suppression des commandes du client : ID=" + client.getId());
+//            return false;
+//        }
 
         // Suppression effective du client
         clients.remove(indexToDelete);
