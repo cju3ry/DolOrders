@@ -1,7 +1,6 @@
 package com.example.dolorders.data.stockage.commande;
 
 import android.content.Context;
-import android.os.Build;
 import android.util.Log;
 
 import com.example.dolorders.objet.Commande;
@@ -60,9 +59,9 @@ public class GestionnaireStockageCommande {
 
             // Écriture dans le fichier interne
             FileOutputStream fos = context.openFileOutput(getFileName(), Context.MODE_PRIVATE);
-            OutputStreamWriter writer = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
-            writer.write(jsonData);
-            writer.close();
+            try (OutputStreamWriter writer = new OutputStreamWriter(fos, StandardCharsets.UTF_8)) {
+                writer.write(jsonData);
+            }
             fos.close();
 
             Log.d(TAG, "Commandes sauvegardées avec succès (" + commandes.size() + " commandes) dans : " + getFileName());
@@ -90,19 +89,20 @@ public class GestionnaireStockageCommande {
 
         try {
             // Lecture du fichier
-            FileInputStream fis = context.openFileInput(getFileName());
-            InputStreamReader reader = new InputStreamReader(fis, StandardCharsets.UTF_8);
-            BufferedReader bufferedReader = new BufferedReader(reader);
+            StringBuilder jsonBuilder;
+            try (FileInputStream fis = context.openFileInput(getFileName())) {
+                InputStreamReader reader = new InputStreamReader(fis, StandardCharsets.UTF_8);
+                BufferedReader bufferedReader = new BufferedReader(reader);
 
-            StringBuilder jsonBuilder = new StringBuilder();
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                jsonBuilder.append(line);
+                jsonBuilder = new StringBuilder();
+                String line;
+                while ((line = bufferedReader.readLine()) != null) {
+                    jsonBuilder.append(line);
+                }
+
+                bufferedReader.close();
+                reader.close();
             }
-
-            bufferedReader.close();
-            reader.close();
-            fis.close();
 
             // Conversion du JSON en liste d'objets Commande
             String jsonData = jsonBuilder.toString();

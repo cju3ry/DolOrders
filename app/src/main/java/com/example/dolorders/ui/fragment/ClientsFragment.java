@@ -20,7 +20,6 @@ import com.example.dolorders.objet.Client;
 import com.example.dolorders.service.ServiceClient;
 import com.example.dolorders.ui.adapteur.ClientAdapteur;
 import com.example.dolorders.ui.util.NavigationUtils;
-import com.example.dolorders.ui.viewModel.ClientsAjoutFragmentViewModel;
 import com.example.dolorders.ui.viewModel.ClientsFragmentViewModel;
 import com.example.dolorders.ui.viewModel.CommandesFragmentViewModel;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -41,7 +40,8 @@ public class ClientsFragment extends Fragment {
 
     private ServiceClient serviceClient;
 
-    private MaterialButton btnFiltre, btnAjoutClient;
+    private MaterialButton btnFiltre;
+    private MaterialButton btnAjoutClient;
 
     // Champs de filtre mémorisés
     private String filtreNom = "";
@@ -182,9 +182,8 @@ public class ClientsFragment extends Fragment {
     }
 
     private void setupListeners() {
-        btnAjoutClient.setOnClickListener(v -> {
-            createNewClient();
-        });
+        btnAjoutClient.setOnClickListener(v ->
+                createNewClient());
 
         btnFiltre.setOnClickListener(v -> showFilterDialog());
 
@@ -215,9 +214,8 @@ public class ClientsFragment extends Fragment {
                 .setTitle("Filtrer les clients")
                 .setView(dialogView)
                 .setNegativeButton("Annuler", (d, w) -> d.dismiss())
-                .setNeutralButton("Réinitialiser", (d, w) -> {
-                    resetFilter();
-                })
+                .setNeutralButton("Réinitialiser", (d, w) ->
+                        resetFilter())
                 .setPositiveButton("Appliquer", (d, w) -> {
                     // Mémoriser les valeurs saisies
                     filtreNom = edtNom.getText().toString();

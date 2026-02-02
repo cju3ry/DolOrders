@@ -15,16 +15,17 @@ import com.example.dolorders.R;
 import com.example.dolorders.data.stockage.client.GestionnaireStockageClient;
 import com.example.dolorders.data.stockage.commande.GestionnaireStockageCommande;
 import com.example.dolorders.ui.util.NavigationUtils;
-import com.example.dolorders.ui.viewModel.ClientsAjoutFragmentViewModel;
 import com.example.dolorders.ui.viewModel.CommandesFragmentViewModel;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 
 public class HomeFragment extends Fragment {
 
-    private TextView textClients, textCommandes, textTotal;
-    private MaterialButton btnNewClient, btnNewCommande, btnPendingData;
-    private CommandesFragmentViewModel commandesViewModel;
+    private TextView textClients;
+
+    private TextView textCommandes;
+
+    private TextView textTotal;
 
     @Nullable
     @Override
@@ -36,10 +37,10 @@ public class HomeFragment extends Fragment {
         textClients = view.findViewById(R.id.textClients);
         textCommandes = view.findViewById(R.id.textCommandes);
         textTotal = view.findViewById(R.id.textTotal);
-        btnNewClient = view.findViewById(R.id.btnNewClient);
-        btnNewCommande = view.findViewById(R.id.btnNewCommande);
-        btnPendingData = view.findViewById(R.id.btnPendingData);
-        commandesViewModel = new ViewModelProvider(requireActivity()).get(CommandesFragmentViewModel.class);
+        MaterialButton btnNewClient = view.findViewById(R.id.btnNewClient);
+        MaterialButton btnNewCommande = view.findViewById(R.id.btnNewCommande);
+        MaterialButton btnPendingData = view.findViewById(R.id.btnPendingData);
+        CommandesFragmentViewModel commandesViewModel = new ViewModelProvider(requireActivity()).get(CommandesFragmentViewModel.class);
 
         // Récupération réelle des données
         GestionnaireStockageClient gestionnaireClient = new GestionnaireStockageClient(requireContext());

@@ -29,9 +29,6 @@ import java.security.GeneralSecurityException;
 
 public class MainActivity extends AppCompatActivity {
 
-    private Toolbar toolbar;
-    private BottomNavigationView bottomNav;
-
     private static final String TAG = "MainActivity";
     private ServiceUrl serviceUrl;
 
@@ -41,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         // Toolbar globale
-        toolbar = findViewById(R.id.toolbarHome);
+        Toolbar toolbar = findViewById(R.id.toolbarHome);
         setSupportActionBar(toolbar);
 
         // Désactive le titre par défaut de la Toolbar
@@ -50,35 +47,19 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // Récupération du nom d'utilisateur et mise à jour du TextView
-        TextView tvWelcomeUser = findViewById(R.id.tvWelcomeUser);
-        String username = LoginActivity.getUsername(this);
-        Log.d(TAG, "Username récupéré: " + username);
-        if (username != null && !username.isEmpty()) {
-            tvWelcomeUser.setText("Bienvenue " + username);
-            Log.d(TAG, "TextView mis à jour: Bienvenue " + username);
-        } else {
-            tvWelcomeUser.setText("Bienvenue");
-            Log.w(TAG, "Username null ou vide, texte par défaut utilisé");
-        }
+        recupererUtilisateur();
 
         // Overflow icon blanc
         toolbar.setOverflowIcon(ContextCompat.getDrawable(this, R.drawable.ic_overflow_white));
 
         // Bottom Navigation
-        bottomNav = findViewById(R.id.bottomNavigation);
+        BottomNavigationView bottomNav = findViewById(R.id.bottomNavigation);
 
         serviceUrl = new ServiceUrl(this);
 
         // Récupère l'URL utilisée pour se connecter et la sauvegarde
-        String baseUrl = getBaseUrl();
-        if (baseUrl != null) {
-            boolean success = serviceUrl.addUrl(baseUrl);
-            if (success) {
-                Log.d(TAG, "URL sauvegardée avec succès: " + baseUrl);
-            } else {
-                Log.e(TAG, "Erreur lors de la sauvegarde de l'URL");
-            }
-        }
+        recupererUrl();
+
         bottomNav.setOnItemSelectedListener(item -> {
             Fragment selectedFragment = null;
             int id = item.getItemId();
@@ -106,6 +87,31 @@ public class MainActivity extends AppCompatActivity {
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.fragment_container, new HomeFragment())
                     .commit();
+        }
+    }
+
+    private void recupererUrl() {
+        String baseUrl = getBaseUrl();
+        if (baseUrl != null) {
+            boolean success = serviceUrl.addUrl(baseUrl);
+            if (success) {
+                Log.d(TAG, "URL sauvegardée avec succès: " + baseUrl);
+            } else {
+                Log.e(TAG, "Erreur lors de la sauvegarde de l'URL");
+            }
+        }
+    }
+
+    private void recupererUtilisateur() {
+        String username = LoginActivity.getUsername(this);
+        Log.d(TAG, "Username récupéré: " + username);
+        TextView tvWelcomeUser = findViewById(R.id.tvWelcomeUser);
+        if (username != null && !username.isEmpty()) {
+            tvWelcomeUser.setText("Bienvenue " + username);
+            Log.d(TAG, "TextView mis à jour: Bienvenue " + username);
+        } else {
+            tvWelcomeUser.setText("Bienvenue");
+            Log.w(TAG, "Username null ou vide, texte par défaut utilisé");
         }
     }
 

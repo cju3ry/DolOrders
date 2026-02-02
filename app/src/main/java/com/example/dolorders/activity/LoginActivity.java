@@ -37,6 +37,14 @@ public class LoginActivity extends AppCompatActivity {
     private SharedPreferences securePrefs;
     private ServiceUrl serviceUrl;
 
+    private static final String USER_NAME = "username";
+
+    private static final String LOGIN_ACTIVITY = "LoginActivity";
+
+    private static final String CRYPTED_FILE_NAME = "secure_prefs_crypto";
+
+    private static final String DEBUG_TAG = "LOGIN_DEBUG";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -71,7 +79,7 @@ public class LoginActivity extends AppCompatActivity {
         if (lastUrl != null && !lastUrl.isEmpty()) {
             etUrl.setText(lastUrl);
             urlWasPrefilled[0] = true;
-            Log.d("LoginActivity", "URL pré-remplie: " + lastUrl);
+            Log.d(LOGIN_ACTIVITY, "URL pré-remplie: " + lastUrl);
         }
 
         // Efface l'URL au clic pour permettre une nouvelle saisie
@@ -79,7 +87,7 @@ public class LoginActivity extends AppCompatActivity {
             if (hasFocus && urlWasPrefilled[0]) {
                 etUrl.setText("");
                 urlWasPrefilled[0] = false;
-                Log.d("LoginActivity", "URL effacée au focus");
+                Log.d(LOGIN_ACTIVITY, "URL effacée au focus");
             }
         });
 
@@ -129,7 +137,7 @@ public class LoginActivity extends AppCompatActivity {
 
         return EncryptedSharedPreferences.create(
                 this,
-                "secure_prefs_crypto",
+                CRYPTED_FILE_NAME,
                 masterKey,
                 EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
@@ -209,20 +217,20 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void saveCredentials(String username, String apiKey, String baseUrl) {
-        android.util.Log.d("LOGIN_DEBUG", "Sauvegarde des credentials - username: " + username);
+        android.util.Log.d(DEBUG_TAG, "Sauvegarde des credentials - username: " + username);
 
         SharedPreferences.Editor editor = securePrefs.edit();
-        editor.putString("username", username);
+        editor.putString(USER_NAME, username);
         editor.putString("api_key", apiKey);
         editor.putString("base_url", baseUrl);
         editor.putBoolean("is_logged_in", true);
         editor.apply();
 
-        android.util.Log.d("LOGIN_DEBUG", "Identifiants sauvegardés de manière cryptée");
+        android.util.Log.d(DEBUG_TAG, "Identifiants sauvegardés de manière cryptée");
 
         // Vérification immédiate
-        String verif = securePrefs.getString("username", null);
-        android.util.Log.d("LOGIN_DEBUG", "Vérification immédiate - username lu: " + verif);
+        String verif = securePrefs.getString(USER_NAME, null);
+        android.util.Log.d(DEBUG_TAG, "Vérification immédiate - username lu: " + verif);
     }
 
     public static String getApiKey(AppCompatActivity activity) {
@@ -233,7 +241,7 @@ public class LoginActivity extends AppCompatActivity {
 
             SharedPreferences securePrefs = EncryptedSharedPreferences.create(
                     activity,
-                    "secure_prefs_crypto",
+                    CRYPTED_FILE_NAME,
                     masterKey,
                     EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
@@ -251,7 +259,7 @@ public class LoginActivity extends AppCompatActivity {
      */
     public static String getUsername(android.content.Context context) {
         try {
-            android.util.Log.d("LoginActivity", "Tentative de récupération du username");
+            android.util.Log.d(LOGIN_ACTIVITY, "Tentative de récupération du username");
 
             MasterKey masterKey = new MasterKey.Builder(context)
                     .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
@@ -259,17 +267,17 @@ public class LoginActivity extends AppCompatActivity {
 
             SharedPreferences securePrefs = EncryptedSharedPreferences.create(
                     context,
-                    "secure_prefs_crypto",
+                    CRYPTED_FILE_NAME,
                     masterKey,
                     EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             );
 
-            String username = securePrefs.getString("username", null);
-            android.util.Log.d("LoginActivity", "Username récupéré: " + username);
+            String username = securePrefs.getString(USER_NAME, null);
+            android.util.Log.d(LOGIN_ACTIVITY, "Username récupéré: " + username);
             return username;
         } catch (GeneralSecurityException | IOException e) {
-            android.util.Log.e("LoginActivity", "Erreur lors de la récupération du username", e);
+            android.util.Log.e(LOGIN_ACTIVITY, "Erreur lors de la récupération du username", e);
             e.printStackTrace();
             return null;
         }
@@ -291,7 +299,7 @@ public class LoginActivity extends AppCompatActivity {
             String lastUrl = normalPrefs.getString("last_used_url", null);
 
             if (lastUrl != null && !lastUrl.isEmpty()) {
-                Log.d("LoginActivity", "URL récupérée depuis SharedPreferences normales: " + lastUrl);
+                Log.d(LOGIN_ACTIVITY, "URL récupérée depuis SharedPreferences normales: " + lastUrl);
                 return lastUrl;
             }
 
@@ -299,12 +307,12 @@ public class LoginActivity extends AppCompatActivity {
             if (securePrefs != null) {
                 lastUrl = securePrefs.getString("base_url", null);
                 if (lastUrl != null && !lastUrl.isEmpty()) {
-                    Log.d("LoginActivity", "URL récupérée depuis SharedPreferences cryptées: " + lastUrl);
+                    Log.d(LOGIN_ACTIVITY, "URL récupérée depuis SharedPreferences cryptées: " + lastUrl);
                     return lastUrl;
                 }
             }
         } catch (Exception e) {
-            Log.e("LoginActivity", "Erreur lors de la récupération de la dernière URL", e);
+            Log.e(LOGIN_ACTIVITY, "Erreur lors de la récupération de la dernière URL", e);
         }
         return null;
     }

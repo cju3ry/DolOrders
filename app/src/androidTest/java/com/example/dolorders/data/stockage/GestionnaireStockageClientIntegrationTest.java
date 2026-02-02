@@ -400,8 +400,6 @@ public class GestionnaireStockageClientIntegrationTest {
     @Test
     public void saveEtLoad_TousLesChamps_SontPreservesEnFichier() {
         Date dateSaisie = new Date(1000000000000L);
-        Date dateEnvoie = new Date(1100000000000L);
-        Date dateMaj = new Date(1200000000000L);
 
         Client clientComplet = new Client.Builder()
                 .setId("123")

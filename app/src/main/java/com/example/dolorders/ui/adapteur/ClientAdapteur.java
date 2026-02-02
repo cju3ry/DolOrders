@@ -96,7 +96,11 @@ public class ClientAdapteur extends RecyclerView.Adapter<ClientAdapteur.ClientVi
 
     static class ClientViewHolder extends RecyclerView.ViewHolder {
 
-        TextView txtNom, txtTelephone, txtVille;
+        TextView txtNom;
+
+        TextView txtTelephone;
+
+        TextView txtVille;
         ImageView btnActions;
 
         ClientViewHolder(@NonNull View itemView) {

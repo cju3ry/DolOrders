@@ -34,8 +34,6 @@ public class GestionnaireStockageClient {
     private final Context context;
     private final Gson gson;
 
-    private boolean isCommandeClientSuppr;
-
     public GestionnaireStockageClient(Context context) {
         this.context = context;
         // Configuration de Gson avec l'adaptateur personnalisé pour Client
@@ -62,11 +60,11 @@ public class GestionnaireStockageClient {
             String jsonData = gson.toJson(clients);
 
             // Écriture dans le fichier interne
-            FileOutputStream fos = context.openFileOutput(getFileName(), Context.MODE_PRIVATE);
-            OutputStreamWriter writer = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
-            writer.write(jsonData);
-            writer.close();
-            fos.close();
+            try (FileOutputStream fos = context.openFileOutput(getFileName(), Context.MODE_PRIVATE)) {
+                OutputStreamWriter writer = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
+                writer.write(jsonData);
+                writer.close();
+            }
 
             Log.d(TAG, "Clients sauvegardés avec succès (" + clients.size() + " clients) dans : " + getFileName());
             return true;
@@ -93,19 +91,19 @@ public class GestionnaireStockageClient {
 
         try {
             // Lecture du fichier
-            FileInputStream fis = context.openFileInput(getFileName());
-            InputStreamReader reader = new InputStreamReader(fis, StandardCharsets.UTF_8);
-            BufferedReader bufferedReader = new BufferedReader(reader);
+            StringBuilder jsonBuilder;
+            try (FileInputStream fis = context.openFileInput(getFileName())) {
+                jsonBuilder = new StringBuilder();
 
-            StringBuilder jsonBuilder = new StringBuilder();
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                jsonBuilder.append(line);
+                try (InputStreamReader reader = new InputStreamReader(fis, StandardCharsets.UTF_8)) {
+                    try (BufferedReader bufferedReader = new BufferedReader(reader)) {
+                        String line;
+                        while ((line = bufferedReader.readLine()) != null) {
+                            jsonBuilder.append(line);
+                        }
+                    }
+                }
             }
-
-            bufferedReader.close();
-            reader.close();
-            fis.close();
 
             // Conversion du JSON en liste d'objets Client
             String jsonData = jsonBuilder.toString();
@@ -216,10 +214,11 @@ public class GestionnaireStockageClient {
         List<Client> clients = loadClients();
 
         // Remplacer le client
-        for (int i = 0; i < clients.size(); i++) {
+        boolean trouve = false;
+        for (int i = 0; i < clients.size() && !trouve; i++) {
             if (Objects.equals(clients.get(i).getId(), updatedClient.getId())) {
                 clients.set(i, updatedClient);
-                i = clients.size(); // Forcer la sortie de la boucle
+                trouve = true;
             }
         }
 
@@ -234,7 +233,7 @@ public class GestionnaireStockageClient {
      * @return true si le client a été trouvé et supprimé, false sinon
      */
     public boolean deleteClient(Client client) {
-        isCommandeClientSuppr = false;
+        boolean isCommandeClientSuppr = false;
         if (client == null) {
             Log.w(TAG, "Tentative de suppression d'un client null");
             return false;

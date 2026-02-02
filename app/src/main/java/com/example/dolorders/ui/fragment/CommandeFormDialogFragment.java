@@ -1,6 +1,8 @@
 package com.example.dolorders.ui.fragment;
 
-import android.app.DatePickerDialog; // Import for DatePicker
+import static android.content.DialogInterface.BUTTON_POSITIVE;
+
+import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.os.Bundle;
 import android.text.Editable;
@@ -12,15 +14,16 @@ import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.DialogFragment;
 
+import com.example.dolorders.R;
 import com.example.dolorders.objet.Commande;
 import com.example.dolorders.objet.LigneCommande;
 import com.example.dolorders.objet.Produit;
-import com.example.dolorders.R;
 import com.google.android.material.textfield.TextInputEditText;
 
 import java.text.SimpleDateFormat;
@@ -37,6 +40,8 @@ public class CommandeFormDialogFragment extends DialogFragment {
     private List<Produit> tousLesProduits;
     // New variable to track the modified date. Initialize with original date.
     private Date dateModifiee;
+
+    private static final String REGEX_MONTANT = "%.2f €";
 
 
     public interface OnCommandeEditedListener {
@@ -82,10 +87,8 @@ public class CommandeFormDialogFragment extends DialogFragment {
         TextView tvNbArticles = v.findViewById(R.id.tvDialogNbArticles);
 
         // 1. Remplissage Info Client et Date
-        if (commandeInitiale != null) {
-            if (commandeInitiale.getClient() != null) {
-                edtClientNom.setText(commandeInitiale.getClient().getNom());
-            }
+        if (commandeInitiale != null && commandeInitiale.getClient() != null) {
+            edtClientNom.setText(commandeInitiale.getClient().getNom());
         }
 
         // Update date field with current stored date
@@ -122,29 +125,28 @@ public class CommandeFormDialogFragment extends DialogFragment {
                 .setPositiveButton("Enregistrer", null); // On gère le clic plus bas
 
         AlertDialog dialog = builder.create();
-        dialog.setOnShowListener(dlg -> {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
-                // Vérification des erreurs sur tous les champs quantité/remise
-                boolean hasError = false;
-                for (int i = 0; i < containerLignes.getChildCount(); i++) {
-                    View row = containerLignes.getChildAt(i);
-                    EditText etQty = row.findViewById(R.id.edit_text_quantite_article);
-                    EditText etRem = row.findViewById(R.id.edit_text_remise_ligne);
-                    if ((etQty != null && etQty.getError() != null) || (etRem != null && etRem.getError() != null)) {
-                        hasError = true;
-                        break;
+        dialog.setOnShowListener(dlg ->
+                dialog.getButton(BUTTON_POSITIVE).setOnClickListener(view -> {
+                    // Vérification des erreurs sur tous les champs quantité/remise
+                    boolean hasError = false;
+                    for (int i = 0; i < containerLignes.getChildCount(); i++) {
+                        View row = containerLignes.getChildAt(i);
+                        EditText etQty = row.findViewById(R.id.edit_text_quantite_article);
+                        EditText etRem = row.findViewById(R.id.edit_text_remise_ligne);
+                        if ((etQty != null && etQty.getError() != null) || (etRem != null && etRem.getError() != null)) {
+                            hasError = true;
+                            break;
+                        }
                     }
-                }
-                if (hasError) {
-                    android.widget.Toast.makeText(requireContext(), "Corrigez les champs en erreur avant d'enregistrer", android.widget.Toast.LENGTH_LONG).show();
-                    return;
-                }
-                if (listener != null) {
-                    listener.onCommandeEdited(dateModifiee, lignesEditees);
-                }
-                dialog.dismiss();
-            });
-        });
+                    if (hasError) {
+                        android.widget.Toast.makeText(requireContext(), "Corrigez les champs en erreur avant d'enregistrer", android.widget.Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    if (listener != null) {
+                        listener.onCommandeEdited(dateModifiee, lignesEditees);
+                    }
+                    dialog.dismiss();
+                }));
         return dialog;
     }
 
@@ -193,15 +195,15 @@ public class CommandeFormDialogFragment extends DialogFragment {
 
             tvLibelle.setText(ligne.getProduit().getLibelle());
             tvPU.setText(String.format(Locale.FRANCE, "%.2f", ligne.getProduit().getPrixUnitaire()));
-            tvTotalLigne.setText(String.format(Locale.FRANCE, "%.2f €", ligne.getMontantLigne()));
+            tvTotalLigne.setText(String.format(Locale.FRANCE, REGEX_MONTANT, ligne.getMontantLigne()));
 
             // Store object in tag
             row.setTag(ligne);
 
             if (!etQty.hasFocus()) etQty.setText(String.valueOf(ligne.getQuantite()));
             if (!etRem.hasFocus()) {
-                if(ligne.getRemise() == (long) ligne.getRemise())
-                    etRem.setText(String.valueOf((long)ligne.getRemise()));
+                if (ligne.getRemise() == (long) ligne.getRemise())
+                    etRem.setText(String.valueOf((long) ligne.getRemise()));
                 else
                     etRem.setText(String.valueOf(ligne.getRemise()));
             }
@@ -213,9 +215,16 @@ public class CommandeFormDialogFragment extends DialogFragment {
 
             // --- Text Watchers ---
             etQty.addTextChangedListener(new TextWatcher() {
-                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-                @Override public void afterTextChanged(Editable s) {}
-                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
                     if (etQty.hasFocus() && s.length() > 0) {
                         try {
                             int newQ = Integer.parseInt(s.toString());
@@ -232,18 +241,26 @@ public class CommandeFormDialogFragment extends DialogFragment {
                             if (newQ != current.getQuantite()) {
                                 // CRASH FIX: Pass 'row' directly instead of finding it
                                 updateLigneLocale(row, current, newQ, current.getRemise());
-                                tvTotalLigne.setText(String.format(Locale.FRANCE, "%.2f €", ((LigneCommande)row.getTag()).getMontantLigne()));
+                                tvTotalLigne.setText(String.format(Locale.FRANCE, REGEX_MONTANT, ((LigneCommande) row.getTag()).getMontantLigne()));
                                 recalculerTotalGlobal(tvTotal);
                             }
-                        } catch (NumberFormatException e) { }
+                        } catch (NumberFormatException e) {
+                        }
                     }
                 }
             });
 
             etRem.addTextChangedListener(new TextWatcher() {
-                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-                @Override public void afterTextChanged(Editable s) {}
-                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
                     if (etRem.hasFocus() && s.length() > 0) {
                         try {
                             double newR = Double.parseDouble(s.toString());
@@ -263,10 +280,11 @@ public class CommandeFormDialogFragment extends DialogFragment {
                             if (newR != current.getRemise()) {
                                 // CRASH FIX: Pass 'row' directly
                                 updateLigneLocale(row, current, current.getQuantite(), newR);
-                                tvTotalLigne.setText(String.format(Locale.FRANCE, "%.2f €", ((LigneCommande)row.getTag()).getMontantLigne()));
+                                tvTotalLigne.setText(String.format(Locale.FRANCE, REGEX_MONTANT, ((LigneCommande) row.getTag()).getMontantLigne()));
                                 recalculerTotalGlobal(tvTotal);
                             }
-                        } catch (NumberFormatException e) { }
+                        } catch (NumberFormatException e) {
+                        }
                     }
                 }
             });
@@ -275,7 +293,7 @@ public class CommandeFormDialogFragment extends DialogFragment {
             container.addView(row);
         }
 
-        tvTotal.setText(String.format(Locale.FRANCE, "%.2f €", total));
+        tvTotal.setText(String.format(Locale.FRANCE, REGEX_MONTANT, total));
         tvNb.setText(lignesEditees.size() + " articles");
     }
 
@@ -298,7 +316,7 @@ public class CommandeFormDialogFragment extends DialogFragment {
         for (LigneCommande l : lignesEditees) {
             total += l.getMontantLigne();
         }
-        tvTotal.setText(String.format(Locale.FRANCE, "%.2f €", total));
+        tvTotal.setText(String.format(Locale.FRANCE, REGEX_MONTANT, total));
     }
 }
 
