@@ -46,24 +46,26 @@ import java.util.Locale;
 
 public class CommandesFragment extends Fragment {
 
+    private static final String REGEX_MONTANT = "%.2f €";
+
+    private static final String REGEX_DATE = "dd/MM/yyyy";
     private CommandesFragmentViewModel viewModel;
     private GestionnaireStockageCommande commandeStorage;
-
-    private GestionnaireStockageClient gestionnaireStockageClient;
-
-    private List<Client> listeClients;
-
     // Vues
-    private AutoCompleteTextView autoCompleteClient, autoCompleteArticle;
+    private AutoCompleteTextView autoCompleteClient;
+    private AutoCompleteTextView autoCompleteArticle;
     private TextInputEditText editTextDate;
     private LinearLayout layoutArticlesSelectionnes;
-    private MaterialButton btnAnnuler, btnValider;
+    private MaterialButton btnAnnuler;
+    private MaterialButton btnValider;
 
     // Infos clients & Totaux
-    private TextView tvClientAdresse, tvClientTel;
-    private LinearLayout layoutInfosClient, containerDetailsCommande;
-    private TextView tvTotalFinal, tvNbArticles;
-
+    private TextView tvClientAdresse;
+    private TextView tvClientTel;
+    private LinearLayout layoutInfosClient;
+    private LinearLayout containerDetailsCommande;
+    private TextView tvTotalFinal;
+    private TextView tvNbArticles;
     private String nomUtilisateur;
 
 
@@ -87,15 +89,15 @@ public class CommandesFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         setupViews(view);
         setupListeners();
-        gestionnaireStockageClient = new GestionnaireStockageClient(requireContext());
-        listeClients = gestionnaireStockageClient.loadClients();
+        GestionnaireStockageClient gestionnaireStockageClient = new GestionnaireStockageClient(requireContext());
+        List<Client> listeClients = gestionnaireStockageClient.loadClients();
 
         viewModel.setListeClients(listeClients);
         viewModel.chargerProduitsDeTest();
 
         observeViewModel();
         if (viewModel.getClientSelectionne().getValue() == null) {
-            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE);
+            SimpleDateFormat sdf = new SimpleDateFormat(REGEX_DATE, Locale.FRANCE);
             viewModel.setDate(sdf.format(new Date()));
         }
     }
@@ -364,7 +366,7 @@ public class CommandesFragment extends Fragment {
 
         tvLibelle.setText(ligne.getProduit().getLibelle());
         tvPU.setText(String.format(Locale.FRANCE, "%.2f", ligne.getProduit().getPrixUnitaire()));
-        tvTotal.setText(String.format(Locale.FRANCE, "%.2f €", ligne.getMontantLigne()));
+        tvTotal.setText(String.format(Locale.FRANCE, REGEX_MONTANT, ligne.getMontantLigne()));
 
         if (!etQty.hasFocus()) {
             etQty.setTag("UPDATING");
@@ -384,7 +386,7 @@ public class CommandesFragment extends Fragment {
 
     private void updateTotal() {
         double total = viewModel.getTotal();
-        tvTotalFinal.setText(String.format(Locale.FRANCE, "%.2f €", total));
+        tvTotalFinal.setText(String.format(Locale.FRANCE, REGEX_MONTANT, total));
     }
 
     private boolean isFormulaireValide() {
@@ -410,7 +412,7 @@ public class CommandesFragment extends Fragment {
         List<LigneCommande> lignes = viewModel.getLignesCommande().getValue();
         Date dateCommande;
         try {
-            dateCommande = new SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE).parse(viewModel.getDate().getValue());
+            dateCommande = new SimpleDateFormat(REGEX_DATE, Locale.FRANCE).parse(viewModel.getDate().getValue());
         } catch (ParseException e) {
             return;
         }
@@ -429,7 +431,7 @@ public class CommandesFragment extends Fragment {
 
             if (saved) {
                 Toast.makeText(getContext(),
-                        "Commande enregistrée : " + String.format("%.2f €", cmd.getMontantTotal()),
+                        "Commande enregistrée : " + String.format(REGEX_MONTANT, cmd.getMontantTotal()),
                         Toast.LENGTH_LONG).show();
                 viewModel.clear();
                 navigateToHome();
@@ -478,7 +480,7 @@ public class CommandesFragment extends Fragment {
         Calendar c = Calendar.getInstance();
         new DatePickerDialog(requireContext(), (v, y, m, d) -> {
             c.set(y, m, d);
-            viewModel.setDate(new SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE).format(c.getTime()));
+            viewModel.setDate(new SimpleDateFormat(REGEX_DATE, Locale.FRANCE).format(c.getTime()));
         }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
     }
 

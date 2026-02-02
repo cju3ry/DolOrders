@@ -131,6 +131,7 @@ public class ServiceUrl {
 
             Log.w(TAG, "URL non trouvée pour suppression: " + url);
             return false;
+
         } catch (JSONException e) {
             Log.e(TAG, "Erreur lors de la suppression de l'URL", e);
             return false;
@@ -156,10 +157,9 @@ public class ServiceUrl {
      * @return Le tableau JSON, ou un nouveau tableau vide si le fichier n'existe pas
      */
     private JSONArray loadUrls() {
-        try {
-            FileInputStream fis = context.openFileInput(FILENAME);
-            InputStreamReader isr = new InputStreamReader(fis);
-            BufferedReader reader = new BufferedReader(isr);
+        try (FileInputStream fis = context.openFileInput(FILENAME);
+             InputStreamReader isr = new InputStreamReader(fis);
+             BufferedReader reader = new BufferedReader(isr)) {
 
             StringBuilder json = new StringBuilder();
             String line;
@@ -167,14 +167,13 @@ public class ServiceUrl {
                 json.append(line);
             }
 
-            reader.close();
-
             Log.d(TAG, "Fichier chargé: " + json.toString());
             return new JSONArray(json.toString());
 
         } catch (FileNotFoundException e) {
             Log.d(TAG, "Fichier inexistant, création d'un nouveau tableau");
             return new JSONArray();
+
         } catch (IOException | JSONException e) {
             Log.e(TAG, "Erreur lors de la lecture du fichier", e);
             return new JSONArray();
@@ -188,11 +187,10 @@ public class ServiceUrl {
      * @return true si l'opération a réussi, false sinon
      */
     private boolean saveUrls(JSONArray urls) {
-        try {
-            FileOutputStream fos = context.openFileOutput(FILENAME, Context.MODE_PRIVATE);
-            fos.write(urls.toString().getBytes());
-            fos.close();
+        try (FileOutputStream fos =
+                     context.openFileOutput(FILENAME, Context.MODE_PRIVATE)) {
 
+            fos.write(urls.toString().getBytes());
             Log.d(TAG, "Fichier sauvegardé: " + urls.toString());
             return true;
 

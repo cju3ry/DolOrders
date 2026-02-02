@@ -162,8 +162,6 @@ public class AdaptateurStockageClientTest {
     @Test
     public void serialisation_AvecToutesLesDates_Reussit() {
         Date dateSaisie = new Date(1000000000000L);
-        Date dateEnvoie = new Date(1100000000000L);
-        Date dateMaj = new Date(1200000000000L);
 
         Client clientAvecDates = new Client.Builder()
                 .setNom("TestDates")

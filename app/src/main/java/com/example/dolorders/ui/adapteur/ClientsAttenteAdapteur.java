@@ -83,7 +83,13 @@ public class ClientsAttenteAdapteur extends RecyclerView.Adapter<ClientsAttenteA
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvNom, tvEmail, tvVille, tvDate;
+        TextView tvNom;
+
+        TextView tvEmail;
+
+        TextView tvVille;
+
+        TextView tvDate;
         ImageView btnMore;
 
         public ViewHolder(@NonNull View itemView) {

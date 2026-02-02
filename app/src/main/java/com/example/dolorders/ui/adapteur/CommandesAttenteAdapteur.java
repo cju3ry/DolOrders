@@ -6,7 +6,6 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -26,6 +25,7 @@ public class CommandesAttenteAdapteur extends RecyclerView.Adapter<CommandesAtte
     // Définition de l'interface pour communiquer avec le Fragment
     public interface OnCommandeActionListener {
         void onEdit(Commande commande);
+
         void onDelete(Commande commande);
     }
 
@@ -84,7 +84,9 @@ public class CommandesAttenteAdapteur extends RecyclerView.Adapter<CommandesAtte
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvId, tvNom, tvDate;
+        TextView tvId;
+        TextView tvNom;
+        TextView tvDate;
         ImageView btnMore;
 
         public ViewHolder(@NonNull View itemView) {

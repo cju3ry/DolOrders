@@ -25,6 +25,8 @@ public class ServiceGestionSession {
 
     private final RequestQueue requestQueue;
 
+    private static final String LOGOUT_DEBUG = "LOGOUT_DEBUG";
+
     public ServiceGestionSession(Context context) {
         requestQueue = Volley.newRequestQueue(context.getApplicationContext());
     }
@@ -54,7 +56,7 @@ public class ServiceGestionSession {
 
             // Sauvegarde l'URL avant effacement
             String lastUrl = securePrefs.getString("base_url", null);
-            android.util.Log.d("LOGOUT_DEBUG", "URL sauvegardée avant effacement: " + lastUrl);
+            android.util.Log.d(LOGOUT_DEBUG, "URL sauvegardée avant effacement: " + lastUrl);
 
             // Efface toutes les données cryptées
             securePrefs.edit().clear().apply();
@@ -63,10 +65,10 @@ public class ServiceGestionSession {
             if (lastUrl != null && !lastUrl.isEmpty()) {
                 SharedPreferences normalPrefs = activity.getSharedPreferences("DolOrdersPrefs", Context.MODE_PRIVATE);
                 normalPrefs.edit().putString("last_used_url", lastUrl).apply();
-                android.util.Log.d("LOGOUT_DEBUG", "URL restaurée pour la prochaine connexion");
+                android.util.Log.d(LOGOUT_DEBUG, "URL restaurée pour la prochaine connexion");
             }
 
-            android.util.Log.d("LOGOUT_DEBUG", "Données cryptées effacées avec succès");
+            android.util.Log.d(LOGOUT_DEBUG, "Données cryptées effacées avec succès");
 
             // Redirection vers LoginActivity
             Intent intent = new Intent(activity, LoginActivity.class);
@@ -77,7 +79,7 @@ public class ServiceGestionSession {
             Toast.makeText(activity, "Déconnexion réussie", Toast.LENGTH_SHORT).show();
 
         } catch (GeneralSecurityException | IOException e) {
-            android.util.Log.e("LOGOUT_DEBUG", "Erreur lors de la déconnexion", e);
+            android.util.Log.e(LOGOUT_DEBUG, "Erreur lors de la déconnexion", e);
             Toast.makeText(activity, "Erreur lors de la déconnexion", Toast.LENGTH_LONG).show();
         }
     }

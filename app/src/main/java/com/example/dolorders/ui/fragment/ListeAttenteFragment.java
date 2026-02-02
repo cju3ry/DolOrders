@@ -40,28 +40,23 @@ public class ListeAttenteFragment extends Fragment {
 
         // Liaison TabLayout <-> ViewPager
         new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
-            switch (position) {
-                case 0:
-                    tab.setText("CLIENTS");
-                    break;
-                case 1:
-                    tab.setText("COMMANDES");
-                    break;
+            if (position == 0) {
+                tab.setText("CLIENTS");
+            } else if (position == 1) {
+                tab.setText("COMMANDES");
             }
         }).attach();
 
         // Gestion du bouton Envoyer (Action globale)
-        btnEnvoyer.setOnClickListener(v -> {
-            new AlertDialog.Builder(requireContext())
-                    .setTitle("Synchronisation")
-                    .setMessage("Voulez-vous envoyer toutes les données en attente vers Dolibarr ?")
-                    .setPositiveButton("Envoyer", (dialog, which) -> {
-                        // TODO: Appeler ton futur JsonManager / ApiManager ici
-                        Toast.makeText(getContext(), "Envoi en cours...", Toast.LENGTH_SHORT).show();
-                    })
-                    .setNegativeButton("Annuler", null)
-                    .show();
-        });
+        btnEnvoyer.setOnClickListener(v ->
+                new AlertDialog.Builder(requireContext())
+                        .setTitle("Synchronisation")
+                        .setMessage("Voulez-vous envoyer toutes les données en attente vers Dolibarr ?")
+                        .setPositiveButton("Envoyer", (dialog, which) ->
+                                // TODO: Appeler ton futur JsonManager / ApiManager ici
+                                Toast.makeText(getContext(), "Envoi en cours...", Toast.LENGTH_SHORT).show())
+                        .setNegativeButton("Annuler", null)
+                        .show());
     }
 
     // Adapter interne réduit à 2 onglets

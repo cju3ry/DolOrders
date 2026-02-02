@@ -20,6 +20,8 @@ import java.util.List;
  */
 public class AdapteurStockageCommande extends TypeAdapter<Commande> {
 
+    private static final String CLE_UTILISATEUR = "utilisateur";
+
     @Override
     public void write(JsonWriter out, Commande commande) throws IOException {
         if (commande == null) {
@@ -33,7 +35,7 @@ public class AdapteurStockageCommande extends TypeAdapter<Commande> {
         out.name("id").value(commande.getId());
         out.name("dateCommande").value(commande.getDateCommande() != null ? commande.getDateCommande().getTime() : 0);
         out.name("montantTotal").value(commande.getMontantTotal());
-        out.name("utilisateur").value(commande.getUtilisateur());
+        out.name(CLE_UTILISATEUR).value(commande.getUtilisateur());
 
         // Écriture du client
         if (commande.getClient() != null) {
@@ -63,7 +65,7 @@ public class AdapteurStockageCommande extends TypeAdapter<Commande> {
         out.name("ville").value(client.getVille());
         out.name("adresseMail").value(client.getAdresseMail());
         out.name("telephone").value(client.getTelephone());
-        out.name("utilisateur").value(client.getUtilisateur());
+        out.name(CLE_UTILISATEUR).value(client.getUtilisateur());
         out.name("dateSaisie").value(client.getDateSaisie() != null ? client.getDateSaisie().getTime() : 0);
         out.endObject();
     }
@@ -116,7 +118,7 @@ public class AdapteurStockageCommande extends TypeAdapter<Commande> {
                     // Le montant total est recalculé automatiquement
                     in.nextDouble();
                     break;
-                case "utilisateur":
+                case CLE_UTILISATEUR:
                     builder.setUtilisateur(in.nextString());
                     break;
                 case "client":
@@ -166,7 +168,7 @@ public class AdapteurStockageCommande extends TypeAdapter<Commande> {
                 case "telephone":
                     builder.setTelephone(in.nextString());
                     break;
-                case "utilisateur":
+                case CLE_UTILISATEUR:
                     builder.setUtilisateur(in.nextString());
                     break;
                 case "dateSaisie":

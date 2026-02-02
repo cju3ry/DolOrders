@@ -33,9 +33,14 @@ public class ClientsAjoutFragment extends Fragment {
 
     private ClientsAjoutFragmentViewModel viewModel;
     private GestionnaireStockageClient storageManager;
-    private TextInputEditText editTextNom, editTextAdresse, editTextCodePostal, editTextVille, editTextEmail,
-            editTextTelephone;
-    private MaterialButton btnAnnuler, btnValider;
+    private TextInputEditText editTextNom;
+    private TextInputEditText editTextAdresse;
+    private TextInputEditText editTextCodePostal;
+    private TextInputEditText editTextVille;
+    private TextInputEditText editTextEmail;
+    private TextInputEditText editTextTelephone;
+    private MaterialButton btnAnnuler;
+    private MaterialButton btnValider;
     private List<Client> listeClients;
     private String nomUtilisateur;
 
