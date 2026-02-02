@@ -57,6 +57,14 @@ public class ClientApiRepository {
         void onError(String message);
     }
 
+    /**
+     * Interface de callback pour récupérer l'ID utilisateur.
+     */
+    public interface UserIdCallback {
+        void onSuccess(String userId);
+        void onError(String message);
+    }
+
     public ClientApiRepository(Context context) {
         this.context = context.getApplicationContext();
         this.requestQueue = Volley.newRequestQueue(context);
@@ -160,6 +168,27 @@ public class ClientApiRepository {
      * @param callback Callback pour notifier du résultat
      */
     public void envoyerClient(Client client, ClientEnvoiCallback callback) {
+        // D'abord récupérer l'ID utilisateur
+        recupererIdUtilisateur(new UserIdCallback() {
+            @Override
+            public void onSuccess(String userId) {
+                // Une fois l'ID récupéré, envoyer le client
+                envoyerClientAvecUserId(client, userId, callback);
+            }
+
+            @Override
+            public void onError(String message) {
+                Log.w(TAG, "Impossible de récupérer l'ID utilisateur: " + message);
+                // Utiliser un ID par défaut (-1) si échec
+                envoyerClientAvecUserId(client, "-1", callback);
+            }
+        });
+    }
+
+    /**
+     * Envoie un client vers Dolibarr avec l'ID utilisateur fourni.
+     */
+    private void envoyerClientAvecUserId(Client client, String userId, ClientEnvoiCallback callback) {
         String baseUrl = getBaseUrl();
         String apiKey = getApiKey();
 
@@ -173,10 +202,11 @@ public class ClientApiRepository {
                 ? baseUrl + "api/index.php/thirdparties"
                 : baseUrl + "/api/index.php/thirdparties";
 
-        Log.d(TAG, "Envoi du client vers Dolibarr : " + client.getNom());
+        Log.d(TAG, "Envoi du client vers Dolibarr : " + client.getNom() + " (userId: " + userId + ")");
 
         try {
-            final String jsonBodyString = creerJsonClient(client).toString();
+            final String jsonBodyString = creerJsonClient(client, userId).toString();
+            final String username = getUsername(); // Récupérer le username pour l'historique
 
             StringRequest request = new StringRequest(
                     Request.Method.POST,
@@ -199,7 +229,24 @@ public class ClientApiRepository {
                             }
 
                             Log.d(TAG, "✅ Client envoyé avec succès. ID Dolibarr: " + dolibarrId);
-                            callback.onSuccess(dolibarrId);
+
+                            // Maintenant envoyer vers le module d'historique
+                            envoyerVersHistorique(client, dolibarrId, username, new ClientEnvoiCallback() {
+                                @Override
+                                public void onSuccess(String historiqueId) {
+                                    Log.d(TAG, "✅ Client enregistré dans l'historique. ID: " + historiqueId);
+                                    // Retourner le succès avec l'ID Dolibarr original
+                                    callback.onSuccess(dolibarrId);
+                                }
+
+                                @Override
+                                public void onError(String message) {
+                                    Log.w(TAG, "⚠️ Erreur enregistrement historique: " + message);
+                                    // Même si l'historique échoue, on considère la création du client comme réussie
+                                    callback.onSuccess(dolibarrId);
+                                }
+                            });
+
                         } catch (Exception e) {
                             Log.e(TAG, "Erreur parsing réponse Dolibarr", e);
                             callback.onError("Erreur parsing réponse: " + e.getMessage());
@@ -245,7 +292,7 @@ public class ClientApiRepository {
      * Crée le JSON pour envoyer un client vers Dolibarr.
      * NE PAS INCLURE l'ID local - Dolibarr génère son propre ID.
      */
-    private JSONObject creerJsonClient(Client client) throws Exception {
+    private JSONObject creerJsonClient(Client client, String userId) throws Exception {
         JSONObject json = new JSONObject();
 
         json.put("name", client.getNom());
@@ -265,9 +312,11 @@ public class ClientApiRepository {
         json.put("client", "1");       // 1 = client
         json.put("prospect", "0");     // 0 = pas un prospect
         json.put("fournisseur", "0");  // 0 = pas un fournisseur
-        json.put("commercial_id", 2); // TODO remplacer par l'ID de l'utilisateur connecté
+        json.put("commercial_id", userId); // ID de l'utilisateur connecté
         json.put("code_client","auto"); // Auto-génération du code client par Dolibarr
-        Log.d(TAG, "JSON créé pour client: " + json.toString());
+
+        Log.d(TAG, "JSON créé pour client: " + json);
+        Log.d(TAG, "ID utilisateur utilisé: " + userId);
 
         return json;
     }
@@ -318,5 +367,231 @@ public class ClientApiRepository {
             Log.e(TAG, "Erreur lors de la récupération de la clé API", e);
             return null;
         }
+    }
+
+    /**
+     * Récupère le nom d'utilisateur depuis les SharedPreferences cryptées.
+     */
+    private String getUsername() {
+        try {
+            MasterKey masterKey = new MasterKey.Builder(context)
+                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                    .build();
+
+            android.content.SharedPreferences securePrefs = EncryptedSharedPreferences.create(
+                    context,
+                    "secure_prefs_crypto",
+                    masterKey,
+                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            );
+
+            return securePrefs.getString("username", null);
+        } catch (GeneralSecurityException | IOException e) {
+            Log.e(TAG, "Erreur lors de la récupération du username", e);
+            return null;
+        }
+    }
+
+    /**
+     * Envoie les informations du client vers le module d'historique custom.
+     * POST /dolcustomersapi/clients
+     */
+    private void envoyerVersHistorique(Client client, String dolibarrId, String username, ClientEnvoiCallback callback) {
+        String baseUrl = getBaseUrl();
+        String apiKey = getApiKey();
+
+        if (baseUrl == null || apiKey == null) {
+            callback.onError("Configuration manquante");
+            return;
+        }
+
+        String url = baseUrl.endsWith("/")
+                ? baseUrl + "api/index.php/dolcustomersapi/clients"
+                : baseUrl + "/api/index.php/dolcustomersapi/clients";
+
+        Log.d(TAG, "Envoi vers historique : " + client.getNom() + " (ID Dolibarr: " + dolibarrId + ")");
+
+        try {
+            final String jsonBodyString = creerJsonHistorique(client, dolibarrId, username).toString();
+
+            StringRequest request = new StringRequest(
+                    Request.Method.POST,
+                    url,
+                    response -> {
+                        try {
+                            Log.d(TAG, "Réponse historique: " + response);
+
+                            String historiqueId;
+                            response = response.trim();
+
+                            if (response.startsWith("{")) {
+                                JSONObject jsonResponse = new JSONObject(response);
+                                historiqueId = jsonResponse.has("id") ? jsonResponse.getString("id") : "success";
+                            } else {
+                                historiqueId = response;
+                            }
+
+                            callback.onSuccess(historiqueId);
+                        } catch (Exception e) {
+                            Log.e(TAG, "Erreur parsing réponse historique", e);
+                            callback.onError("Erreur parsing: " + e.getMessage());
+                        }
+                    },
+                    error -> {
+                        String errorMsg = "Erreur envoi historique";
+                        if (error.networkResponse != null) {
+                            errorMsg += " (Code: " + error.networkResponse.statusCode + ")";
+                            if (error.networkResponse.data != null) {
+                                String body = new String(error.networkResponse.data);
+                                Log.e(TAG, "Réponse serveur historique: " + body);
+                            }
+                        }
+                        Log.e(TAG, errorMsg, error);
+                        callback.onError(errorMsg);
+                    }
+            ) {
+                @Override
+                public Map<String, String> getHeaders() {
+                    Map<String, String> headers = new HashMap<>();
+                    headers.put("DOLAPIKEY", apiKey);
+                    headers.put("Content-Type", "application/json");
+                    headers.put("Accept", "application/json");
+                    return headers;
+                }
+
+                @Override
+                public byte[] getBody() {
+                    return jsonBodyString.getBytes();
+                }
+            };
+
+            requestQueue.add(request);
+
+        } catch (Exception e) {
+            Log.e(TAG, "Erreur création requête historique", e);
+            callback.onError("Erreur création requête: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Crée le JSON pour envoyer un client vers le module d'historique.
+     */
+    private JSONObject creerJsonHistorique(Client client, String dolibarrId, String username) throws Exception {
+        JSONObject json = new JSONObject();
+
+        json.put("idclient", dolibarrId); // ID du client dans Dolibarr
+        json.put("nom", client.getNom());
+        json.put("adresse", client.getAdresse() != null ? client.getAdresse() : "");
+
+        // Convertir code postal en int (ou 0 si vide/null)
+        int codePostal = 0;
+        if (client.getCodePostal() != null && !client.getCodePostal().isEmpty()) {
+            try {
+                codePostal = Integer.parseInt(client.getCodePostal());
+            } catch (NumberFormatException e) {
+                Log.w(TAG, "Code postal invalide: " + client.getCodePostal());
+            }
+        }
+        json.put("codepostal", codePostal);
+
+        json.put("ville", client.getVille() != null ? client.getVille() : "");
+
+        // Convertir téléphone en long (ou 0 si vide/null)
+        long telephone = 0;
+        if (client.getTelephone() != null && !client.getTelephone().isEmpty()) {
+            try {
+                // Enlever les espaces et caractères non numériques
+                String telClean = client.getTelephone().replaceAll("[^0-9]", "");
+                if (!telClean.isEmpty()) {
+                    telephone = Long.parseLong(telClean);
+                }
+            } catch (NumberFormatException e) {
+                Log.w(TAG, "Téléphone invalide: " + client.getTelephone());
+            }
+        }
+        json.put("telephone", telephone);
+
+        json.put("mail", client.getAdresseMail());
+        json.put("creator_name", username != null ? username : "Unknown");
+
+        // Date de création du client (en timestamp Unix - secondes)
+        long creationDate = client.getDateSaisie() != null ?
+                client.getDateSaisie().getTime() / 1000 :
+                System.currentTimeMillis() / 1000;
+        json.put("creation_date", creationDate);
+
+        json.put("submitted_by_name", username != null ? username : "Unknown");
+
+        // Date d'envoi (maintenant, en timestamp Unix - secondes)
+        long submissionDate = System.currentTimeMillis() / 1000;
+        json.put("submission_date", submissionDate);
+
+        json.put("update_date", "Oui"); // Client inséré avec succès
+
+        Log.d(TAG, "JSON historique créé: " + json);
+
+        return json;
+    }
+
+
+
+    /**
+     * Récupère l'ID de l'utilisateur connecté depuis l'API Dolibarr.
+     * GET /users/login/{username}
+     *
+     * @param callback Callback pour notifier du résultat
+     */
+    private void recupererIdUtilisateur(UserIdCallback callback) {
+        String baseUrl = getBaseUrl();
+        String apiKey = getApiKey();
+
+        if (baseUrl == null || apiKey == null) {
+            Log.e(TAG, "Configuration manquante pour récupérer l'ID utilisateur");
+            callback.onError("Configuration manquante");
+            return;
+        }
+
+        String url = baseUrl.endsWith("/")
+                ? baseUrl + "api/index.php/users/info/"
+                : baseUrl + "/api/index.php/users/info/";
+
+        Log.d(TAG, "Récupération de l'ID ");
+
+        StringRequest request = new StringRequest(
+                Request.Method.GET,
+                url,
+                response -> {
+                    try {
+
+                        JSONObject jsonResponse = new JSONObject(response);
+                        String userId = jsonResponse.getString("id");
+
+                        Log.d(TAG, "✅ ID utilisateur récupéré: " + userId);
+                        callback.onSuccess(userId);
+                    } catch (Exception e) {
+                        Log.e(TAG, "Erreur parsing réponse ID utilisateur", e);
+                        callback.onError("Erreur parsing: " + e.getMessage());
+                    }
+                },
+                error -> {
+                    String errorMsg = "Erreur récupération ID utilisateur";
+                    if (error.networkResponse != null) {
+                        errorMsg += " (Code: " + error.networkResponse.statusCode + ")";
+                    }
+                    Log.e(TAG, errorMsg, error);
+                    callback.onError(errorMsg);
+                }
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("DOLAPIKEY", apiKey);
+                headers.put("Accept", "application/json");
+                return headers;
+            }
+        };
+
+        requestQueue.add(request);
     }
 }
