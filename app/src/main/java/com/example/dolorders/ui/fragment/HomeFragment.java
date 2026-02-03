@@ -48,9 +48,14 @@ public class HomeFragment extends Fragment {
         ClientsFragmentViewModel clientsViewModel = new ViewModelProvider(requireActivity()).get(ClientsFragmentViewModel.class);
 
         // Récupération réelle des données
-        GestionnaireStockageClient gestionnaireClient = new GestionnaireStockageClient(requireContext());
+        // Charger TOUS les clients (locaux + API)
+        GestionnaireStockageClient gestionnaireClientLocal = new GestionnaireStockageClient(requireContext());
+        GestionnaireStockageClient gestionnaireClientApi = new GestionnaireStockageClient(requireContext(), GestionnaireStockageClient.API_CLIENTS_FILE);
+        int nbClientsLocaux = gestionnaireClientLocal.loadClients().size();
+        int nbClientsApi = gestionnaireClientApi.loadClients().size();
+        int nbClients = nbClientsLocaux + nbClientsApi;
+
         GestionnaireStockageCommande gestionnaireCommande = new GestionnaireStockageCommande(requireContext());
-        int nbClients = gestionnaireClient.loadClients().size();
         int nbCommandes = gestionnaireCommande.loadCommandes().size();
         updateStats(nbClients, nbCommandes);
 

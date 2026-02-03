@@ -72,54 +72,96 @@ public class ListeAttenteFragment extends Fragment {
     }
 
     /**
-     * Envoie tous les clients locaux et leurs commandes vers Dolibarr + historique.
-     * Flux: Client → Historique client → Commandes du client → Historique commandes
+     * Envoie tous les clients et leurs commandes vers Dolibarr + historique.
+     * - Clients locaux : envoyés vers Dolibarr puis leurs commandes
+     * - Clients API : seulement leurs commandes (client existe déjà)
+     * Flux: Client (si local) → Commandes du client → Historique commandes
      */
-    //TODO gerer le fait que si on a cree une commande a partir dun client de dolibarr, il faut pas renvoyer le client
     private void envoyerToutVersDolibarr() {
         ProgressDialog progressDialog = new ProgressDialog(requireContext());
         progressDialog.setMessage("Préparation de l'envoi...");
         progressDialog.setCancelable(false);
         progressDialog.show();
 
-        // Charger les clients locaux
+        // Charger TOUS les clients (locaux + API)
         GestionnaireStockageClient storageLocal = new GestionnaireStockageClient(requireContext());
-        List<Client> clientsLocaux = storageLocal.loadClients();
+        GestionnaireStockageClient storageApi = new GestionnaireStockageClient(
+                requireContext(),
+                GestionnaireStockageClient.API_CLIENTS_FILE
+        );
 
-        // Filtrer uniquement les clients locaux (pas ceux de l'API)
-        List<Client> clientsAEnvoyer = new ArrayList<>();
-        for (Client c : clientsLocaux) {
-            if (!c.isFromApi()) {
-                clientsAEnvoyer.add(c);
+        List<Client> clientsLocaux = storageLocal.loadClients();
+        List<Client> clientsApi = storageApi.loadClients();
+
+        // Charger toutes les commandes pour identifier quels clients ont des commandes
+        GestionnaireStockageCommande commandeStorage = new GestionnaireStockageCommande(requireContext());
+        List<Commande> toutesCommandes = commandeStorage.loadCommandes();
+
+        // Créer une liste de tous les clients qui ont des commandes
+        List<Client> clientsAvecCommandes = new ArrayList<>();
+
+        // Parcourir toutes les commandes et identifier les clients concernés
+        if (toutesCommandes != null && !toutesCommandes.isEmpty()) {
+            for (Commande cmd : toutesCommandes) {
+                if (cmd.getClient() != null) {
+                    String nomClient = cmd.getClient().getNom();
+
+                    // Chercher le client correspondant (local ou API)
+                    Client clientComplet = null;
+
+                    // D'abord chercher dans les clients locaux
+                    for (Client c : clientsLocaux) {
+                        if (c.getNom().equals(nomClient)) {
+                            clientComplet = c;
+                            break;
+                        }
+                    }
+
+                    // Si pas trouvé, chercher dans les clients API
+                    if (clientComplet == null) {
+                        for (Client c : clientsApi) {
+                            if (c.getNom().equals(nomClient)) {
+                                clientComplet = c;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Ajouter le client s'il n'est pas déjà dans la liste
+                    if (clientComplet != null && !clientsAvecCommandes.contains(clientComplet)) {
+                        clientsAvecCommandes.add(clientComplet);
+                    }
+                }
             }
         }
 
-        if (clientsAEnvoyer.isEmpty()) {
+        if (clientsAvecCommandes.isEmpty()) {
             progressDialog.dismiss();
-            Toast.makeText(getContext(), "Aucun client à envoyer", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "Aucune commande à envoyer", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        Log.d("ListeAttente", "Nombre de clients à envoyer: " + clientsAEnvoyer.size());
+        Log.d("ListeAttente", "Nombre de clients avec commandes: " + clientsAvecCommandes.size());
 
         // Envoyer chaque client + ses commandes séquentiellement
         ClientApiRepository clientRepo = new ClientApiRepository(requireContext());
         CommandeApiRepository commandeRepo = new CommandeApiRepository(requireContext());
-        GestionnaireStockageCommande commandeStorage = new GestionnaireStockageCommande(requireContext());
 
-        envoyerClientEtCommandesRecursif(clientsAEnvoyer, 0, clientRepo, commandeRepo,
+        envoyerClientEtCommandesRecursif(clientsAvecCommandes, 0, clientRepo, commandeRepo,
                                          storageLocal, commandeStorage, progressDialog);
     }
 
     /**
      * Envoie les clients un par un avec leurs commandes de manière récursive.
+     * Les clients provenant de l'API ne sont pas envoyés (ils existent déjà dans Dolibarr),
+     * seules leurs commandes sont envoyées.
      */
     private void envoyerClientEtCommandesRecursif(List<Client> clients, int index,
-                                                   ClientApiRepository clientRepo,
-                                                   CommandeApiRepository commandeRepo,
-                                                   GestionnaireStockageClient clientStorage,
-                                                   GestionnaireStockageCommande commandeStorage,
-                                                   ProgressDialog progressDialog) {
+                                                  ClientApiRepository clientRepo,
+                                                  CommandeApiRepository commandeRepo,
+                                                  GestionnaireStockageClient clientStorage,
+                                                  GestionnaireStockageCommande commandeStorage,
+                                                  ProgressDialog progressDialog) {
         // Tous les clients ont été traités
         if (index >= clients.size()) {
             Log.d("ListeAttente", "Tous les clients et commandes traités. Re-synchronisation...");
@@ -128,60 +170,78 @@ public class ListeAttenteFragment extends Fragment {
         }
 
         Client client = clients.get(index);
-        Log.d("ListeAttente", "Envoi du client " + (index + 1) + "/" + clients.size() + ": " + client.getNom());
+        Log.d("ListeAttente", "Traitement du client " + (index + 1) + "/" + clients.size() + ": " + client.getNom());
 
-        progressDialog.setMessage("Envoi du client " + client.getNom() + " (" + (index + 1) + "/" + clients.size() + ")...");
+        progressDialog.setMessage("Traitement du client " + client.getNom() + " (" + (index + 1) + "/" + clients.size() + ")...");
 
-        // 1. Envoyer le client vers Dolibarr + historique
-        clientRepo.envoyerClient(client, new ClientApiRepository.ClientEnvoiCallback() {
-            @Override
-            public void onSuccess(String dolibarrId) {
-                Log.d("ListeAttente", "✅ Client " + client.getNom() + " envoyé ! ID Dolibarr: " + dolibarrId);
+        // Vérifier si le client provient de l'API (existe déjà dans Dolibarr)
+        if (client.isFromApi()) {
+            Log.d("ListeAttente", "✅ Client " + client.getNom() + " provient de l'API (ID: " + client.getId() + ") - Pas d'envoi nécessaire");
 
+            // Le client existe déjà dans Dolibarr, on utilise directement son ID
+            // 1. Envoyer les commandes de ce client
+            envoyerCommandesDuClient(client, commandeRepo, commandeStorage, () -> {
+                // 2. Pas de suppression du client car il provient de l'API (on le garde)
+                Log.d("ListeAttente", "✅ Commandes du client API " + client.getNom() + " traitées (client conservé)");
 
-                Client clientAvecId = new Client.Builder()
-                        .setId(dolibarrId)
-                        .setNom(client.getNom())
-                        .setAdresse(client.getAdresse())
-                        .setCodePostal(client.getCodePostal())
-                        .setVille(client.getVille())
-                        .setAdresseMail(client.getAdresseMail())
-                        .setTelephone(client.getTelephone())
-                        .setUtilisateur(client.getUtilisateur())
-                        .setDateSaisie(client.getDateSaisie())
-                        .setFromApi(false)
-                        .build();
-
-                // 2. Envoyer les commandes de ce client
-                envoyerCommandesDuClient(clientAvecId, commandeRepo, commandeStorage, () -> {
-                    // 3. Supprimer le client du stockage local après tout
-                    boolean supprime = clientStorage.deleteClient(client);
-
-                    if (supprime) {
-                        Log.d("ListeAttente", "✅ Client " + client.getNom() + " supprimé du stockage local");
-                    } else {
-                        Log.w("ListeAttente", "⚠️ Erreur suppression du client local: " + client.getNom());
-                    }
-
-                    // 4. Passer au client suivant
-                    envoyerClientEtCommandesRecursif(clients, index + 1, clientRepo, commandeRepo,
-                                                     clientStorage, commandeStorage, progressDialog);
-                });
-            }
-
-            @Override
-            public void onError(String message) {
-                Log.e("ListeAttente", "❌ Erreur envoi " + client.getNom() + ": " + message);
-
-                Toast.makeText(getContext(),
-                        "Erreur : " + client.getNom() + " - " + message,
-                        Toast.LENGTH_LONG).show();
-
-                // Continuer avec le client suivant même en cas d'erreur
+                // 3. Passer au client suivant
                 envoyerClientEtCommandesRecursif(clients, index + 1, clientRepo, commandeRepo,
-                                                 clientStorage, commandeStorage, progressDialog);
-            }
-        });
+                        clientStorage, commandeStorage, progressDialog);
+            });
+        } else {
+            // Client local : il faut l'envoyer vers Dolibarr
+            Log.d("ListeAttente", "Envoi du client local " + client.getNom() + " vers Dolibarr...");
+
+            // 1. Envoyer le client vers Dolibarr + historique
+            clientRepo.envoyerClient(client, new ClientApiRepository.ClientEnvoiCallback() {
+                @Override
+                public void onSuccess(String dolibarrId) {
+                    Log.d("ListeAttente", "✅ Client " + client.getNom() + " envoyé ! ID Dolibarr: " + dolibarrId);
+
+                    Client clientAvecId = new Client.Builder()
+                            .setId(dolibarrId)
+                            .setNom(client.getNom())
+                            .setAdresse(client.getAdresse())
+                            .setCodePostal(client.getCodePostal())
+                            .setVille(client.getVille())
+                            .setAdresseMail(client.getAdresseMail())
+                            .setTelephone(client.getTelephone())
+                            .setUtilisateur(client.getUtilisateur())
+                            .setDateSaisie(client.getDateSaisie())
+                            .setFromApi(false)
+                            .build();
+
+                    // 2. Envoyer les commandes de ce client
+                    envoyerCommandesDuClient(clientAvecId, commandeRepo, commandeStorage, () -> {
+                        // 3. Supprimer le client du stockage local après tout
+                        boolean supprime = clientStorage.deleteClient(client);
+
+                        if (supprime) {
+                            Log.d("ListeAttente", "✅ Client " + client.getNom() + " supprimé du stockage local");
+                        } else {
+                            Log.w("ListeAttente", "⚠️ Erreur suppression du client local: " + client.getNom());
+                        }
+
+                        // 4. Passer au client suivant
+                        envoyerClientEtCommandesRecursif(clients, index + 1, clientRepo, commandeRepo,
+                                clientStorage, commandeStorage, progressDialog);
+                    });
+                }
+
+                @Override
+                public void onError(String message) {
+                    Log.e("ListeAttente", "❌ Erreur envoi " + client.getNom() + ": " + message);
+
+                    Toast.makeText(getContext(),
+                            "Erreur : " + client.getNom() + " - " + message,
+                            Toast.LENGTH_LONG).show();
+
+                    // Continuer avec le client suivant même en cas d'erreur
+                    envoyerClientEtCommandesRecursif(clients, index + 1, clientRepo, commandeRepo,
+                            clientStorage, commandeStorage, progressDialog);
+                }
+            });
+        }
     }
 
     /**

@@ -7,6 +7,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.example.dolorders.data.stockage.client.GestionnaireStockageClient;
 import com.example.dolorders.data.stockage.produit.ProduitStorageManager;
 import com.example.dolorders.objet.Client;
 import com.example.dolorders.objet.LigneCommande;
@@ -33,6 +34,8 @@ public class CommandesFragmentViewModel extends ViewModel {
 
     private ProduitRepository produitRepository;
     private ProduitStorageManager produitStorageManager;
+    private GestionnaireStockageClient clientStorageManager;
+    private GestionnaireStockageClient clientApiStorageManager;
 
     // --- Getters ---
     public LiveData<List<LigneCommande>> getLignesCommande() {
@@ -260,5 +263,36 @@ public class CommandesFragmentViewModel extends ViewModel {
 
     public void setListeClients(List<Client> clients) {
         this.listeClients.setValue(clients);
+    }
+
+    /**
+     * Charge tous les clients (locaux + API) fusionnés.
+     * Utilisé pour afficher la liste complète dans le formulaire de commande.
+     *
+     * @param context Le contexte nécessaire pour initialiser les storage managers
+     */
+    public void chargerTousLesClients(Context context) {
+        if (clientStorageManager == null) {
+            clientStorageManager = new GestionnaireStockageClient(context);
+        }
+        if (clientApiStorageManager == null) {
+            clientApiStorageManager = new GestionnaireStockageClient(context, GestionnaireStockageClient.API_CLIENTS_FILE);
+        }
+
+        // Charger les clients locaux
+        List<Client> clientsLocaux = clientStorageManager.loadClients();
+
+        // Charger les clients de l'API
+        List<Client> clientsApi = clientApiStorageManager.loadClients();
+
+        // Fusionner les deux listes
+        List<Client> tousLesClients = new ArrayList<>();
+        tousLesClients.addAll(clientsLocaux);
+        tousLesClients.addAll(clientsApi);
+
+        Log.d(TAG, "Clients chargés pour commande : " + clientsLocaux.size() + " locaux + " +
+              clientsApi.size() + " API = " + tousLesClients.size() + " total");
+
+        listeClients.setValue(tousLesClients);
     }
 }

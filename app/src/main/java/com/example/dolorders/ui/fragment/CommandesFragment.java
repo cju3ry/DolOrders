@@ -26,7 +26,6 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.dolorders.R;
 import com.example.dolorders.activity.LoginActivity;
-import com.example.dolorders.data.stockage.client.GestionnaireStockageClient;
 import com.example.dolorders.data.stockage.commande.GestionnaireStockageCommande;
 import com.example.dolorders.objet.Client;
 import com.example.dolorders.objet.Commande;
@@ -93,14 +92,11 @@ public class CommandesFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         setupViews(view);
         setupListeners();
-        GestionnaireStockageClient gestionnaireStockageClient = new GestionnaireStockageClient(requireContext());
-        List<Client> listeClients = gestionnaireStockageClient.loadClients();
 
-        viewModel.setListeClients(listeClients);
+        // Charger TOUS les clients (locaux + API)
+        viewModel.chargerTousLesClients(requireContext());
 
-        // Charger les produits depuis le fichier local (pas d'appel API automatique)
-        // Si le fichier existe, les produits seront disponibles immédiatement
-        // Pour synchroniser depuis l'API, l'utilisateur doit cliquer sur "Synchroniser les produits" dans l'accueil
+        // Charger les produits depuis le cache local
         viewModel.chargerProduitsDepuisCache(requireContext());
 
         observeViewModel();
