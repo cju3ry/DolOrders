@@ -64,6 +64,16 @@
         android:textSize="13sp"
         android:paddingEnd="4dp"/>
 
+    <!-- Bouton valider la ligne (coche) -->
+    <ImageButton
+        android:id="@+id/btn_valider_ligne"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:src="@android:drawable/checkbox_off_background"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Valider la ligne"
+        app:tint="@color/blue_dolibarr" />
+
     <ImageButton
         android:id="@+id/btn_delete_article"
         android:layout_width="30dp"

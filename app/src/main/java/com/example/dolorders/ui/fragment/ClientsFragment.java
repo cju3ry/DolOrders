@@ -17,7 +17,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.dolorders.R;
 import com.example.dolorders.data.stockage.client.GestionnaireStockageClient;
 import com.example.dolorders.objet.Client;
-import com.example.dolorders.service.ServiceClient;
 import com.example.dolorders.ui.adapteur.ClientAdapteur;
 import com.example.dolorders.ui.util.NavigationUtils;
 import com.example.dolorders.ui.viewModel.ClientsFragmentViewModel;
@@ -54,7 +53,6 @@ public class ClientsFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         viewModel = new ViewModelProvider(requireActivity()).get(ClientsFragmentViewModel.class);
-        serviceClient = new ServiceClient(requireContext());
     }
 
     @Nullable
@@ -82,19 +80,15 @@ public class ClientsFragment extends Fragment {
     }
 
     private void setupRecyclerView() {
-        //TODO a modifier
         // 1) LayoutManager
         listeClients.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        GestionnaireStockageClient storageManager =
-                new GestionnaireStockageClient(requireContext());
+        // 2) Charger tous les clients (locaux + API) via le ViewModel
+        viewModel.chargerTousLesClients(requireContext());
 
-        // 2) Données temporaires (remplacées plus tard par JSON/API)
+        // Les données seront chargées via l'observer dans observeViewModel()
         clientsSource.clear();
-        clientsSource.addAll(storageManager.loadClients());
-
         clientsDisplayed.clear();
-        clientsDisplayed.addAll(clientsSource);
 
         // 3) Adapter
         clientAdapteur = new ClientAdapteur(clientsDisplayed, new ClientAdapteur.OnClientActionListener() {
@@ -108,6 +102,14 @@ public class ClientsFragment extends Fragment {
 
             @Override
             public void onModifier(Client client) {
+                // Vérifier si le client provient de l'API (on ne peut pas le modifier)
+                if (client.isFromApi()) {
+                    Toast.makeText(getContext(),
+                        "Impossible de modifier un client synchronisé depuis Dolibarr",
+                        Toast.LENGTH_LONG).show();
+                    return;
+                }
+
                 // On capture l'index avant d'ouvrir le dialog
                 int index = clientsDisplayed.indexOf(client);
                 if (index < 0) return;
@@ -129,25 +131,20 @@ public class ClientsFragment extends Fragment {
                                 .setAdresseMail(mail)
                                 .setUtilisateur(client.getUtilisateur()) // conserve
                                 .setDateSaisie(client.getDateSaisie())   // conserve
+                                .setFromApi(false) // Client local, pas de l'API
                                 .build();
 
-                        // 2) Remplacer dans la liste
-                        clientsDisplayed.set(index, updated);
-
-                        // 3) Notifier l’adapter
-                        clientAdapteur.notifyItemChanged(index);
-
-                        // (optionnel) si tu veux aussi “sauvegarder” ailleurs (ViewModel/API), c’est ici.
+                        // 2) Modifier dans le gestionnaire de stockage
+                        GestionnaireStockageClient storageManager = new GestionnaireStockageClient(requireContext());
                         boolean modiffier = storageManager.modifierClient(updated);
 
                         if (modiffier) {
                             Toast.makeText(getContext(), "Client '" + updated.getNom() + "' modifié et enregistré localement !", Toast.LENGTH_SHORT)
                                     .show();
 
-                            ClientsFragmentViewModel clientsVM = new ViewModelProvider(requireActivity())
-                                    .get(ClientsFragmentViewModel.class);
-
-                            clientsVM.publierClientCree(updated);
+                            // 3) Recharger tous les clients via le ViewModel
+                            viewModel.chargerTousLesClients(requireContext());
+                            viewModel.publierClientCree(updated);
                         } else {
                             Toast.makeText(getContext(),
                                     "Client '" + updated.getNom() + "' modifié et enregistré localement a échoué",
@@ -231,7 +228,17 @@ public class ClientsFragment extends Fragment {
     @SuppressLint("NotifyDataSetChanged")
     private void applyFilter(String nom, String adresse, String cp, String ville, String tel) {
         clientsDisplayed.clear();
-        clientsDisplayed.addAll(serviceClient.filter(nom, adresse, cp, ville, tel));
+
+        // Filtrer sur clientsSource (qui contient locaux + API)
+        List<Client> filtered = clientsSource.stream()
+                .filter(c -> (nom == null || nom.isEmpty() || c.getNom().toLowerCase().contains(nom.toLowerCase())))
+                .filter(c -> (adresse == null || adresse.isEmpty() || c.getAdresse().toLowerCase().contains(adresse.toLowerCase())))
+                .filter(c -> (cp == null || cp.isEmpty() || c.getCodePostal().toLowerCase().contains(cp.toLowerCase())))
+                .filter(c -> (ville == null || ville.isEmpty() || c.getVille().toLowerCase().contains(ville.toLowerCase())))
+                .filter(c -> (tel == null || tel.isEmpty() || c.getTelephone().toLowerCase().contains(tel.toLowerCase())))
+                .collect(java.util.stream.Collectors.toList());
+
+        clientsDisplayed.addAll(filtered);
         clientAdapteur.notifyDataSetChanged();
     }
 
@@ -242,24 +249,35 @@ public class ClientsFragment extends Fragment {
         filtreCP = "";
         filtreVille = "";
         filtreTel = "";
-        GestionnaireStockageClient storageManager =
-                new GestionnaireStockageClient(requireContext());
+
+        // Recharger tous les clients (locaux + API) via le ViewModel
         clientsDisplayed.clear();
-        clientsDisplayed.addAll(storageManager.loadClients());
+        clientsDisplayed.addAll(clientsSource);
         clientAdapteur.notifyDataSetChanged();
     }
 
 
     private void observeViewModel() {
+        // Observer la liste complète des clients (locaux + API)
+        viewModel.getListeClients().observe(getViewLifecycleOwner(), clients -> {
+            if (clients != null) {
+                clientsSource.clear();
+                clientsSource.addAll(clients);
+
+                clientsDisplayed.clear();
+                clientsDisplayed.addAll(clients);
+
+                clientAdapteur.notifyDataSetChanged();
+            }
+        });
+
+        // Observer la création d'un nouveau client pour recharger la liste
         viewModel.getClientCree().observe(getViewLifecycleOwner(), client -> {
-            if (client == null) return;
-
-            clientsSource.add(client);
-            clientAdapteur.notifyItemInserted(clientsSource.size() - 1);
-            listeClients.scrollToPosition(clientsSource.size() - 1);
-
-            // éviter un doublon si re-émission
-            viewModel.consommerClientCree();
+            if (client != null) {
+                // Recharger tous les clients quand un nouveau client est créé
+                viewModel.chargerTousLesClients(requireContext());
+                viewModel.consommerClientCree(); // Consommer l'événement
+            }
         });
     }
 

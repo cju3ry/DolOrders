@@ -1,10 +1,10 @@
 package com.example.dolorders.ui.fragment;
 
+import android.app.AlertDialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.app.AlertDialog;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.dolorders.R;
 import com.example.dolorders.data.stockage.commande.GestionnaireStockageCommande;
+import com.example.dolorders.data.stockage.produit.ProduitStorageManager;
 import com.example.dolorders.objet.Commande;
 import com.example.dolorders.objet.Produit;
 import com.example.dolorders.ui.adapteur.CommandesAttenteAdapteur;
@@ -25,6 +26,7 @@ import java.util.List;
 public class TableauCommandesFragment extends Fragment {
 
     private GestionnaireStockageCommande commandeStorage;
+    private ProduitStorageManager produitStorage;
     private CommandesAttenteAdapteur adapter;
     private List<Commande> listeCommandes;
     private CommandeFormDialogFragment dialog;
@@ -40,6 +42,7 @@ public class TableauCommandesFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         commandeStorage = new GestionnaireStockageCommande(requireContext());
+        produitStorage = new ProduitStorageManager(requireContext());
 
         RecyclerView recyclerView = view.findViewById(R.id.recycler_commandes_attente);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -170,13 +173,18 @@ public class TableauCommandesFragment extends Fragment {
     }
 
     // Méthode utilitaire pour fournir la liste des produits disponibles au dialogue.
-    // À l'avenir, cela pourrait venir d'un ProduitStorageManager.
+    // Charge les produits depuis le ProduitStorageManager.
     private List<Produit> getListeProduitsDisponibles() {
-        List<Produit> produits = new ArrayList<>();
-        produits.add(new Produit(101, "Stylo Bleu", 1.50));
-        produits.add(new Produit(102, "Cahier A4", 3.20));
-        produits.add(new Produit(103, "Clavier USB", 25.00));
-        produits.add(new Produit(104, "Souris sans fil", 18.50));
+        List<Produit> produits = produitStorage.loadProduits();
+
+        // Si aucun produit n'est disponible, retourner une liste vide
+        if (produits == null || produits.isEmpty()) {
+            Toast.makeText(requireContext(),
+                "Aucun produit disponible. Synchronisez les produits depuis l'accueil.",
+                Toast.LENGTH_LONG).show();
+            return new ArrayList<>();
+        }
+
         return produits;
     }
 }

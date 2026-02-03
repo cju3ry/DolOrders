@@ -82,6 +82,7 @@ public class AdapteurStockageCommande extends TypeAdapter<Commande> {
         out.name("quantite").value(ligne.getQuantite());
         out.name("remise").value(ligne.getRemise());
         out.name("montantLigne").value(ligne.getMontantLigne());
+        out.name("validee").value(ligne.isValidee());
 
         out.endObject();
     }
@@ -90,6 +91,7 @@ public class AdapteurStockageCommande extends TypeAdapter<Commande> {
         out.beginObject();
         out.name("id").value(produit.getId());
         out.name("libelle").value(produit.getLibelle());
+        out.name("description").value(produit.getDescription());
         out.name("prixUnitaire").value(produit.getPrixUnitaire());
         out.endObject();
     }
@@ -201,6 +203,7 @@ public class AdapteurStockageCommande extends TypeAdapter<Commande> {
         Produit produit = null;
         int quantite = 0;
         double remise = 0.0;
+        boolean validee = false;
 
         in.beginObject();
         while (in.hasNext()) {
@@ -220,6 +223,9 @@ public class AdapteurStockageCommande extends TypeAdapter<Commande> {
                     // Le montant est recalculé automatiquement
                     in.nextDouble();
                     break;
+                case "validee":
+                    validee = in.nextBoolean();
+                    break;
                 default:
                     in.skipValue();
                     break;
@@ -227,12 +233,13 @@ public class AdapteurStockageCommande extends TypeAdapter<Commande> {
         }
         in.endObject();
 
-        return new LigneCommande(produit, quantite, remise);
+        return new LigneCommande(produit, quantite, remise, validee);
     }
 
     private Produit readProduit(JsonReader in) throws IOException {
-        int id = 0;
+        String id = "0";
         String libelle = "";
+        String description = "";
         double prixUnitaire = 0.0;
 
         in.beginObject();
@@ -241,10 +248,19 @@ public class AdapteurStockageCommande extends TypeAdapter<Commande> {
 
             switch (name) {
                 case "id":
-                    id = in.nextInt();
+                    // Gère à la fois String et Int pour la compatibilité
+                    try {
+                        id = in.nextString();
+                    } catch (Exception e) {
+                        in.skipValue();
+                        id = "0";
+                    }
                     break;
                 case "libelle":
                     libelle = in.nextString();
+                    break;
+                case "description":
+                    description = in.nextString();
                     break;
                 case "prixUnitaire":
                     prixUnitaire = in.nextDouble();
@@ -256,7 +272,7 @@ public class AdapteurStockageCommande extends TypeAdapter<Commande> {
         }
         in.endObject();
 
-        return new Produit(id, libelle, prixUnitaire);
+        return new Produit(id, libelle, description, prixUnitaire);
     }
 }
 
