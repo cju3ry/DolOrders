@@ -1,7 +1,5 @@
 package com.example.dolorders.ui.fragment;
 
-import static android.content.DialogInterface.BUTTON_POSITIVE;
-
 import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.os.Bundle;
@@ -14,7 +12,6 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -281,7 +278,7 @@ public class CommandeFormDialogFragment extends DialogFragment {
 
                             if (newQ != current.getQuantite()) {
                                 // CRASH FIX: Pass 'row' directly instead of finding it
-                                updateLigneLocale(row, current, newQ, current.getRemise());
+                                updateLigneLocale(row, current, newQ, current.getRemise(), current.isValidee());
                                 tvTotalLigne.setText(String.format(Locale.FRANCE, REGEX_MONTANT, ((LigneCommande) row.getTag()).getMontantLigne()));
                                 recalculerTotalGlobal(tvTotal);
                             }
@@ -325,7 +322,7 @@ public class CommandeFormDialogFragment extends DialogFragment {
                             newR = Double.parseDouble(s.toString());
                             if (newR != current.getRemise()) {
                                 // CRASH FIX: Pass 'row' directly
-                                updateLigneLocale(row, current, current.getQuantite(), newR);
+                                updateLigneLocale(row, current, current.getQuantite(), newR, current.isValidee());
                                 tvTotalLigne.setText(String.format(Locale.FRANCE, REGEX_MONTANT, ((LigneCommande) row.getTag()).getMontantLigne()));
                                 recalculerTotalGlobal(tvTotal);
                             }

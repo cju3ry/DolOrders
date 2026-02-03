@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.dolorders.R;
 import com.example.dolorders.data.stockage.client.GestionnaireStockageClient;
 import com.example.dolorders.objet.Client;
+import com.example.dolorders.service.ServiceClient;
 import com.example.dolorders.ui.adapteur.ClientAdapteur;
 import com.example.dolorders.ui.util.NavigationUtils;
 import com.example.dolorders.ui.viewModel.ClientsFragmentViewModel;

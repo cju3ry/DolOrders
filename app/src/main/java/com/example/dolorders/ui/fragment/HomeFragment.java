@@ -42,6 +42,8 @@ public class HomeFragment extends Fragment {
         MaterialButton btnNewClient = view.findViewById(R.id.btnNewClient);
         MaterialButton btnNewCommande = view.findViewById(R.id.btnNewCommande);
         MaterialButton btnPendingData = view.findViewById(R.id.btnPendingData);
+        MaterialButton btnSyncClients = view.findViewById(R.id.btnSyncClients);
+        MaterialButton btnSyncProduits = view.findViewById(R.id.btnSyncProduits);
         CommandesFragmentViewModel commandesViewModel = new ViewModelProvider(requireActivity()).get(CommandesFragmentViewModel.class);
         ClientsFragmentViewModel clientsViewModel = new ViewModelProvider(requireActivity()).get(ClientsFragmentViewModel.class);
 
