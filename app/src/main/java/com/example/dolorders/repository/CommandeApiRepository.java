@@ -13,6 +13,7 @@ import com.android.volley.toolbox.Volley;
 import com.example.dolorders.objet.Commande;
 import com.example.dolorders.objet.LigneCommande;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -21,11 +22,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Repository pour gérer l'envoi des commandes vers le module d'historique Dolibarr.
- * POST /dolordersapi/fournisseurss
+ * Repository pour gérer l'envoi des commandes vers Dolibarr.
+ * - POST /orders : Module natif Dolibarr (commandes avec lignes)
+ * - POST /dolordersapi/fournisseurss : Module d'historique (ligne par ligne)
  *
- * IMPORTANT : Chaque ligne de commande est envoyée séparément.
- * Exemple : Une commande avec 3 lignes → 3 appels API distincts
+ * Flux d'envoi :
+ * 1. Envoyer vers le module natif → récupérer l'ID de la commande Dolibarr
+ * 2. Envoyer vers l'historique avec l'ID de la commande Dolibarr
  */
 public class CommandeApiRepository {
 
@@ -42,19 +45,203 @@ public class CommandeApiRepository {
         void onError(String message);
     }
 
+    /**
+     * Interface de callback pour l'envoi d'une commande vers le module natif Dolibarr.
+     */
+    public interface CommandeNativeEnvoiCallback {
+        void onSuccess(String dolibarrCommandeId);
+        void onError(String message);
+    }
+
     public CommandeApiRepository(Context context) {
         this.context = context.getApplicationContext();
         this.requestQueue = Volley.newRequestQueue(context);
     }
 
     /**
-     * Envoie une commande vers le module d'historique.
-     * Chaque ligne de commande est envoyée séparément.
+     * Envoie une commande vers le module natif Dolibarr.
+     * POST /orders
+     *
+     * Structure JSON :
+     * {
+     *   "socid": id_client,
+     *   "date": timestamp,
+     *   "type": 0,
+     *   "lines": [
+     *     {
+     *       "fk_product": id_produit,
+     *       "qty": quantite,
+     *       "subprice": prix_unitaire,
+     *       "tva_tx": 0,
+     *       "remise_percent": remise
+     *     }
+     *   ]
+     * }
      *
      * @param commande Commande à envoyer
-     * @param callback Callback pour notifier du résultat final
+     * @param callback Callback pour notifier du résultat (retourne l'ID de la commande Dolibarr)
      */
-    public void envoyerCommandeVersHistorique(Commande commande, CommandeEnvoiCallback callback) {
+    public void envoyerCommandeVersModuleNatif(Commande commande, CommandeNativeEnvoiCallback callback) {
+        if (commande.getLignesCommande() == null || commande.getLignesCommande().isEmpty()) {
+            callback.onError("La commande ne contient aucune ligne");
+            return;
+        }
+
+        String baseUrl = getBaseUrl();
+        String apiKey = getApiKey();
+
+        if (baseUrl == null || apiKey == null) {
+            callback.onError("Configuration manquante");
+            return;
+        }
+
+        String url = baseUrl.endsWith("/")
+                ? baseUrl + "api/index.php/orders"
+                : baseUrl + "/api/index.php/orders";
+
+        try {
+            final String jsonBodyString = creerJsonCommandeNative(commande).toString();
+
+            Log.d(TAG, "Envoi commande vers module natif: " + jsonBodyString);
+
+            StringRequest request = new StringRequest(
+                    Request.Method.POST,
+                    url,
+                    response -> {
+                        try {
+                            Log.d(TAG, "Réponse module natif: " + response);
+
+                            // Extraire l'ID de la commande Dolibarr
+                            String dolibarrCommandeId;
+                            response = response.trim();
+
+                            if (response.startsWith("{")) {
+                                // Réponse JSON
+                                JSONObject jsonResponse = new JSONObject(response);
+                                dolibarrCommandeId = jsonResponse.has("id") ? jsonResponse.getString("id") : response;
+                            } else {
+                                // Réponse simple (juste l'ID)
+                                dolibarrCommandeId = response;
+                            }
+
+                            Log.d(TAG, "✅ Commande créée dans Dolibarr. ID: " + dolibarrCommandeId);
+                            callback.onSuccess(dolibarrCommandeId);
+                        } catch (Exception e) {
+                            Log.e(TAG, "Erreur parsing réponse module natif", e);
+                            callback.onError("Erreur parsing: " + e.getMessage());
+                        }
+                    },
+                    error -> {
+                        String errorMsg = "Erreur envoi module natif";
+                        if (error.networkResponse != null) {
+                            errorMsg += " (Code: " + error.networkResponse.statusCode + ")";
+                            if (error.networkResponse.data != null) {
+                                String body = new String(error.networkResponse.data);
+                                Log.e(TAG, "Réponse serveur module natif: " + body);
+                                errorMsg += " - " + body;
+                            }
+                        }
+                        Log.e(TAG, errorMsg, error);
+                        callback.onError(errorMsg);
+                    }
+            ) {
+                @Override
+                public Map<String, String> getHeaders() {
+                    Map<String, String> headers = new HashMap<>();
+                    headers.put("DOLAPIKEY", apiKey);
+                    headers.put("Content-Type", "application/json");
+                    headers.put("Accept", "application/json");
+                    return headers;
+                }
+
+                @Override
+                public byte[] getBody() {
+                    return jsonBodyString.getBytes();
+                }
+            };
+
+            requestQueue.add(request);
+
+        } catch (Exception e) {
+            Log.e(TAG, "Erreur création requête module natif", e);
+            callback.onError("Erreur création requête: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Crée le JSON pour envoyer une commande vers le module natif Dolibarr.
+     *
+     * Structure JSON :
+     * {
+     *   "socid": id_client,
+     *   "date": timestamp,
+     *   "type": 0,
+     *   "lines": [
+     *     {
+     *       "fk_product": id_produit,
+     *       "qty": quantite,
+     *       "subprice": prix_unitaire,
+     *       "tva_tx": 0,
+     *       "remise_percent": remise
+     *     }
+     *   ]
+     * }
+     */
+    private JSONObject creerJsonCommandeNative(Commande commande) throws Exception {
+        JSONObject json = new JSONObject();
+
+        // ID du client (socid)
+        String idClient = commande.getClient() != null ? commande.getClient().getId() : null;
+        if (idClient == null) {
+            throw new IllegalArgumentException("Le client doit avoir un ID Dolibarr");
+        }
+        json.put("socid", Integer.parseInt(idClient));
+
+        // Date de la commande (timestamp Unix - secondes)
+        long dateCommande = commande.getDateCommande() != null ?
+                commande.getDateCommande().getTime() / 1000 :
+                System.currentTimeMillis() / 1000;
+        json.put("date", dateCommande);
+
+        // Type de commande (0 par défaut)
+        json.put("type", 0);
+
+        // Lignes de commande
+        JSONArray lines = new JSONArray();
+        for (LigneCommande ligne : commande.getLignesCommande()) {
+            JSONObject ligneJson = new JSONObject();
+
+            // ID du produit
+            ligneJson.put("fk_product", Integer.parseInt(ligne.getProduit().getId()));
+
+            // Quantité
+            ligneJson.put("qty", ligne.getQuantite());
+
+            // Prix unitaire
+            ligneJson.put("subprice", ligne.getProduit().getPrixUnitaire());
+
+            // TVA (0 par défaut)
+            ligneJson.put("tva_tx", 0);
+
+            // Remise
+            ligneJson.put("remise_percent", ligne.getRemise());
+
+            lines.put(ligneJson);
+        }
+        json.put("lines", lines);
+
+        return json;
+    }
+
+    /**
+     * Envoie une commande vers l'historique en utilisant l'ID Dolibarr.
+     * Cette méthode doit être appelée APRÈS l'envoi vers le module natif.
+     *
+     * @param commande Commande à envoyer
+     * @param dolibarrCommandeId ID de la commande dans Dolibarr (récupéré lors de l'envoi natif)
+     * @param callback Callback pour notifier du résultat
+     */
+    public void envoyerCommandeVersHistoriqueAvecId(Commande commande, String dolibarrCommandeId, CommandeEnvoiCallback callback) {
         if (commande.getLignesCommande() == null || commande.getLignesCommande().isEmpty()) {
             callback.onError("La commande ne contient aucune ligne");
             return;
@@ -62,20 +249,20 @@ public class CommandeApiRepository {
 
         String username = getUsername();
 
-        Log.d(TAG, "Début envoi commande " + commande.getId() + " (" +
-                   commande.getLignesCommande().size() + " lignes)");
+        Log.d(TAG, "Début envoi commande vers historique avec ID Dolibarr: " + dolibarrCommandeId +
+                   " (" + commande.getLignesCommande().size() + " lignes)");
 
-        // Envoyer chaque ligne de commande séparément
-        envoyerLigneRecursive(commande, 0, username, callback);
+        // Envoyer chaque ligne de commande séparément avec l'ID Dolibarr
+        envoyerLigneRecursiveAvecId(commande, dolibarrCommandeId, 0, username, callback);
     }
 
     /**
-     * Envoie les lignes de commande une par une de manière récursive.
+     * Envoie les lignes de commande vers l'historique avec l'ID Dolibarr.
      */
-    private void envoyerLigneRecursive(Commande commande, int index, String username, CommandeEnvoiCallback callback) {
+    private void envoyerLigneRecursiveAvecId(Commande commande, String dolibarrCommandeId, int index, String username, CommandeEnvoiCallback callback) {
         if (index >= commande.getLignesCommande().size()) {
             // Toutes les lignes ont été envoyées
-            Log.d(TAG, "✅ Toutes les lignes de la commande " + commande.getId() + " envoyées");
+            Log.d(TAG, "✅ Toutes les lignes de la commande envoyées vers l'historique");
             callback.onSuccess("all_lines_sent");
             return;
         }
@@ -83,30 +270,30 @@ public class CommandeApiRepository {
         LigneCommande ligne = commande.getLignesCommande().get(index);
 
         Log.d(TAG, "Envoi ligne " + (index + 1) + "/" + commande.getLignesCommande().size() +
-                   " de la commande " + commande.getId() + " - Produit: " + ligne.getProduit().getLibelle());
+                   " vers l'historique - Produit: " + ligne.getProduit().getLibelle());
 
-        envoyerLigneVersHistorique(commande, ligne, username, new CommandeEnvoiCallback() {
+        envoyerLigneVersHistoriqueAvecId(commande, ligne, dolibarrCommandeId, username, new CommandeEnvoiCallback() {
             @Override
             public void onSuccess(String historiqueId) {
-                Log.d(TAG, "✅ Ligne " + (index + 1) + " envoyée. ID: " + historiqueId);
+                Log.d(TAG, "✅ Ligne " + (index + 1) + " envoyée vers l'historique. ID: " + historiqueId);
                 // Envoyer la ligne suivante
-                envoyerLigneRecursive(commande, index + 1, username, callback);
+                envoyerLigneRecursiveAvecId(commande, dolibarrCommandeId, index + 1, username, callback);
             }
 
             @Override
             public void onError(String message) {
-                Log.e(TAG, "❌ Erreur envoi ligne " + (index + 1) + ": " + message);
+                Log.e(TAG, "❌ Erreur envoi ligne " + (index + 1) + " vers l'historique: " + message);
                 // Continuer avec la ligne suivante même en cas d'erreur
-                envoyerLigneRecursive(commande, index + 1, username, callback);
+                envoyerLigneRecursiveAvecId(commande, dolibarrCommandeId, index + 1, username, callback);
             }
         });
     }
 
     /**
-     * Envoie une ligne de commande vers le module d'historique.
+     * Envoie une ligne de commande vers le module d'historique avec l'ID Dolibarr.
      * POST /dolordersapi/fournisseurss
      */
-    private void envoyerLigneVersHistorique(Commande commande, LigneCommande ligne, String username, CommandeEnvoiCallback callback) {
+    private void envoyerLigneVersHistoriqueAvecId(Commande commande, LigneCommande ligne, String dolibarrCommandeId, String username, CommandeEnvoiCallback callback) {
         String baseUrl = getBaseUrl();
         String apiKey = getApiKey();
 
@@ -120,7 +307,7 @@ public class CommandeApiRepository {
                 : baseUrl + "/api/index.php/dolordersapi/fournisseurss";
 
         try {
-            final String jsonBodyString = creerJsonLigneCommande(commande, ligne, username).toString();
+            final String jsonBodyString = creerJsonLigneCommandeAvecId(commande, ligne, dolibarrCommandeId, username).toString();
 
             StringRequest request = new StringRequest(
                     Request.Method.POST,
@@ -182,27 +369,9 @@ public class CommandeApiRepository {
     }
 
     /**
-     * Crée le JSON pour envoyer une ligne de commande vers le module d'historique.
-     *
-     * Structure JSON :
-     * {
-     *   "idclient": id,
-     *   "idcommande": id,
-     *   "nomclient": "username",
-     *   "datecommande": date,
-     *   "codearticle": "code",
-     *   "label": "Nom du produit",
-     *   "qte": int,
-     *   "price": int,
-     *   "remise": int,
-     *   "creator_name": "username",
-     *   "creation_date": date,
-     *   "submitted_by_name": "username",
-     *   "submission_date": date,
-     *   "update_date": "Oui ou non"
-     * }
+     * Crée le JSON pour envoyer une ligne de commande vers le module d'historique avec l'ID Dolibarr.
      */
-    private JSONObject creerJsonLigneCommande(Commande commande, LigneCommande ligne, String username) throws Exception {
+    private JSONObject creerJsonLigneCommandeAvecId(Commande commande, LigneCommande ligne, String dolibarrCommandeId, String username) throws Exception {
         JSONObject json = new JSONObject();
 
         // ID du client (récupéré depuis le client de la commande)
@@ -210,11 +379,11 @@ public class CommandeApiRepository {
 
         json.put("idclient", Integer.parseInt(idClient));
 
-        // ID de la commande (pour le moment on met 1)
-        json.put("idcommande", 1);
+        // ID de la commande (ID Dolibarr retourné par le module natif)
+        json.put("idcommande", Integer.parseInt(dolibarrCommandeId));
 
         // Nom du client (username)
-        String nomClient= commande.getClient().getNom();
+        String nomClient = commande.getClient().getNom();
         json.put("nomclient", nomClient != null ? nomClient : "Unknown");
 
         // Date de la commande (timestamp Unix - secondes)
@@ -251,10 +420,10 @@ public class CommandeApiRepository {
         long submissionDate = System.currentTimeMillis() / 1000;
         json.put("submission_date", submissionDate);
 
-        // Update date (Non par défaut)
-        json.put("update_date", "Non");
+        // Update date (Oui car la commande a été créée dans le module natif)
+        json.put("update_date", "Oui");
 
-        Log.d(TAG, "JSON ligne commande créé: " + json);
+        Log.d(TAG, "JSON ligne commande avec ID Dolibarr créé: " + json);
 
         return json;
     }

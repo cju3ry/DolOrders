@@ -245,7 +245,11 @@ public class ListeAttenteFragment extends Fragment {
     }
 
     /**
-     * Envoie toutes les commandes d'un client vers l'historique.
+     * Envoie toutes les commandes d'un client vers Dolibarr (module natif + historique).
+     * Flux :
+     * 1. Envoyer la commande vers le module natif → récupérer l'ID Dolibarr
+     * 2. Envoyer vers l'historique avec l'ID Dolibarr
+     * 3. Supprimer la commande locale
      */
     private void envoyerCommandesDuClient(Client client,
                                           CommandeApiRepository commandeRepo,
@@ -284,12 +288,16 @@ public class ListeAttenteFragment extends Fragment {
 
         Log.d("ListeAttente", "Envoi de " + commandesDuClient.size() + " commande(s) pour " + client.getNom());
 
-        // Envoyer les commandes une par une
+        // Envoyer les commandes une par une (module natif + historique)
         envoyerCommandesRecursif(commandesDuClient, 0, commandeRepo, commandeStorage, onTermine);
     }
 
     /**
      * Envoie les commandes une par une de manière récursive.
+     * Flux pour chaque commande :
+     * 1. Envoyer vers le module natif Dolibarr → récupérer l'ID
+     * 2. Envoyer vers l'historique avec l'ID Dolibarr
+     * 3. Supprimer du stockage local
      */
     private void envoyerCommandesRecursif(List<Commande> commandes, int index,
                                           CommandeApiRepository repo,
@@ -305,27 +313,52 @@ public class ListeAttenteFragment extends Fragment {
         Log.d("ListeAttente", "Envoi commande " + (index + 1) + "/" + commandes.size() +
               " - " + commande.getLignesCommande().size() + " ligne(s)");
 
-        repo.envoyerCommandeVersHistorique(commande, new CommandeApiRepository.CommandeEnvoiCallback() {
+        // Étape 1 : Envoyer vers le module natif Dolibarr
+        Log.d("ListeAttente", "📤 Étape 1/2 : Envoi vers le module natif Dolibarr...");
+
+        repo.envoyerCommandeVersModuleNatif(commande, new CommandeApiRepository.CommandeNativeEnvoiCallback() {
             @Override
-            public void onSuccess(String historiqueId) {
-                Log.d("ListeAttente", "✅ Commande " + commande.getId() + " envoyée !");
+            public void onSuccess(String dolibarrCommandeId) {
+                Log.d("ListeAttente", "✅ Commande " + commande.getId() + " créée dans Dolibarr ! ID: " + dolibarrCommandeId);
 
-                // Supprimer la commande du stockage local
-                boolean supprime = storage.deleteCommande(commande.getId());
+                // Étape 2 : Envoyer vers l'historique avec l'ID Dolibarr
+                Log.d("ListeAttente", "📤 Étape 2/2 : Envoi vers l'historique avec ID Dolibarr...");
 
-                if (supprime) {
-                    Log.d("ListeAttente", "✅ Commande " + commande.getId() + " supprimée du stockage local");
-                } else {
-                    Log.w("ListeAttente", "⚠️ Erreur suppression de la commande locale: " + commande.getId());
-                }
+                repo.envoyerCommandeVersHistoriqueAvecId(commande, dolibarrCommandeId, new CommandeApiRepository.CommandeEnvoiCallback() {
+                    @Override
+                    public void onSuccess(String historiqueId) {
+                        Log.d("ListeAttente", "✅ Commande " + commande.getId() + " envoyée vers l'historique !");
 
-                // Envoyer la commande suivante
-                envoyerCommandesRecursif(commandes, index + 1, repo, storage, onTermine);
+                        // Étape 3 : Supprimer la commande du stockage local
+                        boolean supprime = storage.deleteCommande(commande.getId());
+
+                        if (supprime) {
+                            Log.d("ListeAttente", "✅ Commande " + commande.getId() + " supprimée du stockage local");
+                        } else {
+                            Log.w("ListeAttente", "⚠️ Erreur suppression de la commande locale: " + commande.getId());
+                        }
+
+                        // Envoyer la commande suivante
+                        envoyerCommandesRecursif(commandes, index + 1, repo, storage, onTermine);
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        Log.e("ListeAttente", "❌ Erreur envoi historique commande " + commande.getId() + ": " + message);
+
+                        Toast.makeText(getContext(),
+                                "Erreur historique : " + message,
+                                Toast.LENGTH_SHORT).show();
+
+                        // Continuer avec la commande suivante même en cas d'erreur
+                        envoyerCommandesRecursif(commandes, index + 1, repo, storage, onTermine);
+                    }
+                });
             }
 
             @Override
             public void onError(String message) {
-                Log.e("ListeAttente", "❌ Erreur envoi commande " + commande.getId() + ": " + message);
+                Log.e("ListeAttente", "❌ Erreur envoi module natif commande " + commande.getId() + ": " + message);
 
                 Toast.makeText(getContext(),
                         "Erreur commande : " + message,
