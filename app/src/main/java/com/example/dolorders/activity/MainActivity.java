@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -16,6 +17,7 @@ import androidx.security.crypto.EncryptedSharedPreferences;
 import androidx.security.crypto.MasterKey;
 
 import com.example.dolorders.R;
+import com.example.dolorders.service.ServiceConnexionInternet;
 import com.example.dolorders.service.ServiceGestionSession;
 import com.example.dolorders.service.ServiceUrl;
 import com.example.dolorders.ui.fragment.ClientsFragment;
@@ -31,6 +33,8 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
     private ServiceUrl serviceUrl;
+    private ServiceConnexionInternet serviceConnexion;
+    private View connectionIndicator;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,6 +49,10 @@ public class MainActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayShowTitleEnabled(false);
         }
+
+        // Initialiser l'indicateur de connexion
+        connectionIndicator = findViewById(R.id.connectionIndicator);
+        setupConnectionMonitoring();
 
         // Récupération du nom d'utilisateur et mise à jour du TextView
         recupererUtilisateur();
@@ -139,6 +147,56 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Configuration de la surveillance de la connexion Internet
+     */
+    private void setupConnectionMonitoring() {
+        serviceConnexion = new ServiceConnexionInternet(this);
+
+        // Mettre à jour l'indicateur avec l'état initial
+        updateConnectionIndicator(serviceConnexion.isInternetAvailable());
+
+        // Démarrer la surveillance en temps réel
+        serviceConnexion.startMonitoring(new ServiceConnexionInternet.ConnectionStatusListener() {
+            @Override
+            public void onConnectionStatusChanged(boolean isConnected) {
+                // Le callback peut être appelé depuis un thread réseau
+                // Il faut mettre à jour l'UI sur le thread principal
+                runOnUiThread(() -> {
+                    updateConnectionIndicator(isConnected);
+
+                    // Afficher un Toast pour informer l'utilisateur
+                    if (isConnected) {
+                        Toast.makeText(MainActivity.this,
+                                "✅ Connexion Internet rétablie",
+                                Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(MainActivity.this,
+                                "❌ Connexion Internet perdue",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        });
+
+        Log.d(TAG, "Surveillance de la connexion Internet initialisée");
+    }
+
+    /**
+     * Met à jour l'indicateur visuel de connexion
+     */
+    private void updateConnectionIndicator(boolean isConnected) {
+        if (connectionIndicator != null) {
+            if (isConnected) {
+                connectionIndicator.setBackgroundResource(R.drawable.ic_connection_online);
+                Log.d(TAG, "✅ Indicateur : CONNECTÉ");
+            } else {
+                connectionIndicator.setBackgroundResource(R.drawable.ic_connection_offline);
+                Log.d(TAG, "❌ Indicateur : DÉCONNECTÉ");
+            }
+        }
+    }
+
     // Inflater le menu utilisateur pour la Toolbar
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -158,5 +216,14 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Arrêter la surveillance lors de la destruction de l'activité
+        if (serviceConnexion != null) {
+            serviceConnexion.stopMonitoring();
+        }
     }
 }

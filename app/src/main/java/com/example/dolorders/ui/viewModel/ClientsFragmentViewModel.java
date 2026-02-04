@@ -20,6 +20,8 @@ public class ClientsFragmentViewModel extends ViewModel {
 
     private final MutableLiveData<Client> clientCree = new MutableLiveData<>();
     private final MutableLiveData<List<Client>> listeClients = new MutableLiveData<>();
+    private final MutableLiveData<String> erreurSynchronisation = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> synchronisationReussie = new MutableLiveData<>();
 
     private ClientApiRepository clientApiRepository;
     private GestionnaireStockageClient clientApiStorageManager;
@@ -40,6 +42,22 @@ public class ClientsFragmentViewModel extends ViewModel {
 
     public LiveData<List<Client>> getListeClients() {
         return listeClients;
+    }
+
+    public LiveData<String> getErreurSynchronisation() {
+        return erreurSynchronisation;
+    }
+
+    public LiveData<Boolean> getSynchronisationReussie() {
+        return synchronisationReussie;
+    }
+
+    public void consommerErreur() {
+        erreurSynchronisation.setValue(null);
+    }
+
+    public void consommerSucces() {
+        synchronisationReussie.setValue(null);
     }
 
     /**
@@ -96,6 +114,9 @@ public class ClientsFragmentViewModel extends ViewModel {
                 // Sauvegarder dans le cache API
                 clientApiStorageManager.saveClients(clients);
 
+                // Notifier le succès AVANT de recharger les clients
+                synchronisationReussie.postValue(true);
+
                 // Recharger tous les clients pour mettre à jour l'affichage
                 chargerTousLesClients(context);
             }
@@ -104,8 +125,11 @@ public class ClientsFragmentViewModel extends ViewModel {
             public void onError(String message) {
                 Log.e(TAG, "Erreur lors de la synchronisation des clients : " + message);
 
-                // En cas d'erreur API, charger depuis le cache si disponible
-                chargerTousLesClients(context);
+                // Notifier l'erreur via LiveData pour afficher un dialogue convivial
+                erreurSynchronisation.postValue(message);
+
+                // NE PAS recharger les clients en cas d'erreur pour éviter le Toast de succès
+                // L'utilisateur verra le dialogue d'erreur uniquement
             }
         });
     }
