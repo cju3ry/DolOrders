@@ -12,6 +12,13 @@ import java.util.Date;
 public class ClientApiMapper {
 
     /**
+     * Constructeur privé pour empêcher l'instanciation.
+     */
+    private ClientApiMapper() {
+        // Classe utilitaire : ne doit pas être instanciée
+    }
+
+    /**
      * Convertit un ClientApiReponseDto en Client.
      * Les champs manquants ou null sont gérés avec des valeurs par défaut
      * via la méthode buildFromApi() du Builder.

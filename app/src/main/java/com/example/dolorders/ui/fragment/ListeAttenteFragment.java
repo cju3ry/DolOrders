@@ -32,8 +32,10 @@ import java.util.List;
 
 public class ListeAttenteFragment extends Fragment {
 
-    private ViewPager2 viewPager;
-    private ViewPagerAdapter viewPagerAdapter;
+    private static final String VALIDE_CLIENT = "✅ Client ";
+    private static final String VALIDE_COMMANDE = "✅ Commande ";
+    private static final String LISTE_ATTENTE = "ListeAttente";
+
 
     @Nullable
     @Override
@@ -46,11 +48,11 @@ public class ListeAttenteFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         TabLayout tabLayout = view.findViewById(R.id.tab_layout);
-        viewPager = view.findViewById(R.id.view_pager);
+        ViewPager2 viewPager = view.findViewById(R.id.view_pager);
         Button btnEnvoyer = view.findViewById(R.id.btn_envoyer_dolibarr);
 
         // Configuration de l'adapter (Seulement 2 onglets maintenant)
-        viewPagerAdapter = new ViewPagerAdapter(this);
+        ViewPagerAdapter viewPagerAdapter = new ViewPagerAdapter(this);
         viewPager.setAdapter(viewPagerAdapter);
 
         // Liaison TabLayout <-> ViewPager
@@ -63,16 +65,14 @@ public class ListeAttenteFragment extends Fragment {
         }).attach();
 
         // Gestion du bouton Envoyer - Envoie clients + leurs commandes
-        btnEnvoyer.setOnClickListener(v -> {
-            new AlertDialog.Builder(requireContext())
-                    .setTitle("Synchronisation complète")
-                    .setMessage("Voulez-vous envoyer tous les clients et leurs commandes vers Dolibarr ?")
-                    .setPositiveButton("Envoyer", (dialog, which) -> {
-                        envoyerToutVersDolibarr();
-                    })
-                    .setNegativeButton("Annuler", null)
-                    .show();
-        });
+        btnEnvoyer.setOnClickListener(v ->
+                new AlertDialog.Builder(requireContext())
+                        .setTitle("Synchronisation complète")
+                        .setMessage("Voulez-vous envoyer tous les clients et leurs commandes vers Dolibarr ?")
+                        .setPositiveButton("Envoyer", (dialog, which) ->
+                                envoyerToutVersDolibarr())
+                        .setNegativeButton("Annuler", null)
+                        .show());
     }
 
     /**
@@ -122,8 +122,8 @@ public class ListeAttenteFragment extends Fragment {
                     // Ajouter le client local qu'il ait des commandes ou non
                     if (!clientsAEnvoyer.contains(clientLocal)) {
                         clientsAEnvoyer.add(clientLocal);
-                        Log.d("ListeAttente", "Client local ajouté: " + clientLocal.getNom() +
-                              " (avec commandes: " + aDesCommandes + ")");
+                        Log.d(LISTE_ATTENTE, "Client local ajouté: " + clientLocal.getNom() +
+                                " (avec commandes: " + aDesCommandes + ")");
                     }
                 }
             }
@@ -160,7 +160,7 @@ public class ListeAttenteFragment extends Fragment {
                     // Ajouter le client s'il n'est pas déjà dans la liste
                     if (clientComplet != null && !clientsAEnvoyer.contains(clientComplet)) {
                         clientsAEnvoyer.add(clientComplet);
-                        Log.d("ListeAttente", "Client avec commandes ajouté: " + clientComplet.getNom());
+                        Log.d(LISTE_ATTENTE, "Client avec commandes ajouté: " + clientComplet.getNom());
                     }
                 }
             }
@@ -172,14 +172,14 @@ public class ListeAttenteFragment extends Fragment {
             return;
         }
 
-        Log.d("ListeAttente", "Nombre total de clients à envoyer: " + clientsAEnvoyer.size());
+        Log.d(LISTE_ATTENTE, "Nombre total de clients à envoyer: " + clientsAEnvoyer.size());
 
         // Envoyer chaque client + ses commandes séquentiellement
         ClientApiRepository clientRepo = new ClientApiRepository(requireContext());
         CommandeApiRepository commandeRepo = new CommandeApiRepository(requireContext());
 
         envoyerClientEtCommandesRecursif(clientsAEnvoyer, 0, clientRepo, commandeRepo,
-                                         storageLocal, commandeStorage, progressDialog);
+                storageLocal, commandeStorage, progressDialog);
     }
 
     /**
@@ -195,25 +195,25 @@ public class ListeAttenteFragment extends Fragment {
                                                   ProgressDialog progressDialog) {
         // Tous les clients ont été traités
         if (index >= clients.size()) {
-            Log.d("ListeAttente", "Tous les clients et commandes traités. Re-synchronisation...");
-            resynchroniserClients(clientStorage, progressDialog);
+            Log.d(LISTE_ATTENTE, "Tous les clients et commandes traités. Re-synchronisation...");
+            resynchroniserClients(progressDialog);
             return;
         }
 
         Client client = clients.get(index);
-        Log.d("ListeAttente", "Traitement du client " + (index + 1) + "/" + clients.size() + ": " + client.getNom());
+        Log.d(LISTE_ATTENTE, "Traitement du client " + (index + 1) + "/" + clients.size() + ": " + client.getNom());
 
         progressDialog.setMessage("Traitement du client " + client.getNom() + " (" + (index + 1) + "/" + clients.size() + ")...");
 
         // Vérifier si le client provient de l'API (existe déjà dans Dolibarr)
         if (client.isFromApi()) {
-            Log.d("ListeAttente", "✅ Client " + client.getNom() + " provient de l'API (ID: " + client.getId() + ") - Pas d'envoi nécessaire");
+            Log.d(LISTE_ATTENTE, VALIDE_CLIENT + client.getNom() + " provient de l'API (ID: " + client.getId() + ") - Pas d'envoi nécessaire");
 
             // Le client existe déjà dans Dolibarr, on utilise directement son ID
             // 1. Envoyer les commandes de ce client
             envoyerCommandesDuClient(client, commandeRepo, commandeStorage, () -> {
                 // 2. Pas de suppression du client car il provient de l'API (on le garde)
-                Log.d("ListeAttente", "✅ Commandes du client API " + client.getNom() + " traitées (client conservé)");
+                Log.d(LISTE_ATTENTE, "✅ Commandes du client API " + client.getNom() + " traitées (client conservé)");
 
                 // 3. Passer au client suivant
                 envoyerClientEtCommandesRecursif(clients, index + 1, clientRepo, commandeRepo,
@@ -221,13 +221,13 @@ public class ListeAttenteFragment extends Fragment {
             });
         } else {
             // Client local : il faut l'envoyer vers Dolibarr
-            Log.d("ListeAttente", "Envoi du client local " + client.getNom() + " vers Dolibarr...");
+            Log.d(LISTE_ATTENTE, "Envoi du client local " + client.getNom() + " vers Dolibarr...");
 
             // 1. Envoyer le client vers Dolibarr + historique
             clientRepo.envoyerClient(client, new ClientApiRepository.ClientEnvoiCallback() {
                 @Override
                 public void onSuccess(String dolibarrId) {
-                    Log.d("ListeAttente", "✅ Client " + client.getNom() + " envoyé ! ID Dolibarr: " + dolibarrId);
+                    Log.d(LISTE_ATTENTE, VALIDE_CLIENT + client.getNom() + " envoyé ! ID Dolibarr: " + dolibarrId);
 
                     Client clientAvecId = new Client.Builder()
                             .setId(dolibarrId)
@@ -249,9 +249,9 @@ public class ListeAttenteFragment extends Fragment {
                         boolean supprime = serviceClient.deleteClient(client);
 
                         if (supprime) {
-                            Log.d("ListeAttente", "✅ Client " + client.getNom() + " supprimé du stockage local");
+                            Log.d(LISTE_ATTENTE, VALIDE_CLIENT + client.getNom() + " supprimé du stockage local");
                         } else {
-                            Log.w("ListeAttente", "⚠️ Erreur suppression du client local: " + client.getNom());
+                            Log.w(LISTE_ATTENTE, "⚠️ Erreur suppression du client local: " + client.getNom());
                         }
 
                         // 4. Passer au client suivant
@@ -262,7 +262,7 @@ public class ListeAttenteFragment extends Fragment {
 
                 @Override
                 public void onError(String message) {
-                    Log.e("ListeAttente", "❌ Erreur envoi " + client.getNom() + ": " + message);
+                    Log.e(LISTE_ATTENTE, "❌ Erreur envoi " + client.getNom() + ": " + message);
 
                     Toast.makeText(getContext(),
                             "Erreur : " + client.getNom() + " - " + message,
@@ -291,7 +291,7 @@ public class ListeAttenteFragment extends Fragment {
         List<Commande> toutesCommandes = commandeStorage.loadCommandes();
 
         if (toutesCommandes == null || toutesCommandes.isEmpty()) {
-            Log.d("ListeAttente", "Aucune commande pour le client " + client.getNom());
+            Log.d(LISTE_ATTENTE, "Aucune commande pour le client " + client.getNom());
             onTermine.run();
             return;
         }
@@ -313,12 +313,12 @@ public class ListeAttenteFragment extends Fragment {
         }
 
         if (commandesDuClient.isEmpty()) {
-            Log.d("ListeAttente", "Aucune commande pour le client " + client.getNom());
+            Log.d(LISTE_ATTENTE, "Aucune commande pour le client " + client.getNom());
             onTermine.run();
             return;
         }
 
-        Log.d("ListeAttente", "Envoi de " + commandesDuClient.size() + " commande(s) pour " + client.getNom());
+        Log.d(LISTE_ATTENTE, "Envoi de " + commandesDuClient.size() + " commande(s) pour " + client.getNom());
 
         // Envoyer les commandes une par une (module natif + historique)
         envoyerCommandesRecursif(commandesDuClient, 0, commandeRepo, commandeStorage, onTermine);
@@ -336,38 +336,38 @@ public class ListeAttenteFragment extends Fragment {
                                           GestionnaireStockageCommande storage,
                                           Runnable onTermine) {
         if (index >= commandes.size()) {
-            Log.d("ListeAttente", "Toutes les commandes du client envoyées");
+            Log.d(LISTE_ATTENTE, "Toutes les commandes du client envoyées");
             onTermine.run();
             return;
         }
 
         Commande commande = commandes.get(index);
-        Log.d("ListeAttente", "Envoi commande " + (index + 1) + "/" + commandes.size() +
-              " - " + commande.getLignesCommande().size() + " ligne(s)");
+        Log.d(LISTE_ATTENTE, "Envoi commande " + (index + 1) + "/" + commandes.size() +
+                " - " + commande.getLignesCommande().size() + " ligne(s)");
 
         // Étape 1 : Envoyer vers le module natif Dolibarr
-        Log.d("ListeAttente", "📤 Étape 1/2 : Envoi vers le module natif Dolibarr...");
+        Log.d(LISTE_ATTENTE, "📤 Étape 1/2 : Envoi vers le module natif Dolibarr...");
 
         repo.envoyerCommandeVersModuleNatif(commande, new CommandeApiRepository.CommandeNativeEnvoiCallback() {
             @Override
             public void onSuccess(String dolibarrCommandeId) {
-                Log.d("ListeAttente", "✅ Commande " + commande.getId() + " créée dans Dolibarr ! ID: " + dolibarrCommandeId);
+                Log.d(LISTE_ATTENTE, VALIDE_COMMANDE + commande.getId() + " créée dans Dolibarr ! ID: " + dolibarrCommandeId);
 
                 // Étape 2 : Envoyer vers l'historique avec l'ID Dolibarr
-                Log.d("ListeAttente", "📤 Étape 2/2 : Envoi vers l'historique avec ID Dolibarr...");
+                Log.d(LISTE_ATTENTE, "📤 Étape 2/2 : Envoi vers l'historique avec ID Dolibarr...");
 
                 repo.envoyerCommandeVersHistoriqueAvecId(commande, dolibarrCommandeId, new CommandeApiRepository.CommandeEnvoiCallback() {
                     @Override
                     public void onSuccess(String historiqueId) {
-                        Log.d("ListeAttente", "✅ Commande " + commande.getId() + " envoyée vers l'historique !");
+                        Log.d(LISTE_ATTENTE, VALIDE_COMMANDE + commande.getId() + " envoyée vers l'historique !");
 
                         // Étape 3 : Supprimer la commande du stockage local
                         boolean supprime = storage.deleteCommande(commande.getId());
 
                         if (supprime) {
-                            Log.d("ListeAttente", "✅ Commande " + commande.getId() + " supprimée du stockage local");
+                            Log.d(LISTE_ATTENTE, VALIDE_COMMANDE + commande.getId() + " supprimée du stockage local");
                         } else {
-                            Log.w("ListeAttente", "⚠️ Erreur suppression de la commande locale: " + commande.getId());
+                            Log.w(LISTE_ATTENTE, "⚠️ Erreur suppression de la commande locale: " + commande.getId());
                         }
 
                         // Envoyer la commande suivante
@@ -376,7 +376,7 @@ public class ListeAttenteFragment extends Fragment {
 
                     @Override
                     public void onError(String message) {
-                        Log.e("ListeAttente", "❌ Erreur envoi historique commande " + commande.getId() + ": " + message);
+                        Log.e(LISTE_ATTENTE, "❌ Erreur envoi historique commande " + commande.getId() + ": " + message);
 
                         Toast.makeText(getContext(),
                                 "Erreur historique : " + message,
@@ -390,7 +390,7 @@ public class ListeAttenteFragment extends Fragment {
 
             @Override
             public void onError(String message) {
-                Log.e("ListeAttente", "❌ Erreur envoi module natif commande " + commande.getId() + ": " + message);
+                Log.e(LISTE_ATTENTE, "❌ Erreur envoi module natif commande " + commande.getId() + ": " + message);
 
                 Toast.makeText(getContext(),
                         "Erreur commande : " + message,
@@ -406,7 +406,7 @@ public class ListeAttenteFragment extends Fragment {
     /**
      * Re-synchronise les clients depuis l'API Dolibarr après l'envoi.
      */
-    private void resynchroniserClients(GestionnaireStockageClient storage, ProgressDialog progressDialog) {
+    private void resynchroniserClients(ProgressDialog progressDialog) {
         progressDialog.setMessage("Récupération des clients depuis Dolibarr...");
 
         ClientApiRepository repo = new ClientApiRepository(requireContext());
@@ -420,7 +420,7 @@ public class ListeAttenteFragment extends Fragment {
         repo.synchroniserDepuisApi(new ClientApiRepository.ClientCallback() {
             @Override
             public void onSuccess(List<Client> clients) {
-                Log.d("ListeAttente", "✅ " + clients.size() + " clients récupérés depuis l'API");
+                Log.d(LISTE_ATTENTE, "✅ " + clients.size() + " clients récupérés depuis l'API");
 
                 // Sauvegarder dans le fichier API
                 storageApi.saveClients(clients);
@@ -437,7 +437,7 @@ public class ListeAttenteFragment extends Fragment {
 
             @Override
             public void onError(String message) {
-                Log.e("ListeAttente", "❌ Erreur synchronisation: " + message);
+                Log.e(LISTE_ATTENTE, "❌ Erreur synchronisation: " + message);
 
                 progressDialog.dismiss();
 
@@ -448,14 +448,12 @@ public class ListeAttenteFragment extends Fragment {
                 new AlertDialog.Builder(requireContext())
                         .setTitle("❌ Erreur de synchronisation")
                         .setMessage(messageConvivial)
-                        .setPositiveButton("OK", (dialog, which) -> {
-                            // Naviguer vers la page d'accueil même en cas d'erreur
-                            naviguerVersAccueil();
-                        })
-                        .setNegativeButton("Réessayer", (dialog, which) -> {
-                            // Réessayer en relançant tout le processus
-                            envoyerToutVersDolibarr();
-                        })
+                        .setPositiveButton("OK", (dialog, which) ->
+                                // Naviguer vers la page d'accueil même en cas d'erreur
+                                naviguerVersAccueil())
+                        .setNegativeButton("Réessayer", (dialog, which) ->
+                                // Réessayer en relançant tout le processus
+                                envoyerToutVersDolibarr())
                         .setCancelable(false)
                         .show();
             }
@@ -475,9 +473,9 @@ public class ListeAttenteFragment extends Fragment {
             if (bottomNav != null) {
                 // Sélectionner l'item "Home" du menu
                 bottomNav.setSelectedItemId(R.id.nav_home);
-                Log.d("ListeAttente", "🏠 Navigation vers la page d'accueil");
+                Log.d(LISTE_ATTENTE, "🏠 Navigation vers la page d'accueil");
             } else {
-                Log.w("ListeAttente", "⚠️ BottomNavigationView non trouvé");
+                Log.w(LISTE_ATTENTE, "⚠️ BottomNavigationView non trouvé");
             }
         }
     }
@@ -496,70 +494,70 @@ public class ListeAttenteFragment extends Fragment {
 
         // Détection des problèmes de connexion Internet
         if (lowerMessage.contains("unknownhostexception") ||
-            lowerMessage.contains("unable to resolve host")) {
+                lowerMessage.contains("unable to resolve host")) {
             return "🔍 Impossible de contacter le serveur Dolibarr.\n\n" +
-                   "Veuillez vérifier :\n" +
-                   "• Votre connexion Internet (point rouge en haut = déconnecté)\n" +
-                   "• L'URL de connexion au serveur\n" +
-                   "• L'état serveur";
+                    "Veuillez vérifier :\n" +
+                    "• Votre connexion Internet (point rouge en haut = déconnecté)\n" +
+                    "• L'URL de connexion au serveur\n" +
+                    "• L'état serveur";
         }
 
         if (lowerMessage.contains("timeout") || lowerMessage.contains("timed out")) {
             return "⏱️ Le serveur met trop de temps à répondre.\n\n" +
-                   "Vérifiez :\n" +
-                   "• Votre connexion Internet\n" +
-                   "• Le serveur Dolibarr n'est pas surchargé";
+                    "Vérifiez :\n" +
+                    "• Votre connexion Internet\n" +
+                    "• Le serveur Dolibarr n'est pas surchargé";
         }
 
         if (lowerMessage.contains("no connection") ||
-            lowerMessage.contains("no internet") ||
-            lowerMessage.contains("network unavailable")) {
+                lowerMessage.contains("no internet") ||
+                lowerMessage.contains("network unavailable")) {
             return "📡 Aucune connexion Internet détectée.\n\n" +
-                   "Actions :\n" +
-                   "• Activez le WiFi ou les données mobiles\n" +
-                   "• Vérifiez le point rouge en haut de l'écran";
+                    "Actions :\n" +
+                    "• Activez le WiFi ou les données mobiles\n" +
+                    "• Vérifiez le point rouge en haut de l'écran";
         }
 
         if (lowerMessage.contains("connection refused")) {
             return "🚫 Connexion refusée par le serveur.\n\n" +
-                   "Vérifiez :\n" +
-                   "• L'URL du serveur Dolibarr\n" +
-                   "• Le serveur est bien démarré";
+                    "Vérifiez :\n" +
+                    "• L'URL du serveur Dolibarr\n" +
+                    "• Le serveur est bien démarré";
         }
 
         // Erreurs d'authentification
         if (lowerMessage.contains("401") || lowerMessage.contains("unauthorized")) {
             return "🔐 Authentification échouée.\n\n" +
-                   "Votre clé API est peut-être invalide ou expirée.\n" +
-                   "Reconnectez-vous pour rafraîchir vos identifiants.";
+                    "Votre clé API est peut-être invalide ou expirée.\n" +
+                    "Reconnectez-vous pour rafraîchir vos identifiants.";
         }
 
         // Erreurs serveur
         if (lowerMessage.contains("404") || lowerMessage.contains("not found")) {
             return "❓ Ressource introuvable sur le serveur.\n\n" +
-                   "Vérifiez que l'URL du serveur Dolibarr est correcte.";
+                    "Vérifiez que l'URL du serveur Dolibarr est correcte.";
         }
 
         if (lowerMessage.contains("500") || lowerMessage.contains("internal server")) {
             return "⚠️ Erreur interne du serveur Dolibarr.\n\n" +
-                   "Contactez l'administrateur du serveur.";
+                    "Contactez l'administrateur du serveur.";
         }
 
         if (lowerMessage.contains("503") || lowerMessage.contains("service unavailable")) {
             return "🔧 Serveur temporairement indisponible.\n\n" +
-                   "Réessayez dans quelques instants.";
+                    "Réessayez dans quelques instants.";
         }
 
         // Si le message est court et ne contient pas de termes techniques, on le garde
         if (errorMessage.length() < 100 && !errorMessage.contains("Exception") &&
-            !errorMessage.contains("Error") && !errorMessage.contains("error")) {
+                !errorMessage.contains("Error") && !errorMessage.contains("error")) {
             return "❌ " + errorMessage;
         }
 
         // Message générique pour les autres cas
         return "❌ Erreur de communication avec le serveur.\n\n" +
-               "Vérifiez votre connexion Internet et réessayez.\n\n" +
-               "Détail technique : " + errorMessage;
+                "Vérifiez votre connexion Internet et réessayez.\n\n" +
+                "Détail technique : " + errorMessage;
     }
 
     // Adapter interne réduit à 2 onglets

@@ -12,10 +12,13 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -63,12 +66,11 @@ public class ProduitStorageManager {
         try {
             File file = new File(context.getFilesDir(), FILE_NAME);
             FileOutputStream fos = new FileOutputStream(file);
-            OutputStreamWriter writer = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
+            try (OutputStreamWriter writer = new OutputStreamWriter(fos, StandardCharsets.UTF_8)) {
 
-            String json = gson.toJson(produits);
-            writer.write(json);
-
-            writer.close();
+                String json = gson.toJson(produits);
+                writer.write(json);
+            }
             fos.close();
 
             Log.d(TAG, "Produits sauvegardés avec succès (" + produits.size() + " produits)");
@@ -94,23 +96,24 @@ public class ProduitStorageManager {
         }
 
         try {
-            FileInputStream fis = new FileInputStream(file);
-            InputStreamReader reader = new InputStreamReader(fis, StandardCharsets.UTF_8);
-            BufferedReader bufferedReader = new BufferedReader(reader);
+            StringBuilder jsonBuilder;
+            try (FileInputStream fis = new FileInputStream(file)) {
+                InputStreamReader reader = new InputStreamReader(fis, StandardCharsets.UTF_8);
+                try (BufferedReader bufferedReader = new BufferedReader(reader)) {
 
-            StringBuilder jsonBuilder = new StringBuilder();
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                jsonBuilder.append(line);
+                    jsonBuilder = new StringBuilder();
+                    String line;
+                    while ((line = bufferedReader.readLine()) != null) {
+                        jsonBuilder.append(line);
+                    }
+                }
+                reader.close();
             }
-
-            bufferedReader.close();
-            reader.close();
-            fis.close();
 
             // Conversion du JSON en liste d'objets Produit
             String jsonData = jsonBuilder.toString();
-            Type listType = new TypeToken<List<Produit>>() {}.getType();
+            Type listType = new TypeToken<List<Produit>>() {
+            }.getType();
             List<Produit> produits = gson.fromJson(jsonData, listType);
 
             if (produits == null) {
@@ -133,19 +136,16 @@ public class ProduitStorageManager {
      */
     public boolean clearProduits() {
         File file = new File(context.getFilesDir(), FILE_NAME);
+        Path path = file.toPath();
 
-        if (file.exists()) {
-            boolean deleted = file.delete();
-            if (deleted) {
-                Log.d(TAG, "Fichier de produits supprimé avec succès");
-            } else {
-                Log.w(TAG, "Échec de la suppression du fichier de produits");
-            }
-            return deleted;
+        try {
+            Files.deleteIfExists(path);
+            Log.d(TAG, "Fichier de produits supprimé avec succès");
+            return true;
+        } catch (IOException e) {
+            Log.w(TAG, "Échec de la suppression du fichier de produits");
+            return false;
         }
-
-        Log.d(TAG, "Aucun fichier de produits à supprimer");
-        return true;
     }
 
     /**

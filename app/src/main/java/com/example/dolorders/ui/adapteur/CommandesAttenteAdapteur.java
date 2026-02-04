@@ -6,11 +6,12 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.dolorders.objet.Commande;
 import com.example.dolorders.R;
+import com.example.dolorders.objet.Commande;
 
 import java.text.SimpleDateFormat;
 import java.util.List;
@@ -23,6 +24,7 @@ public class CommandesAttenteAdapteur extends RecyclerView.Adapter<CommandesAtte
 
     public interface OnCommandeActionListener {
         void onEdit(Commande commande);
+
         void onDelete(Commande commande);
     }
 
@@ -87,7 +89,10 @@ public class CommandesAttenteAdapteur extends RecyclerView.Adapter<CommandesAtte
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvId, tvNom, tvDate, tvTotal;
+        TextView tvId;
+        TextView tvNom;
+        TextView tvDate;
+        TextView tvTotal;
         ImageView btnMore;
 
         public ViewHolder(@NonNull View itemView) {

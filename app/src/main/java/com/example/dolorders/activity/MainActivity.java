@@ -157,11 +157,7 @@ public class MainActivity extends AppCompatActivity {
         updateConnectionIndicator(serviceConnexion.isInternetAvailable());
 
         // Démarrer la surveillance en temps réel
-        serviceConnexion.startMonitoring(new ServiceConnexionInternet.ConnectionStatusListener() {
-            @Override
-            public void onConnectionStatusChanged(boolean isConnected) {
-                // Le callback peut être appelé depuis un thread réseau
-                // Il faut mettre à jour l'UI sur le thread principal
+        serviceConnexion.startMonitoring(isConnected ->
                 runOnUiThread(() -> {
                     updateConnectionIndicator(isConnected);
 
@@ -175,9 +171,7 @@ public class MainActivity extends AppCompatActivity {
                                 "❌ Connexion Internet perdue",
                                 Toast.LENGTH_SHORT).show();
                     }
-                });
-            }
-        });
+                }));
 
         Log.d(TAG, "Surveillance de la connexion Internet initialisée");
     }

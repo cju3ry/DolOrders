@@ -10,6 +10,10 @@ import com.example.dolorders.ui.viewModel.ClientsAjoutFragmentViewModel;
 
 public class NavigationUtils {
 
+    private NavigationUtils() {
+        // Constructeur privé pour empêcher l'instanciation
+    }
+
     /**
      * Navigate to ClientsAjoutFragment from any fragment
      * Clears the form before navigating

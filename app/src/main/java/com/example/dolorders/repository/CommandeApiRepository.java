@@ -14,6 +14,7 @@ import com.example.dolorders.objet.Commande;
 import com.example.dolorders.objet.LigneCommande;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -25,7 +26,7 @@ import java.util.Map;
  * Repository pour gérer l'envoi des commandes vers Dolibarr.
  * - POST /orders : Module natif Dolibarr (commandes avec lignes)
  * - POST /dolordersapi/fournisseurss : Module d'historique (ligne par ligne)
- *
+ * <p>
  * Flux d'envoi :
  * 1. Envoyer vers le module natif → récupérer l'ID de la commande Dolibarr
  * 2. Envoyer vers l'historique avec l'ID de la commande Dolibarr
@@ -36,12 +37,18 @@ public class CommandeApiRepository {
 
     private final Context context;
     private final RequestQueue requestQueue;
+    private static final String JSON_APPLICATION = "application/json";
+
+    private static final String UNKNOWN_LIBELLE = "Unknown";
+
+    private static final String FICHIER_CRYPTE = "secure_prefs_crypto";
 
     /**
      * Interface de callback pour l'envoi d'une ligne de commande vers l'historique.
      */
     public interface CommandeEnvoiCallback {
         void onSuccess(String historiqueId);
+
         void onError(String message);
     }
 
@@ -50,6 +57,7 @@ public class CommandeApiRepository {
      */
     public interface CommandeNativeEnvoiCallback {
         void onSuccess(String dolibarrCommandeId);
+
         void onError(String message);
     }
 
@@ -61,21 +69,21 @@ public class CommandeApiRepository {
     /**
      * Envoie une commande vers le module natif Dolibarr.
      * POST /orders
-     *
+     * <p>
      * Structure JSON :
      * {
-     *   "socid": id_client,
-     *   "date": timestamp,
-     *   "type": 0,
-     *   "lines": [
-     *     {
-     *       "fk_product": id_produit,
-     *       "qty": quantite,
-     *       "subprice": prix_unitaire,
-     *       "tva_tx": 0,
-     *       "remise_percent": remise
-     *     }
-     *   ]
+     * "socid": id_client,
+     * "date": timestamp,
+     * "type": 0,
+     * "lines": [
+     * {
+     * "fk_product": id_produit,
+     * "qty": quantite,
+     * "subprice": prix_unitaire,
+     * "tva_tx": 0,
+     * "remise_percent": remise
+     * }
+     * ]
      * }
      *
      * @param commande Commande à envoyer
@@ -149,8 +157,8 @@ public class CommandeApiRepository {
                 public Map<String, String> getHeaders() {
                     Map<String, String> headers = new HashMap<>();
                     headers.put("DOLAPIKEY", apiKey);
-                    headers.put("Content-Type", "application/json");
-                    headers.put("Accept", "application/json");
+                    headers.put("Content-Type", JSON_APPLICATION);
+                    headers.put("Accept", JSON_APPLICATION);
                     return headers;
                 }
 
@@ -170,24 +178,24 @@ public class CommandeApiRepository {
 
     /**
      * Crée le JSON pour envoyer une commande vers le module natif Dolibarr.
-     *
+     * <p>
      * Structure JSON :
      * {
-     *   "socid": id_client,
-     *   "date": timestamp,
-     *   "type": 0,
-     *   "lines": [
-     *     {
-     *       "fk_product": id_produit,
-     *       "qty": quantite,
-     *       "subprice": prix_unitaire,
-     *       "tva_tx": 0,
-     *       "remise_percent": remise
-     *     }
-     *   ]
+     * "socid": id_client,
+     * "date": timestamp,
+     * "type": 0,
+     * "lines": [
+     * {
+     * "fk_product": id_produit,
+     * "qty": quantite,
+     * "subprice": prix_unitaire,
+     * "tva_tx": 0,
+     * "remise_percent": remise
+     * }
+     * ]
      * }
      */
-    private JSONObject creerJsonCommandeNative(Commande commande) throws Exception {
+    private JSONObject creerJsonCommandeNative(Commande commande) throws JSONException {
         JSONObject json = new JSONObject();
 
         // ID du client (socid)
@@ -237,9 +245,9 @@ public class CommandeApiRepository {
      * Envoie une commande vers l'historique en utilisant l'ID Dolibarr.
      * Cette méthode doit être appelée APRÈS l'envoi vers le module natif.
      *
-     * @param commande Commande à envoyer
+     * @param commande           Commande à envoyer
      * @param dolibarrCommandeId ID de la commande dans Dolibarr (récupéré lors de l'envoi natif)
-     * @param callback Callback pour notifier du résultat
+     * @param callback           Callback pour notifier du résultat
      */
     public void envoyerCommandeVersHistoriqueAvecId(Commande commande, String dolibarrCommandeId, CommandeEnvoiCallback callback) {
         if (commande.getLignesCommande() == null || commande.getLignesCommande().isEmpty()) {
@@ -250,7 +258,7 @@ public class CommandeApiRepository {
         String username = getUsername();
 
         Log.d(TAG, "Début envoi commande vers historique avec ID Dolibarr: " + dolibarrCommandeId +
-                   " (" + commande.getLignesCommande().size() + " lignes)");
+                " (" + commande.getLignesCommande().size() + " lignes)");
 
         // Envoyer chaque ligne de commande séparément avec l'ID Dolibarr
         envoyerLigneRecursiveAvecId(commande, dolibarrCommandeId, 0, username, callback);
@@ -270,7 +278,7 @@ public class CommandeApiRepository {
         LigneCommande ligne = commande.getLignesCommande().get(index);
 
         Log.d(TAG, "Envoi ligne " + (index + 1) + "/" + commande.getLignesCommande().size() +
-                   " vers l'historique - Produit: " + ligne.getProduit().getLibelle());
+                " vers l'historique - Produit: " + ligne.getProduit().getLibelle());
 
         envoyerLigneVersHistoriqueAvecId(commande, ligne, dolibarrCommandeId, username, new CommandeEnvoiCallback() {
             @Override
@@ -349,8 +357,8 @@ public class CommandeApiRepository {
                 public Map<String, String> getHeaders() {
                     Map<String, String> headers = new HashMap<>();
                     headers.put("DOLAPIKEY", apiKey);
-                    headers.put("Content-Type", "application/json");
-                    headers.put("Accept", "application/json");
+                    headers.put("Content-Type", JSON_APPLICATION);
+                    headers.put("Accept", JSON_APPLICATION);
                     return headers;
                 }
 
@@ -371,7 +379,7 @@ public class CommandeApiRepository {
     /**
      * Crée le JSON pour envoyer une ligne de commande vers le module d'historique avec l'ID Dolibarr.
      */
-    private JSONObject creerJsonLigneCommandeAvecId(Commande commande, LigneCommande ligne, String dolibarrCommandeId, String username) throws Exception {
+    private JSONObject creerJsonLigneCommandeAvecId(Commande commande, LigneCommande ligne, String dolibarrCommandeId, String username) throws JSONException {
         JSONObject json = new JSONObject();
 
         // ID du client (récupéré depuis le client de la commande)
@@ -384,7 +392,7 @@ public class CommandeApiRepository {
 
         // Nom du client (username)
         String nomClient = commande.getClient().getNom();
-        json.put("nomclient", nomClient != null ? nomClient : "Unknown");
+        json.put("nomclient", nomClient != null ? nomClient : UNKNOWN_LIBELLE);
 
         // Date de la commande (format JJ/MM/AAAA - date sélectionnée via DatePicker)
         String dateCommandeFormatee;
@@ -412,7 +420,7 @@ public class CommandeApiRepository {
         json.put("remise", ligne.getRemise());
 
         // Créateur
-        json.put("creator_name", username != null ? username : "Unknown");
+        json.put("creator_name", username != null ? username : UNKNOWN_LIBELLE);
 
         // Date de création (timestamp Unix - secondes)
         long dateCreation = commande.getDateCommande() != null ?
@@ -421,7 +429,7 @@ public class CommandeApiRepository {
         json.put("creation_date", dateCreation);
 
         // Soumis par
-        json.put("submitted_by_name", username != null ? username : "Unknown");
+        json.put("submitted_by_name", username != null ? username : UNKNOWN_LIBELLE);
 
         // Date de soumission (timestamp Unix - secondes - maintenant)
         long submissionDate = System.currentTimeMillis() / 1000;
@@ -446,7 +454,7 @@ public class CommandeApiRepository {
 
             android.content.SharedPreferences securePrefs = EncryptedSharedPreferences.create(
                     context,
-                    "secure_prefs_crypto",
+                    FICHIER_CRYPTE,
                     masterKey,
                     EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
@@ -470,7 +478,7 @@ public class CommandeApiRepository {
 
             android.content.SharedPreferences securePrefs = EncryptedSharedPreferences.create(
                     context,
-                    "secure_prefs_crypto",
+                    FICHIER_CRYPTE,
                     masterKey,
                     EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
@@ -494,7 +502,7 @@ public class CommandeApiRepository {
 
             android.content.SharedPreferences securePrefs = EncryptedSharedPreferences.create(
                     context,
-                    "secure_prefs_crypto",
+                    FICHIER_CRYPTE,
                     masterKey,
                     EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM

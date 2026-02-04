@@ -258,17 +258,26 @@ public class CommandesFragment extends Fragment {
 
         if (ligneExistante != null) {
             edtQty.setText(String.valueOf(ligneExistante.getQuantite()));
-            if(ligneExistante.getRemise() == (long) ligneExistante.getRemise())
-                edtRem.setText(String.valueOf((long)ligneExistante.getRemise()));
+            if (ligneExistante.getRemise() == (long) ligneExistante.getRemise())
+                edtRem.setText(String.valueOf((long) ligneExistante.getRemise()));
             else
                 edtRem.setText(String.valueOf(ligneExistante.getRemise()));
         }
 
         // Calcul dynamique du total dans la pop-up
         TextWatcher watcher = new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
-            @Override public void afterTextChanged(Editable s) {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                // Pas utilisé : nécessaire pour implémenter TextWatcher
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Pas utilisé : nécessaire pour implémenter TextWatcher
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
                 try {
                     String sQty = edtQty.getText().toString();
                     String sRem = edtRem.getText().toString();
@@ -362,7 +371,9 @@ public class CommandesFragment extends Fragment {
             cal.set(Calendar.DAY_OF_MONTH, calParsee.get(Calendar.DAY_OF_MONTH));
 
             dateCommande = cal.getTime();
-        } catch (ParseException e) { return; }
+        } catch (ParseException e) {
+            return;
+        }
 
         try {
             Commande cmd = new Commande.Builder()

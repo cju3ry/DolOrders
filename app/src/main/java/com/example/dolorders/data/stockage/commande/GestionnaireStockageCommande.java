@@ -12,10 +12,13 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -150,19 +153,16 @@ public class GestionnaireStockageCommande {
      */
     public boolean clearCommandes() {
         File file = new File(context.getFilesDir(), getFileName());
+        Path path = file.toPath();
 
-        if (file.exists()) {
-            boolean deleted = file.delete();
-            if (deleted) {
-                Log.d(TAG, "Fichier de commandes supprimé avec succès");
-            } else {
-                Log.w(TAG, "Échec de la suppression du fichier de commandes");
-            }
-            return deleted;
+        try {
+            Files.deleteIfExists(path);
+            Log.d(TAG, "Fichier de commandes supprimé avec succès");
+            return true;
+        } catch (IOException e) {
+            Log.w(TAG, "Échec de la suppression du fichier de commandes");
+            return false;
         }
-
-        Log.d(TAG, "Aucun fichier de commandes à supprimer");
-        return true;
     }
 
     /**
@@ -251,7 +251,6 @@ public class GestionnaireStockageCommande {
      * @param commandeId ID de la commande recherchée
      * @return La commande trouvée, ou null si non trouvée
      */
-    //TODO A DEPLACER DANS LE FUTUR SERVICE POUR FILTRER ET AUTRES
     public Commande findCommandeById(String commandeId) {
         if (commandeId == null || commandeId.isEmpty()) {
             return null;
@@ -316,7 +315,6 @@ public class GestionnaireStockageCommande {
      * @param clientId ID du client
      * @return Liste des commandes du client
      */
-    //TODO A DEPLACER DANS LE FUTUR SERVICE POUR FILTRER ET AUTRES
     public List<Commande> getCommandesByClient(String clientId) {
         List<Commande> result = new ArrayList<>();
 

@@ -63,15 +63,6 @@ public class CommandesFragmentTest {
         };
     }
 
-//    @Test
-//    public void lesChampsSontAffichesCorrectement() {
-//        onView(withId(R.id.auto_complete_client)).check(matches(isDisplayed()));
-//        onView(withId(R.id.edit_text_date)).check(matches(isDisplayed()));
-//        onView(withId(R.id.auto_complete_article)).check(matches(isDisplayed()));
-//        onView(withId(R.id.edit_text_remise)).check(matches(isDisplayed()));
-//        onView(withId(R.id.btn_valider)).check(matches(isDisplayed()));
-//    }
-
     @Test
     public void validation_afficheErreurSiClientEstVide() {
         // attente de 500 ms pour s'assurer que le fragment est bien chargé
@@ -84,17 +75,4 @@ public class CommandesFragmentTest {
                     .check(matches(hasErrorText("Veuillez sélectionner un client")));
         }
     }
-
-//    @Test
-//    public void validation_afficheErreurSiArticlesSontVides() {
-//
-//        onView(withId(R.id.auto_complete_client)).perform(ViewActions.replaceText("Dupont"), ViewActions.closeSoftKeyboard());
-//
-//        onView(withText("Dupont")).perform(click());
-//
-//        onView(withId(R.id.btn_valider)).perform(click());
-//
-//        onView(withId(R.id.auto_complete_article))
-//                .check(matches(hasErrorText("Veuillez ajouter au moins un article")));
-//    }
 }
