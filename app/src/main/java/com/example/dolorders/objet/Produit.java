@@ -8,11 +8,6 @@ public class Produit {
     private final String description;
     private final double prixUnitaire;
 
-    // Ancien constructeur pour compatibilité (converti int → String)
-    public Produit(int id, String nom, double prixUnitaire) {
-        this(String.valueOf(id), nom, "", prixUnitaire);
-    }
-
     // Nouveau constructeur complet
     public Produit(String id, String nom, String description, double prixUnitaire) {
         if (nom == null || nom.trim().isEmpty()) {

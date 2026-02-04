@@ -273,16 +273,6 @@ public class GestionnaireStockageClient {
             return false;
         }
 
-        // Suppression des commandes associées au client
-        // GestionnaireStockageCommande gestionnaireCommande = new GestionnaireStockageCommande(context);
-        // TODO Décommenter cette ligne lorsque la méthode sera implémentée
-//        isCommandeClientSuppr = gestionnaireCommande.deleteCommandesByClient(client.getId());
-//        if (isCommandeClientSuppr) {
-//            Log.d(TAG, "Les commandes du client ont été supprimées : ID=" + client.getId());
-//        } else {
-//            Log.w(TAG, "Échec de la suppression des commandes du client : ID=" + client.getId());
-//            return false;
-//        }
 
         // Suppression effective du client
         clients.remove(indexToDelete);

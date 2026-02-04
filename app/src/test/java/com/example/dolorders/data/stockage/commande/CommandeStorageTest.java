@@ -52,8 +52,8 @@ public class CommandeStorageTest {
                 .build();
 
         // Création de produits de test
-        produit1 = new Produit(1, "Evian 1.5L", 1.50);
-        produit2 = new Produit(2, "Contrex 1L", 2.00);
+        produit1 = new Produit("1", "Evian 1.5L", "eau en bouteille",1.50);
+        produit2 = new Produit("2", "Contrex 1L", "eau en bouteille spéciale",2.00);
 
         // Création de lignes de commande
         List<LigneCommande> lignes = new ArrayList<>();
