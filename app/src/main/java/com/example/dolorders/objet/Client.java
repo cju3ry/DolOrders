@@ -175,6 +175,46 @@ public class Client {
             }
             return new Client(this);
         }
+
+        /**
+         * Construit un Client provenant de l'API Dolibarr sans validation stricte.
+         * Les champs manquants sont remplacés par des valeurs par défaut.
+         * Le flag fromApi est automatiquement mis à true.
+         *
+         * @return Un objet Client avec des valeurs par défaut si nécessaire
+         */
+        public Client buildFromApi() {
+            // Valeurs par défaut pour les champs manquants de l'API
+            if (nom == null || nom.trim().isEmpty()) {
+                nom = "Client inconnu";
+            }
+            if (adresse == null || adresse.trim().isEmpty()) {
+                adresse = "Adresse non renseignée";
+            }
+            if (codePostal == null || codePostal.trim().isEmpty() || !codePostal.matches("\\d{5}")) {
+                codePostal = "00000";
+            }
+            if (ville == null || ville.trim().isEmpty()) {
+                ville = "Ville non renseignée";
+            }
+            if (adresseMail == null || adresseMail.trim().isEmpty() || !EMAIL_PATTERN.matcher(adresseMail).matches()) {
+                adresseMail = "noemail@inconnu.com";
+            }
+            if (telephone == null || telephone.trim().isEmpty() || !telephone.matches("\\d{10}")) {
+                telephone = "0000000000";
+            }
+            if (utilisateur == null || utilisateur.trim().isEmpty()) {
+                utilisateur = "API_DOLIBARR";
+            }
+            if (dateSaisie == null) {
+                dateSaisie = new Date();
+            }
+
+            // Force le flag fromApi à true pour les clients de l'API
+            fromApi = true;
+
+            return new Client(this);
+        }
     }
 
     @Override

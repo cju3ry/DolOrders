@@ -4,8 +4,13 @@ public class LigneCommande {
     private final Produit produit;
     private final int quantite;
     private final double remise; // Remise en pourcentage pour cette ligne
+    private final boolean validee; // Indique si la ligne est validée (non modifiable)
 
     public LigneCommande(Produit produit, int quantite, double remise) {
+        this(produit, quantite, remise, false);
+    }
+
+    public LigneCommande(Produit produit, int quantite, double remise, boolean validee) {
         if (produit == null) {
             throw new IllegalArgumentException("Le produit ne peut pas être nul.");
         }
@@ -18,6 +23,7 @@ public class LigneCommande {
         this.produit = produit;
         this.quantite = quantite;
         this.remise = remise;
+        this.validee = validee;
     }
 
     public Produit getProduit() {
@@ -30,6 +36,10 @@ public class LigneCommande {
 
     public double getRemise() {
         return remise;
+    }
+
+    public boolean isValidee() {
+        return validee;
     }
 
     public double getMontantLigne() {

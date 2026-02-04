@@ -3,11 +3,13 @@ package com.example.dolorders.objet;
 import java.util.Objects;
 
 public class Produit {
-    private final int id;
+    private final String id;
     private final String libelle;
+    private final String description;
     private final double prixUnitaire;
 
-    public Produit(int id, String nom, double prixUnitaire) {
+    // Nouveau constructeur complet
+    public Produit(String id, String nom, String description, double prixUnitaire) {
         if (nom == null || nom.trim().isEmpty()) {
             throw new IllegalArgumentException("Le nom du produit ne peut pas être vide.");
         }
@@ -16,16 +18,21 @@ public class Produit {
         }
         this.id = id;
         this.libelle = nom;
+        this.description = description != null ? description : "";
         this.prixUnitaire = prixUnitaire;
     }
 
     // Getters
-    public int getId() {
+    public String getId() {
         return id;
     }
 
     public String getLibelle() {
         return libelle;
+    }
+
+    public String getDescription() {
+        return description;
     }
 
     public double getPrixUnitaire() {
@@ -38,7 +45,7 @@ public class Produit {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Produit produit = (Produit) o;
-        return id == produit.id;
+        return Objects.equals(id, produit.id);
     }
 
     @Override

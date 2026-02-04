@@ -270,5 +270,109 @@ public class GestionnaireStockageClientTest {
 
         assertEquals("L'ID devrait être préservé", "ID-12345", clientReconstitue.getId());
     }
-}
 
+    /**
+     * Test : Vérifie que le champ fromApi est correctement sérialisé et désérialisé
+     */
+    @Test
+    public void cycleComplet_AvecFromApi_PreserveLeFlag() {
+        Client clientApi = new Client.Builder()
+                .setId("API-123")
+                .setNom("ClientAPI")
+                .setAdresse("Adresse API")
+                .setCodePostal("12345")
+                .setVille("Ville API")
+                .setAdresseMail("api@test.com")
+                .setTelephone("0123456789")
+                .setUtilisateur("API_DOLIBARR")
+                .setDateSaisie(new Date())
+                .setFromApi(true)
+                .buildFromApi();
+
+        String json = gson.toJson(clientApi);
+        Client clientReconstitue = gson.fromJson(json, Client.class);
+
+        assertTrue("Le flag fromApi devrait être true", clientReconstitue.isFromApi());
+        assertEquals("ClientAPI", clientReconstitue.getNom());
+    }
+
+    /**
+     * Test : Vérifie que les clients locaux ont fromApi à false par défaut
+     */
+    @Test
+    public void cycleComplet_ClientLocal_FromApiFalse() {
+        Client clientLocal = new Client.Builder()
+                .setId("LOCAL-123")
+                .setNom("ClientLocal")
+                .setAdresse("Adresse locale")
+                .setCodePostal("12345")
+                .setVille("Ville locale")
+                .setAdresseMail("local@test.com")
+                .setTelephone("0123456789")
+                .setUtilisateur("userLocal")
+                .setDateSaisie(new Date())
+                .build();
+
+        String json = gson.toJson(clientLocal);
+        Client clientReconstitue = gson.fromJson(json, Client.class);
+
+        assertFalse("Le flag fromApi devrait être false pour un client local", clientReconstitue.isFromApi());
+        assertEquals("ClientLocal", clientReconstitue.getNom());
+    }
+
+    /**
+     * Test : Vérifie que buildFromApi() utilise des valeurs par défaut pour les champs manquants
+     */
+    @Test
+    public void deserialisation_ClientApiAvecChampsManquants_UtiliseValeursParDefaut() {
+        String json = "{" +
+                "\"id\":\"API-999\"," +
+                "\"nom\":\"\"," +  // Nom vide
+                "\"adresse\":null," +  // Adresse null
+                "\"codePostal\":\"123\"," +  // Code postal invalide
+                "\"ville\":null," +
+                "\"adresseMail\":null," +
+                "\"telephone\":\"123\"," +  // Téléphone invalide
+                "\"utilisateur\":null," +
+                "\"dateSaisie\":null," +
+                "\"fromApi\":true" +
+                "}";
+
+        Client client = gson.fromJson(json, Client.class);
+
+        assertNotNull("Le client API devrait être créé malgré les champs manquants", client);
+        assertTrue("Le flag fromApi devrait être true", client.isFromApi());
+        assertEquals("Client inconnu", client.getNom());
+        assertEquals("Adresse non renseignée", client.getAdresse());
+        assertEquals("00000", client.getCodePostal());
+        assertEquals("Ville non renseignée", client.getVille());
+        assertEquals("noemail@inconnu.com", client.getAdresseMail());
+        assertEquals("0000000000", client.getTelephone());
+        assertEquals("API_DOLIBARR", client.getUtilisateur());
+        assertNotNull("Date saisie devrait avoir une valeur par défaut", client.getDateSaisie());
+    }
+
+    /**
+     * Test : Vérifie que les clients sans le champ fromApi sont considérés comme locaux
+     */
+    @Test
+    public void deserialisation_SansChampFromApi_ConsidereCommeLocal() {
+        String json = "{" +
+                "\"id\":\"OLD-123\"," +
+                "\"nom\":\"AncienClient\"," +
+                "\"adresse\":\"Adresse\"," +
+                "\"codePostal\":\"12345\"," +
+                "\"ville\":\"Ville\"," +
+                "\"adresseMail\":\"old@test.com\"," +
+                "\"telephone\":\"0123456789\"," +
+                "\"utilisateur\":\"oldUser\"," +
+                "\"dateSaisie\":1000000000000" +
+                "}";
+
+        Client client = gson.fromJson(json, Client.class);
+
+        assertNotNull("Le client devrait être créé", client);
+        assertFalse("Le flag fromApi devrait être false par défaut", client.isFromApi());
+        assertEquals("AncienClient", client.getNom());
+    }
+}

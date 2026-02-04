@@ -150,8 +150,8 @@ public class ClientsAjoutFragment extends Fragment {
                         .setAdresseMail(viewModel.getEmail().getValue())
                         .setTelephone(viewModel.getTelephone().getValue())
                         .setUtilisateur(nomUtilisateur)
-                        // connecté
                         .setDateSaisie(new Date())
+                        .setFromApi(false) // Client créé localement, pas depuis l'API
                         .build();
 
                 // Enregistrement du client en local

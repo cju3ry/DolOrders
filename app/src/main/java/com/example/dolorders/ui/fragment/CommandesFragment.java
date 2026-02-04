@@ -26,12 +26,12 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.dolorders.R;
 import com.example.dolorders.activity.LoginActivity;
-import com.example.dolorders.data.stockage.client.GestionnaireStockageClient;
 import com.example.dolorders.data.stockage.commande.GestionnaireStockageCommande;
 import com.example.dolorders.objet.Client;
 import com.example.dolorders.objet.Commande;
 import com.example.dolorders.objet.LigneCommande;
 import com.example.dolorders.objet.Produit;
+import com.example.dolorders.ui.adapteur.ProduitAdapter;
 import com.example.dolorders.ui.viewModel.CommandesFragmentViewModel;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
@@ -39,6 +39,7 @@ import com.google.android.material.textfield.TextInputEditText;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -51,6 +52,8 @@ public class CommandesFragment extends Fragment {
     private static final String REGEX_DATE = "dd/MM/yyyy";
     private CommandesFragmentViewModel viewModel;
     private GestionnaireStockageCommande commandeStorage;
+    private ProduitAdapter produitAdapter;
+
     // Vues
     private AutoCompleteTextView autoCompleteClient;
     private AutoCompleteTextView autoCompleteArticle;
@@ -89,11 +92,12 @@ public class CommandesFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         setupViews(view);
         setupListeners();
-        GestionnaireStockageClient gestionnaireStockageClient = new GestionnaireStockageClient(requireContext());
-        List<Client> listeClients = gestionnaireStockageClient.loadClients();
 
-        viewModel.setListeClients(listeClients);
-        viewModel.chargerProduitsDeTest();
+        // Charger TOUS les clients (locaux + API)
+        viewModel.chargerTousLesClients(requireContext());
+
+        // Charger les produits depuis le cache local
+        viewModel.chargerProduitsDepuisCache(requireContext());
 
         observeViewModel();
         if (viewModel.getClientSelectionne().getValue() == null) {
@@ -127,10 +131,16 @@ public class CommandesFragment extends Fragment {
             autoCompleteClient.setAdapter(adapter);
         });
 
-        // Produits
+        // Produits - Utilisation du ProduitAdapter personnalisé
         viewModel.getListeProduits().observe(getViewLifecycleOwner(), produits -> {
-            ArrayAdapter<Produit> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, produits);
-            autoCompleteArticle.setAdapter(adapter);
+            if (produits != null) {
+                if (produitAdapter == null) {
+                    produitAdapter = new ProduitAdapter(requireContext(), new ArrayList<>());
+                    autoCompleteArticle.setAdapter(produitAdapter);
+                    autoCompleteArticle.setThreshold(1); // Déclenche la recherche après 1 caractère
+                }
+                produitAdapter.updateProduits(produits);
+            }
         });
 
         // Client sélectionné
@@ -186,7 +196,10 @@ public class CommandesFragment extends Fragment {
             viewModel.addArticle(produit);
             autoCompleteArticle.setText("", false);
             autoCompleteArticle.setError(null);
-            autoCompleteArticle.postDelayed(() -> autoCompleteArticle.showDropDown(), 100);
+
+            // Fermer la liste déroulante après la sélection
+            autoCompleteArticle.dismissDropDown();
+            autoCompleteArticle.clearFocus();
         });
 
         // Boutons
@@ -223,6 +236,9 @@ public class CommandesFragment extends Fragment {
         String texteCompteur = (count <= 1) ? count + " article" : count + " articles différents";
         tvNbArticles.setText(texteCompteur);
 
+        // Mettre à jour le bouton Valider selon l'état des lignes
+        mettreAJourBoutonValider(lignes);
+
         if (lignes == null) return;
 
         // Si le nombre de lignes change, on refait tout (plus simple)
@@ -241,7 +257,7 @@ public class CommandesFragment extends Fragment {
                 LigneCommande ancienneDonnee = (LigneCommande) row.getTag();
 
                 // On vérifie si c'est bien le même produit (par ID)
-                if (ancienneDonnee != null && ancienneDonnee.getProduit().getId() == nouvelleDonnee.getProduit().getId()) {
+                if (ancienneDonnee != null && ancienneDonnee.getProduit().getId().equals(nouvelleDonnee.getProduit().getId())) {
                     mettreAJourVueLigne(row, nouvelleDonnee);
                 } else {
                     // L'ordre a changé ou c'est pas le bon produit -> On refait tout par sécurité
@@ -258,16 +274,23 @@ public class CommandesFragment extends Fragment {
         View row = LayoutInflater.from(getContext()).inflate(R.layout.item_article_commande, layoutArticlesSelectionnes, false);
 
         ImageButton btnDel = row.findViewById(R.id.btn_delete_article);
+        ImageButton btnValiderLigne = row.findViewById(R.id.btn_valider_ligne);
         EditText etQty = row.findViewById(R.id.edit_text_quantite_article);
         EditText etRem = row.findViewById(R.id.edit_text_remise_ligne);
 
         // On stocke l'objet ligne ACTUEL dans la vue
         row.setTag(ligne);
 
+        // Bouton supprimer
         btnDel.setOnClickListener(v -> {
-            // Pour supprimer, on prend aussi la version à jour
             LigneCommande current = (LigneCommande) row.getTag();
             viewModel.removeLigne(current);
+        });
+
+        // Bouton valider/dévalider la ligne
+        btnValiderLigne.setOnClickListener(v -> {
+            LigneCommande current = (LigneCommande) row.getTag();
+            viewModel.toggleValidationLigne(current);
         });
 
         etQty.addTextChangedListener(new TextWatcher() {
@@ -283,8 +306,10 @@ public class CommandesFragment extends Fragment {
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if (etQty.getTag() == null && s.length() > 0) {
                     try {
-                        // On récupère la donnée À JOUR depuis le tag
                         LigneCommande currentLigne = (LigneCommande) row.getTag();
+
+                        // Ne pas mettre à jour si la ligne est validée
+                        if (currentLigne.isValidee()) return;
 
                         int newQ = Integer.parseInt(s.toString());
 
@@ -320,8 +345,10 @@ public class CommandesFragment extends Fragment {
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if (etRem.getTag() == null) {
                     try {
-                        // On récupère la donnée À JOUR depuis le tag
                         LigneCommande currentLigne = (LigneCommande) row.getTag();
+
+                        // Ne pas mettre à jour si la ligne est validée
+                        if (currentLigne.isValidee()) return;
 
                         double newR = 0.0;
                         if (s.length() > 0) {
@@ -363,10 +390,45 @@ public class CommandesFragment extends Fragment {
         TextView tvTotal = row.findViewById(R.id.text_total_ligne);
         EditText etQty = row.findViewById(R.id.edit_text_quantite_article);
         EditText etRem = row.findViewById(R.id.edit_text_remise_ligne);
+        ImageButton btnValiderLigne = row.findViewById(R.id.btn_valider_ligne);
+        ImageButton btnDel = row.findViewById(R.id.btn_delete_article);
 
         tvLibelle.setText(ligne.getProduit().getLibelle());
         tvPU.setText(String.format(Locale.FRANCE, "%.2f", ligne.getProduit().getPrixUnitaire()));
         tvTotal.setText(String.format(Locale.FRANCE, REGEX_MONTANT, ligne.getMontantLigne()));
+
+        // Gérer l'état visuel selon si la ligne est validée ou non
+        boolean estValidee = ligne.isValidee();
+
+        // Changer l'icône du bouton de validation
+        if (estValidee) {
+            // Ligne validée : afficher icône "éditer" pour pouvoir dévalider
+            btnValiderLigne.setImageResource(R.drawable.ic_edit);
+            btnValiderLigne.setColorFilter(getResources().getColor(android.R.color.holo_orange_dark, null));
+
+            // Désactiver les champs d'édition
+            etQty.setEnabled(false);
+            etRem.setEnabled(false);
+            etQty.setAlpha(0.6f);
+            etRem.setAlpha(0.6f);
+
+            // Changer le fond de la ligne pour indiquer qu'elle est validée
+            row.setBackgroundColor(getResources().getColor(android.R.color.holo_green_light, null));
+            row.getBackground().setAlpha(50);
+        } else {
+            // Ligne non validée : afficher icône "coche" pour valider
+            btnValiderLigne.setImageResource(R.drawable.ic_check);
+            btnValiderLigne.setColorFilter(getResources().getColor(R.color.blue_dolibarr, null));
+
+            // Activer les champs d'édition
+            etQty.setEnabled(true);
+            etRem.setEnabled(true);
+            etQty.setAlpha(1.0f);
+            etRem.setAlpha(1.0f);
+
+            // Remettre le fond normal
+            row.setBackgroundResource(R.drawable.border_bottom);
+        }
 
         if (!etQty.hasFocus()) {
             etQty.setTag("UPDATING");
@@ -389,21 +451,73 @@ public class CommandesFragment extends Fragment {
         tvTotalFinal.setText(String.format(Locale.FRANCE, REGEX_MONTANT, total));
     }
 
+    /**
+     * Met à jour le bouton Valider selon l'état des lignes de commande.
+     * Affiche le nombre de lignes à valider et change l'apparence du bouton.
+     */
+    private void mettreAJourBoutonValider(List<LigneCommande> lignes) {
+        if (lignes == null || lignes.isEmpty()) {
+            btnValider.setEnabled(true);
+            btnValider.setAlpha(1.0f);
+            btnValider.setText("Valider la commande");
+            return;
+        }
+
+        // Compter les lignes non validées
+        int nbNonValidees = 0;
+        for (LigneCommande ligne : lignes) {
+            if (!ligne.isValidee()) {
+                nbNonValidees++;
+            }
+        }
+
+        if (nbNonValidees > 0) {
+            // Il reste des lignes à valider
+            btnValider.setEnabled(true); // Reste cliquable pour afficher le Toast
+            btnValider.setAlpha(0.6f);
+            btnValider.setText("Valider (" + nbNonValidees + " ligne(s) à valider)");
+        } else {
+            // Toutes les lignes sont validées
+            btnValider.setEnabled(true);
+            btnValider.setAlpha(1.0f);
+            btnValider.setText("Valider la commande");
+        }
+    }
+
     private boolean isFormulaireValide() {
         boolean estValide = true;
+
         if (viewModel.getClientSelectionne().getValue() == null) {
             autoCompleteClient.setError("Client requis");
             estValide = false;
         }
+
         List<LigneCommande> lignes = viewModel.getLignesCommande().getValue();
         if (lignes == null || lignes.isEmpty()) {
-            autoCompleteArticle.setError("Article requis");
+            autoCompleteArticle.setError("Au moins un article requis");
             estValide = false;
+        } else {
+            // Vérifier que toutes les lignes sont validées
+            int nbNonValidees = 0;
+            for (LigneCommande ligne : lignes) {
+                if (!ligne.isValidee()) {
+                    nbNonValidees++;
+                }
+            }
+
+            if (nbNonValidees > 0) {
+                Toast.makeText(requireContext(),
+                    "Veuillez valider toutes les lignes (" + nbNonValidees + " ligne(s) non validée(s))",
+                    Toast.LENGTH_LONG).show();
+                estValide = false;
+            }
         }
+
         if (viewModel.getDate().getValue() == null) {
             editTextDate.setError("Date requise");
             estValide = false;
         }
+
         return estValide;
     }
 

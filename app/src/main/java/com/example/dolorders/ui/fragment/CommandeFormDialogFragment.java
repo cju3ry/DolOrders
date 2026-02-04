@@ -1,7 +1,5 @@
 package com.example.dolorders.ui.fragment;
 
-import static android.content.DialogInterface.BUTTON_POSITIVE;
-
 import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.os.Bundle;
@@ -9,11 +7,11 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -24,6 +22,7 @@ import com.example.dolorders.R;
 import com.example.dolorders.objet.Commande;
 import com.example.dolorders.objet.LigneCommande;
 import com.example.dolorders.objet.Produit;
+import com.example.dolorders.ui.adapteur.ProduitAdapter;
 import com.google.android.material.textfield.TextInputEditText;
 
 import java.text.SimpleDateFormat;
@@ -38,6 +37,7 @@ public class CommandeFormDialogFragment extends DialogFragment {
     private Commande commandeInitiale;
     private List<LigneCommande> lignesEditees;
     private List<Produit> tousLesProduits;
+    private ProduitAdapter produitAdapter;
     // New variable to track the modified date. Initialize with original date.
     private Date dateModifiee;
 
@@ -103,16 +103,21 @@ public class CommandeFormDialogFragment extends DialogFragment {
         edtDateCommande.setClickable(true);  // Click triggers picker
         edtDateCommande.setOnClickListener(view -> showDatePicker(edtDateCommande));
 
-        // 2. Configuration Ajout Article
-        if (tousLesProduits != null) {
-            ArrayAdapter<Produit> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, tousLesProduits);
-            autoCompleteAjoutArticle.setAdapter(adapter);
+        // 2. Configuration Ajout Article avec ProduitAdapter personnalisé
+        if (tousLesProduits != null && !tousLesProduits.isEmpty()) {
+            produitAdapter = new ProduitAdapter(requireContext(), tousLesProduits);
+            autoCompleteAjoutArticle.setAdapter(produitAdapter);
+            autoCompleteAjoutArticle.setThreshold(1); // Déclenche la recherche après 1 caractère
 
             autoCompleteAjoutArticle.setOnItemClickListener((parent, view, position, id) -> {
                 Produit produitSelectionne = (Produit) parent.getItemAtPosition(position);
                 ajouterArticle(produitSelectionne, containerLignes, tvTotalFinal, tvNbArticles);
                 autoCompleteAjoutArticle.setText("", false);
             });
+        } else {
+            // Aucun produit disponible
+            autoCompleteAjoutArticle.setEnabled(false);
+            autoCompleteAjoutArticle.setHint("Aucun produit disponible");
         }
 
         // 3. Affichage initial liste
@@ -122,32 +127,48 @@ public class CommandeFormDialogFragment extends DialogFragment {
                 .setView(v)
                 .setTitle("Modifier la commande")
                 .setNegativeButton("Annuler", (dialog, which) -> dialog.dismiss())
-                .setPositiveButton("Enregistrer", null); // On gère le clic plus bas
+                .setPositiveButton("Enregistrer", null); // On va gérer le clic manuellement
 
-        AlertDialog dialog = builder.create();
-        dialog.setOnShowListener(dlg ->
-                dialog.getButton(BUTTON_POSITIVE).setOnClickListener(view -> {
-                    // Vérification des erreurs sur tous les champs quantité/remise
-                    boolean hasError = false;
-                    for (int i = 0; i < containerLignes.getChildCount(); i++) {
-                        View row = containerLignes.getChildAt(i);
-                        EditText etQty = row.findViewById(R.id.edit_text_quantite_article);
-                        EditText etRem = row.findViewById(R.id.edit_text_remise_ligne);
-                        if ((etQty != null && etQty.getError() != null) || (etRem != null && etRem.getError() != null)) {
-                            hasError = true;
-                            break;
-                        }
+        AlertDialog alertDialog = builder.create();
+
+        alertDialog.setOnShowListener(dialogInterface -> {
+            android.widget.Button btnEnregistrer = alertDialog.getButton(AlertDialog.BUTTON_POSITIVE);
+
+            verifierEtMettreAJourBoutonEnregistrer(btnEnregistrer, containerLignes);
+
+            btnEnregistrer.setOnClickListener(view -> {
+                // Vérification des erreurs sur tous les champs quantité/remise (fonctionnalité du Bloc 2)
+                boolean hasError = false;
+                for (int i = 0; i < containerLignes.getChildCount(); i++) {
+                    View row = containerLignes.getChildAt(i);
+                    EditText etQty = row.findViewById(R.id.edit_text_quantite_article);
+                    EditText etRem = row.findViewById(R.id.edit_text_remise_ligne);
+                    if ((etQty != null && etQty.getError() != null) || (etRem != null && etRem.getError() != null)) {
+                        hasError = true;
+                        break;
                     }
-                    if (hasError) {
-                        android.widget.Toast.makeText(requireContext(), "Corrigez les champs en erreur avant d'enregistrer", android.widget.Toast.LENGTH_LONG).show();
-                        return;
-                    }
+                }
+                if (hasError) {
+                    Toast.makeText(requireContext(),
+                            "Corrigez les champs en erreur avant d'enregistrer",
+                            Toast.LENGTH_LONG).show();
+                    return;
+                }
+
+                if (toutesLesLignesSontValidees()) {
                     if (listener != null) {
                         listener.onCommandeEdited(dateModifiee, lignesEditees);
                     }
-                    dialog.dismiss();
-                }));
-        return dialog;
+                    alertDialog.dismiss();
+                } else {
+                    Toast.makeText(requireContext(),
+                            "Veuillez valider toutes les lignes avant d'enregistrer",
+                            Toast.LENGTH_LONG).show();
+                }
+            });
+        });
+
+        return alertDialog;
     }
 
     private void updateDateField(EditText edt) {
@@ -171,7 +192,7 @@ public class CommandeFormDialogFragment extends DialogFragment {
 
     private void ajouterArticle(Produit produit, LinearLayout container, TextView tvTotal, TextView tvNb) {
         for (LigneCommande ligne : lignesEditees) {
-            if (ligne.getProduit().getId() == produit.getId()) {
+            if (ligne.getProduit().getId().equals(produit.getId())) {
                 return;
             }
         }
@@ -192,6 +213,7 @@ public class CommandeFormDialogFragment extends DialogFragment {
             EditText etQty = row.findViewById(R.id.edit_text_quantite_article);
             EditText etRem = row.findViewById(R.id.edit_text_remise_ligne);
             View btnDelete = row.findViewById(R.id.btn_delete_article);
+            View btnValiderLigne = row.findViewById(R.id.btn_valider_ligne);
 
             tvLibelle.setText(ligne.getProduit().getLibelle());
             tvPU.setText(String.format(Locale.FRANCE, "%.2f", ligne.getProduit().getPrixUnitaire()));
@@ -200,6 +222,9 @@ public class CommandeFormDialogFragment extends DialogFragment {
             // Store object in tag
             row.setTag(ligne);
 
+            // Gérer l'état visuel selon si la ligne est validée ou non
+            mettreAJourEtatVisuel(row, ligne, etQty, etRem, btnValiderLigne);
+
             if (!etQty.hasFocus()) etQty.setText(String.valueOf(ligne.getQuantite()));
             if (!etRem.hasFocus()) {
                 if (ligne.getRemise() == (long) ligne.getRemise())
@@ -207,6 +232,15 @@ public class CommandeFormDialogFragment extends DialogFragment {
                 else
                     etRem.setText(String.valueOf(ligne.getRemise()));
             }
+
+            // Bouton valider/dévalider la ligne
+            btnValiderLigne.setOnClickListener(v -> {
+                LigneCommande current = (LigneCommande) row.getTag();
+                toggleValidationLigne(row, current, container, tvTotal, tvNb);
+
+                // Mettre à jour le bouton Enregistrer après chaque validation/dévalidation
+                verifierEtMettreAJourBoutonEnregistrer(getBoutonEnregistrer(), container);
+            });
 
             btnDelete.setOnClickListener(v -> {
                 lignesEditees.remove(ligne);
@@ -238,9 +272,13 @@ public class CommandeFormDialogFragment extends DialogFragment {
                             }
 
                             LigneCommande current = (LigneCommande) row.getTag();
+
+                            // Ne pas mettre à jour si la ligne est validée
+                            if (current.isValidee()) return;
+
                             if (newQ != current.getQuantite()) {
                                 // CRASH FIX: Pass 'row' directly instead of finding it
-                                updateLigneLocale(row, current, newQ, current.getRemise());
+                                updateLigneLocale(row, current, newQ, current.getRemise(), current.isValidee());
                                 tvTotalLigne.setText(String.format(Locale.FRANCE, REGEX_MONTANT, ((LigneCommande) row.getTag()).getMontantLigne()));
                                 recalculerTotalGlobal(tvTotal);
                             }
@@ -277,9 +315,14 @@ public class CommandeFormDialogFragment extends DialogFragment {
                             }
 
                             LigneCommande current = (LigneCommande) row.getTag();
+
+                            // Ne pas mettre à jour si la ligne est validée
+                            if (current.isValidee()) return;
+
+                            newR = Double.parseDouble(s.toString());
                             if (newR != current.getRemise()) {
                                 // CRASH FIX: Pass 'row' directly
-                                updateLigneLocale(row, current, current.getQuantite(), newR);
+                                updateLigneLocale(row, current, current.getQuantite(), newR, current.isValidee());
                                 tvTotalLigne.setText(String.format(Locale.FRANCE, REGEX_MONTANT, ((LigneCommande) row.getTag()).getMontantLigne()));
                                 recalculerTotalGlobal(tvTotal);
                             }
@@ -295,13 +338,16 @@ public class CommandeFormDialogFragment extends DialogFragment {
 
         tvTotal.setText(String.format(Locale.FRANCE, REGEX_MONTANT, total));
         tvNb.setText(lignesEditees.size() + " articles");
+
+        // Mettre à jour le bouton Enregistrer après rafraîchissement
+        verifierEtMettreAJourBoutonEnregistrer(getBoutonEnregistrer(), container);
     }
 
-    // UPDATED Helper method: Accepts 'row' view directly
-    private void updateLigneLocale(View row, LigneCommande oldLigne, int newQty, double newRemise) {
+    // UPDATED Helper method: Accepts 'row' view directly and preserves validation state
+    private void updateLigneLocale(View row, LigneCommande oldLigne, int newQty, double newRemise, boolean validee) {
         int index = lignesEditees.indexOf(oldLigne);
         if (index != -1) {
-            LigneCommande newLigne = new LigneCommande(oldLigne.getProduit(), newQty, newRemise);
+            LigneCommande newLigne = new LigneCommande(oldLigne.getProduit(), newQty, newRemise, validee);
             lignesEditees.set(index, newLigne);
 
             // Update tag directly on the passed view
@@ -311,12 +357,124 @@ public class CommandeFormDialogFragment extends DialogFragment {
         }
     }
 
+    /**
+     * Bascule l'état de validation d'une ligne.
+     */
+    private void toggleValidationLigne(View row, LigneCommande ligne, LinearLayout container, TextView tvTotal, TextView tvNb) {
+        int index = lignesEditees.indexOf(ligne);
+        if (index != -1) {
+            // Créer une nouvelle ligne avec l'état de validation inversé
+            LigneCommande nouvelleLigne = new LigneCommande(
+                ligne.getProduit(),
+                ligne.getQuantite(),
+                ligne.getRemise(),
+                !ligne.isValidee()
+            );
+
+            lignesEditees.set(index, nouvelleLigne);
+            row.setTag(nouvelleLigne);
+
+            // Mettre à jour l'état visuel
+            EditText etQty = row.findViewById(R.id.edit_text_quantite_article);
+            EditText etRem = row.findViewById(R.id.edit_text_remise_ligne);
+            View btnValiderLigne = row.findViewById(R.id.btn_valider_ligne);
+
+            mettreAJourEtatVisuel(row, nouvelleLigne, etQty, etRem, btnValiderLigne);
+        }
+    }
+
+    /**
+     * Met à jour l'apparence visuelle d'une ligne selon son état de validation.
+     */
+    private void mettreAJourEtatVisuel(View row, LigneCommande ligne, EditText etQty, EditText etRem, View btnValiderLigne) {
+        boolean estValidee = ligne.isValidee();
+
+        if (estValidee) {
+            // Ligne validée : icône crayon orange, fond vert, champs désactivés
+            ((android.widget.ImageButton) btnValiderLigne).setImageResource(R.drawable.ic_edit);
+            ((android.widget.ImageButton) btnValiderLigne).setColorFilter(
+                getResources().getColor(android.R.color.holo_orange_dark, null));
+
+            etQty.setEnabled(false);
+            etRem.setEnabled(false);
+            etQty.setAlpha(0.6f);
+            etRem.setAlpha(0.6f);
+
+            row.setBackgroundColor(getResources().getColor(android.R.color.holo_green_light, null));
+            row.getBackground().setAlpha(50);
+
+        } else {
+            // Ligne non validée : icône coche bleue, fond normal, champs activés
+            ((android.widget.ImageButton) btnValiderLigne).setImageResource(R.drawable.ic_check);
+            ((android.widget.ImageButton) btnValiderLigne).setColorFilter(
+                getResources().getColor(R.color.blue_dolibarr, null));
+
+            etQty.setEnabled(true);
+            etRem.setEnabled(true);
+            etQty.setAlpha(1.0f);
+            etRem.setAlpha(1.0f);
+
+            row.setBackgroundResource(R.drawable.border_bottom);
+        }
+    }
+
     private void recalculerTotalGlobal(TextView tvTotal) {
         double total = 0.0;
         for (LigneCommande l : lignesEditees) {
             total += l.getMontantLigne();
         }
         tvTotal.setText(String.format(Locale.FRANCE, REGEX_MONTANT, total));
+    }
+
+    /**
+     * Vérifie si toutes les lignes de la commande sont validées.
+     */
+    private boolean toutesLesLignesSontValidees() {
+        if (lignesEditees == null || lignesEditees.isEmpty()) {
+            return false; // Pas de lignes = pas validé
+        }
+
+        for (LigneCommande ligne : lignesEditees) {
+            if (!ligne.isValidee()) {
+                return false; // Au moins une ligne non validée
+            }
+        }
+
+        return true; // Toutes les lignes sont validées
+    }
+
+    /**
+     * Récupère le bouton Enregistrer du dialogue (si disponible).
+     */
+    private android.widget.Button getBoutonEnregistrer() {
+        if (getDialog() instanceof AlertDialog) {
+            return ((AlertDialog) getDialog()).getButton(AlertDialog.BUTTON_POSITIVE);
+        }
+        return null;
+    }
+
+    /**
+     * Vérifie l'état des lignes et met à jour le bouton Enregistrer.
+     */
+    private void verifierEtMettreAJourBoutonEnregistrer(android.widget.Button btnEnregistrer, LinearLayout container) {
+        if (btnEnregistrer == null) return;
+
+        boolean toutValidees = toutesLesLignesSontValidees();
+
+        btnEnregistrer.setEnabled(toutValidees);
+
+        // Changer visuellement le bouton selon l'état
+        if (toutValidees) {
+            btnEnregistrer.setAlpha(1.0f);
+            btnEnregistrer.setText("Enregistrer");
+        } else {
+            btnEnregistrer.setAlpha(0.5f);
+            int nbNonValidees = 0;
+            for (LigneCommande ligne : lignesEditees) {
+                if (!ligne.isValidee()) nbNonValidees++;
+            }
+            btnEnregistrer.setText("Enregistrer (" + nbNonValidees + " ligne(s) à valider)");
+        }
     }
 }
 
