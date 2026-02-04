@@ -141,7 +141,7 @@ public class CommandeStorageTest {
 
         // Vérification de la première ligne
         LigneCommande ligne1 = lignes.get(0);
-        assertEquals(1, ligne1.getProduit().getId());
+        assertEquals("1", ligne1.getProduit().getId());
         assertEquals("Evian 1.5L", ligne1.getProduit().getLibelle());
         assertEquals(3, ligne1.getQuantite());
         assertEquals(0.0, ligne1.getRemise(), 0.01);
@@ -149,7 +149,7 @@ public class CommandeStorageTest {
 
         // Vérification de la deuxième ligne
         LigneCommande ligne2 = lignes.get(1);
-        assertEquals(2, ligne2.getProduit().getId());
+        assertEquals("2", ligne2.getProduit().getId());
         assertEquals("Contrex 1L", ligne2.getProduit().getLibelle());
         assertEquals(2, ligne2.getQuantite());
         assertEquals(10.0, ligne2.getRemise(), 0.01);
