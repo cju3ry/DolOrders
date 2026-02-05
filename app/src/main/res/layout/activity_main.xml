@@ -21,6 +21,14 @@
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
+            <!-- Indicateur de connexion Internet -->
+            <View
+                android:id="@+id/connectionIndicator"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/ic_connection_offline" />
+
             <TextView
                 android:id="@+id/tvAppName"
                 android:layout_width="wrap_content"

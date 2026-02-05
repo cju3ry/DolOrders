@@ -31,6 +31,8 @@ public class CommandesFragmentViewModel extends ViewModel {
     private final MutableLiveData<List<Produit>> listeProduits = new MutableLiveData<>();
     private final MutableLiveData<Boolean> fromAccueil = new MutableLiveData<>(false);
     private final MutableLiveData<Boolean> fromListeClients = new MutableLiveData<>(false);
+    private final MutableLiveData<String> erreurSynchronisation = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> synchronisationReussie = new MutableLiveData<>();
 
     private ProduitRepository produitRepository;
     private ProduitStorageManager produitStorageManager;
@@ -64,6 +66,22 @@ public class CommandesFragmentViewModel extends ViewModel {
 
     public LiveData<Boolean> getFromListeClients() {
         return fromListeClients;
+    }
+
+    public LiveData<String> getErreurSynchronisation() {
+        return erreurSynchronisation;
+    }
+
+    public LiveData<Boolean> getSynchronisationReussie() {
+        return synchronisationReussie;
+    }
+
+    public void consommerErreur() {
+        erreurSynchronisation.setValue(null);
+    }
+
+    public void consommerSucces() {
+        synchronisationReussie.setValue(null);
     }
 
     public void setFromAccueil() {
@@ -155,6 +173,9 @@ public class CommandesFragmentViewModel extends ViewModel {
                 // Sauvegarder dans le cache
                 produitStorageManager.saveProduits(produits);
 
+                // Notifier le succès AVANT de mettre à jour le LiveData
+                synchronisationReussie.postValue(true);
+
                 // Mettre à jour le LiveData
                 listeProduits.postValue(produits);
             }
@@ -163,14 +184,11 @@ public class CommandesFragmentViewModel extends ViewModel {
             public void onError(String message) {
                 Log.e(TAG, "Erreur lors de la synchronisation des produits : " + message);
 
-                // En cas d'erreur API, charger depuis le cache si disponible
-                List<Produit> produitsCache = produitStorageManager.loadProduits();
-                if (produitsCache != null && !produitsCache.isEmpty()) {
-                    Log.d(TAG, "Fallback sur le cache : " + produitsCache.size() + " produits");
-                    listeProduits.postValue(produitsCache);
-                } else {
-                    listeProduits.postValue(new ArrayList<>());
-                }
+                // Notifier l'erreur via LiveData pour afficher un dialogue convivial
+                erreurSynchronisation.postValue(message);
+
+                // NE PAS mettre à jour listeProduits en cas d'erreur pour éviter le Toast de succès
+                // L'utilisateur verra le dialogue d'erreur uniquement
             }
         });
     }

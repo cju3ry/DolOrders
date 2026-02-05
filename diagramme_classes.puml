@@ -1,0 +1,702 @@
+@startuml DolOrders - Diagramme de Classes
+
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+title DolOrders - Diagramme de Classes Complet
+
+' ==================== PACKAGE OBJET (MODÈLES DE DOMAINE) ====================
+package "com.example.dolorders.objet" #LightYellow {
+
+    class Client {
+        - id: String
+        - nom: String
+        - adresse: String
+        - codePostal: String
+        - ville: String
+        - adresseMail: String
+        - telephone: String
+        - utilisateur: String
+        - dateSaisie: Date
+        - fromApi: boolean
+        __
+        + getId(): String
+        + getNom(): String
+        + getAdresse(): String
+        + getCodePostal(): String
+        + getVille(): String
+        + getAdresseMail(): String
+        + getTelephone(): String
+        + getUtilisateur(): String
+        + getDateSaisie(): Date
+        + isFromApi(): boolean
+    }
+
+    class "Client.Builder" as ClientBuilder {
+        - id: String
+        - nom: String
+        - adresse: String
+        - codePostal: String
+        - ville: String
+        - adresseMail: String
+        - telephone: String
+        - utilisateur: String
+        - dateSaisie: Date
+        - fromApi: boolean
+        __
+        + setId(String): Builder
+        + setNom(String): Builder
+        + setAdresse(String): Builder
+        + setCodePostal(String): Builder
+        + setVille(String): Builder
+        + setAdresseMail(String): Builder
+        + setTelephone(String): Builder
+        + setUtilisateur(String): Builder
+        + setDateSaisie(Date): Builder
+        + setFromApi(boolean): Builder
+        + build(): Client
+    }
+
+    class Commande {
+        - id: String
+        - client: Client
+        - dateCommande: Date
+        - lignesCommande: List<LigneCommande>
+        - montantTotal: double
+        - utilisateur: String
+        __
+        + getId(): String
+        + getClient(): Client
+        + getDateCommande(): Date
+        + getLignesCommande(): List<LigneCommande>
+        + getMontantTotal(): double
+        + getUtilisateur(): String
+        - calculerMontantTotal(): double
+    }
+
+    class "Commande.Builder" as CommandeBuilder {
+        - id: String
+        - dateCommande: Date
+        - client: Client
+        - lignesCommande: List<LigneCommande>
+        - utilisateur: String
+        __
+        + setId(String): Builder
+        + setDateCommande(Date): Builder
+        + setClient(Client): Builder
+        + setLignesCommande(List): Builder
+        + setUtilisateur(String): Builder
+        + build(): Commande
+    }
+
+    class LigneCommande {
+        - produit: Produit
+        - quantite: int
+        - remise: double
+        - validee: boolean
+        __
+        + LigneCommande(Produit, int, double)
+        + LigneCommande(Produit, int, double, boolean)
+        + getProduit(): Produit
+        + getQuantite(): int
+        + getRemise(): double
+        + isValidee(): boolean
+        + getMontantLigne(): double
+    }
+
+    class Produit {
+        - id: String
+        - nom: String
+        - description: String
+        - prixUnitaire: double
+        __
+        + Produit(String, String, String, double)
+        + getId(): String
+        + getNom(): String
+        + getDescription(): String
+        + getPrixUnitaire(): double
+    }
+}
+
+Client +-- ClientBuilder : <<nested>>
+Commande +-- CommandeBuilder : <<nested>>
+Commande "1" *-- "1..*" LigneCommande : contient
+Commande "1" --> "1" Client : associé à
+LigneCommande "1" --> "1" Produit : contient
+
+' ==================== PACKAGE DATA (DTO) ====================
+package "com.example.dolorders.data.dto" #LightBlue {
+
+    class ClientApiReponseDto {
+        - id: String
+        - name: String
+        - phone: String
+        - email: String
+        - address: String
+        - zip: String
+        - town: String
+        __
+        + getId(): String
+        + getName(): String
+        + getPhone(): String
+        + getEmail(): String
+        + getAddress(): String
+        + getZip(): String
+        + getTown(): String
+    }
+
+    class ProduitApiReponseDto {
+        - id: String
+        - ref: String
+        - label: String
+        - description: String
+        - price: String
+        - price_ttc: String
+        __
+        + getId(): String
+        + getRef(): String
+        + getLabel(): String
+        + getDescription(): String
+        + getPrice(): String
+        + getPriceTtc(): String
+    }
+}
+
+' ==================== PACKAGE MAPPER ====================
+package "com.example.dolorders.mapper" #LightGreen {
+
+    class ClientApiMapper {
+        + {static} toClient(ClientApiReponseDto): Client
+    }
+
+    class ProduitMapper {
+        + {static} toProduit(ProduitApiReponseDto): Produit
+    }
+}
+
+ClientApiMapper ..> ClientApiReponseDto : <<use>>
+ClientApiMapper ..> Client : <<create>>
+ProduitMapper ..> ProduitApiReponseDto : <<use>>
+ProduitMapper ..> Produit : <<create>>
+
+' ==================== PACKAGE STOCKAGE ====================
+package "com.example.dolorders.data.stockage" #LightCyan {
+
+    package "client" {
+        class GestionnaireStockageClient {
+            - context: Context
+            - fileName: String
+            - gson: Gson
+            + {static} API_CLIENTS_FILE: String
+            __
+            + GestionnaireStockageClient(Context)
+            + GestionnaireStockageClient(Context, String)
+            + saveClients(List<Client>): boolean
+            + loadClients(): List<Client>
+            + deleteClient(Client): boolean
+            + updateClient(Client, Client): boolean
+        }
+
+        class AdaptateurStockageClient {
+            + serialize(Client, Type, JsonSerializationContext): JsonElement
+            + deserialize(JsonElement, Type, JsonDeserializationContext): Client
+        }
+    }
+
+    package "commande" {
+        class GestionnaireStockageCommande {
+            - context: Context
+            - gson: Gson
+            - fileName: String
+            __
+            + GestionnaireStockageCommande(Context)
+            + saveCommandes(List<Commande>): boolean
+            + loadCommandes(): List<Commande>
+            + deleteCommande(String): boolean
+        }
+
+        class AdapteurStockageCommande {
+            + serialize(Commande, Type, JsonSerializationContext): JsonElement
+            + deserialize(JsonElement, Type, JsonDeserializationContext): Commande
+        }
+    }
+
+    package "produit" {
+        class ProduitStorageManager {
+            - context: Context
+            - fileName: String
+            - gson: Gson
+            __
+            + ProduitStorageManager(Context)
+            + saveProduits(List<Produit>): boolean
+            + loadProduits(): List<Produit>
+        }
+
+        class ProduitTypeAdapter {
+            + serialize(Produit, Type, JsonSerializationContext): JsonElement
+            + deserialize(JsonElement, Type, JsonDeserializationContext): Produit
+        }
+    }
+}
+
+GestionnaireStockageClient ..> Client : <<manage>>
+GestionnaireStockageClient --> AdaptateurStockageClient : <<use>>
+AdaptateurStockageClient ..> Client : <<serialize/deserialize>>
+
+GestionnaireStockageCommande ..> Commande : <<manage>>
+GestionnaireStockageCommande --> AdapteurStockageCommande : <<use>>
+AdapteurStockageCommande ..> Commande : <<serialize/deserialize>>
+
+ProduitStorageManager ..> Produit : <<manage>>
+ProduitStorageManager --> ProduitTypeAdapter : <<use>>
+ProduitTypeAdapter ..> Produit : <<serialize/deserialize>>
+
+' ==================== PACKAGE REPOSITORY ====================
+package "com.example.dolorders.repository" #Wheat {
+
+    class ClientApiRepository {
+        - context: Context
+        - requestQueue: RequestQueue
+        - gson: Gson
+        __
+        + ClientApiRepository(Context)
+        + synchroniserDepuisApi(ClientCallback): void
+        + envoyerClient(Client, ClientEnvoiCallback): void
+        + recupererIdUtilisateur(String, UserIdCallback): void
+        - getBaseUrl(): String
+        - getApiKey(): String
+    }
+
+    interface "ClientApiRepository.ClientCallback" as ClientCallback {
+        + onSuccess(List<Client>): void
+        + onError(String): void
+    }
+
+    interface "ClientApiRepository.ClientEnvoiCallback" as ClientEnvoiCallback {
+        + onSuccess(String): void
+        + onError(String): void
+    }
+
+    interface "ClientApiRepository.UserIdCallback" as UserIdCallback {
+        + onSuccess(String): void
+        + onError(String): void
+    }
+
+    class ProduitRepository {
+        - context: Context
+        - requestQueue: RequestQueue
+        - gson: Gson
+        __
+        + ProduitRepository(Context)
+        + synchroniserDepuisApi(ProduitCallback): void
+        - getBaseUrl(): String
+        - getApiKey(): String
+    }
+
+    interface "ProduitRepository.ProduitCallback" as ProduitCallback {
+        + onSuccess(List<Produit>): void
+        + onError(String): void
+    }
+
+    class CommandeApiRepository {
+        - context: Context
+        - requestQueue: RequestQueue
+        - gson: Gson
+        __
+        + CommandeApiRepository(Context)
+        + envoyerCommandeVersModuleNatif(Commande, CommandeNativeEnvoiCallback): void
+        + envoyerCommandeVersHistoriqueAvecId(Commande, String, CommandeEnvoiCallback): void
+        - getBaseUrl(): String
+        - getApiKey(): String
+    }
+
+    interface "CommandeApiRepository.CommandeNativeEnvoiCallback" as CommandeNativeEnvoiCallback {
+        + onSuccess(String): void
+        + onError(String): void
+    }
+
+    interface "CommandeApiRepository.CommandeEnvoiCallback" as CommandeEnvoiCallback {
+        + onSuccess(String): void
+        + onError(String): void
+    }
+}
+
+ClientApiRepository +-- ClientCallback : <<nested>>
+ClientApiRepository +-- ClientEnvoiCallback : <<nested>>
+ClientApiRepository +-- UserIdCallback : <<nested>>
+ClientApiRepository ..> Client : <<use>>
+ClientApiRepository ..> ClientApiMapper : <<use>>
+
+ProduitRepository +-- ProduitCallback : <<nested>>
+ProduitRepository ..> Produit : <<use>>
+ProduitRepository ..> ProduitMapper : <<use>>
+
+CommandeApiRepository +-- CommandeNativeEnvoiCallback : <<nested>>
+CommandeApiRepository +-- CommandeEnvoiCallback : <<nested>>
+CommandeApiRepository ..> Commande : <<use>>
+
+' ==================== PACKAGE SERVICE ====================
+package "com.example.dolorders.service" #Pink {
+
+    class ServiceClient {
+        + {static} ajouterClient(Context, Client, ServiceClient.OnClientAjouteListener): void
+    }
+
+    interface "ServiceClient.OnClientAjouteListener" as OnClientAjouteListener {
+        + onClientAjoute(Client): void
+        + onErreur(String): void
+    }
+
+    class ServiceUrl {
+        - context: Context
+        - sharedPreferences: SharedPreferences
+        __
+        + ServiceUrl(Context)
+        + addUrl(String): boolean
+        + getUrl(): String
+    }
+
+    class ServiceGestionSession {
+        + {static} logout(Context): void
+        + {static} isLoggedIn(Context): boolean
+    }
+
+    class ServiceConnexionInternet {
+        - connectivityManager: ConnectivityManager
+        - networkCallback: NetworkCallback
+        - listener: ConnectionStatusListener
+        - isConnected: boolean
+        __
+        + ServiceConnexionInternet(Context)
+        + startMonitoring(ConnectionStatusListener): void
+        + stopMonitoring(): void
+        + isInternetAvailable(): boolean
+        + isConnected(): boolean
+    }
+
+    interface "ServiceConnexionInternet.ConnectionStatusListener" as ConnectionStatusListener {
+        + onConnectionStatusChanged(boolean): void
+    }
+}
+
+ServiceClient +-- OnClientAjouteListener : <<nested>>
+ServiceClient ..> Client : <<use>>
+ServiceClient ..> GestionnaireStockageClient : <<use>>
+
+ServiceConnexionInternet +-- ConnectionStatusListener : <<nested>>
+
+' ==================== PACKAGE VIEWMODEL ====================
+package "com.example.dolorders.ui.viewModel" #Lavender {
+
+    class ClientsFragmentViewModel {
+        - clientCree: MutableLiveData<Client>
+        - listeClients: MutableLiveData<List<Client>>
+        - erreurSynchronisation: MutableLiveData<String>
+        - synchronisationReussie: MutableLiveData<Boolean>
+        - clientApiRepository: ClientApiRepository
+        - clientApiStorageManager: GestionnaireStockageClient
+        - clientStorageManager: GestionnaireStockageClient
+        __
+        + getClientCree(): LiveData<Client>
+        + publierClientCree(Client): void
+        + consommerClientCree(): void
+        + getListeClients(): LiveData<List<Client>>
+        + getErreurSynchronisation(): LiveData<String>
+        + getSynchronisationReussie(): LiveData<Boolean>
+        + consommerErreur(): void
+        + consommerSucces(): void
+        + chargerTousLesClients(Context): void
+        + synchroniserClientsDepuisApi(Context): void
+    }
+
+    class CommandesFragmentViewModel {
+        - lignesCommande: MutableLiveData<List<LigneCommande>>
+        - clientSelectionne: MutableLiveData<Client>
+        - date: MutableLiveData<String>
+        - listeClients: MutableLiveData<List<Client>>
+        - listeProduits: MutableLiveData<List<Produit>>
+        - fromAccueil: MutableLiveData<Boolean>
+        - fromListeClients: MutableLiveData<Boolean>
+        - erreurSynchronisation: MutableLiveData<String>
+        - synchronisationReussie: MutableLiveData<Boolean>
+        - produitRepository: ProduitRepository
+        - produitStorageManager: ProduitStorageManager
+        - clientStorageManager: GestionnaireStockageClient
+        - clientApiStorageManager: GestionnaireStockageClient
+        __
+        + getLignesCommande(): LiveData<List<LigneCommande>>
+        + getClientSelectionne(): LiveData<Client>
+        + getDate(): LiveData<String>
+        + getListeClients(): LiveData<List<Client>>
+        + getListeProduits(): LiveData<List<Produit>>
+        + getErreurSynchronisation(): LiveData<String>
+        + getSynchronisationReussie(): LiveData<Boolean>
+        + addArticle(Produit): void
+        + removeLigne(LigneCommande): void
+        + updateLigne(LigneCommande, int, double): void
+        + toggleValidationLigne(LigneCommande): void
+        + getTotal(): double
+        + clear(): void
+        + chargerProduits(Context): void
+        + chargerTousLesClients(Context): void
+    }
+
+    class ClientsAjoutFragmentViewModel {
+        + publierClient(Client): void
+    }
+}
+
+ClientsFragmentViewModel ..> Client : <<use>>
+ClientsFragmentViewModel --> ClientApiRepository : <<use>>
+ClientsFragmentViewModel --> GestionnaireStockageClient : <<use>>
+
+CommandesFragmentViewModel ..> Commande : <<use>>
+CommandesFragmentViewModel ..> LigneCommande : <<use>>
+CommandesFragmentViewModel ..> Produit : <<use>>
+CommandesFragmentViewModel ..> Client : <<use>>
+CommandesFragmentViewModel --> ProduitRepository : <<use>>
+CommandesFragmentViewModel --> ProduitStorageManager : <<use>>
+CommandesFragmentViewModel --> GestionnaireStockageClient : <<use>>
+
+' ==================== PACKAGE ACTIVITY ====================
+package "com.example.dolorders.activity" #LightSalmon {
+
+    class LoginActivity {
+        - edtUrl: EditText
+        - edtUsername: EditText
+        - edtPassword: EditText
+        - btnLogin: Button
+        - progressBar: ProgressBar
+        __
+        + onCreate(Bundle): void
+        - handleLogin(): void
+        - saveCredentials(String, String, String): void
+        - loadLastUrl(): void
+        + {static} getUsername(Context): String
+    }
+
+    class MainActivity {
+        - serviceUrl: ServiceUrl
+        - serviceConnexion: ServiceConnexionInternet
+        - connectionIndicator: View
+        __
+        + onCreate(Bundle): void
+        - recupererUrl(): void
+        - recupererUtilisateur(): void
+        - getBaseUrl(): String
+        - setupConnectionMonitoring(): void
+        - updateConnectionIndicator(boolean): void
+        + onCreateOptionsMenu(Menu): boolean
+        + onOptionsItemSelected(MenuItem): boolean
+        + onDestroy(): void
+    }
+}
+
+LoginActivity ..> ServiceGestionSession : <<use>>
+MainActivity --> ServiceUrl : <<use>>
+MainActivity --> ServiceConnexionInternet : <<use>>
+
+' ==================== PACKAGE FRAGMENT ====================
+package "com.example.dolorders.ui.fragment" #Honeydew {
+
+    class HomeFragment {
+        - textClients: TextView
+        - textCommandes: TextView
+        - textTotal: TextView
+        __
+        + onCreateView(LayoutInflater, ViewGroup, Bundle): View
+        + onViewCreated(View, Bundle): void
+        - updateStats(int, int): void
+        - convertirErreurEnMessageConvivial(String): String
+    }
+
+    class ClientsFragment {
+        + onCreateView(LayoutInflater, ViewGroup, Bundle): View
+        + onViewCreated(View, Bundle): void
+    }
+
+    class ClientsAjoutFragment {
+        + onCreateView(LayoutInflater, ViewGroup, Bundle): View
+        + onViewCreated(View, Bundle): void
+    }
+
+    class ClientFormulaireFragment {
+        + onCreateView(LayoutInflater, ViewGroup, Bundle): View
+        + onViewCreated(View, Bundle): void
+    }
+
+    class CommandesFragment {
+        + onCreateView(LayoutInflater, ViewGroup, Bundle): View
+        + onViewCreated(View, Bundle): void
+    }
+
+    class CommandeFormDialogFragment {
+        + onCreateDialog(Bundle): Dialog
+    }
+
+    class ListeAttenteFragment {
+        - viewPager: ViewPager2
+        - viewPagerAdapter: ViewPagerAdapter
+        __
+        + onCreateView(LayoutInflater, ViewGroup, Bundle): View
+        + onViewCreated(View, Bundle): void
+        - envoyerToutVersDolibarr(): void
+        - envoyerClientEtCommandesRecursif(...): void
+        - envoyerCommandesDuClient(...): void
+        - envoyerCommandesRecursif(...): void
+        - resynchroniserClients(...): void
+        - naviguerVersAccueil(): void
+        - convertirErreurEnMessageConvivial(String): String
+    }
+
+    class TableauClientsFragment {
+        + onCreateView(LayoutInflater, ViewGroup, Bundle): View
+        + onViewCreated(View, Bundle): void
+    }
+
+    class TableauCommandesFragment {
+        + onCreateView(LayoutInflater, ViewGroup, Bundle): View
+        + onViewCreated(View, Bundle): void
+    }
+}
+
+HomeFragment --> ClientsFragmentViewModel : <<observe>>
+HomeFragment --> CommandesFragmentViewModel : <<observe>>
+
+ClientsFragment --> ClientsFragmentViewModel : <<observe>>
+ClientsAjoutFragment --> ClientsAjoutFragmentViewModel : <<observe>>
+ClientFormulaireFragment --> ClientsAjoutFragmentViewModel : <<observe>>
+
+CommandesFragment --> CommandesFragmentViewModel : <<observe>>
+CommandeFormDialogFragment --> CommandesFragmentViewModel : <<observe>>
+
+ListeAttenteFragment --> ClientApiRepository : <<use>>
+ListeAttenteFragment --> CommandeApiRepository : <<use>>
+ListeAttenteFragment --> GestionnaireStockageClient : <<use>>
+ListeAttenteFragment --> GestionnaireStockageCommande : <<use>>
+
+TableauClientsFragment --> GestionnaireStockageClient : <<use>>
+TableauCommandesFragment --> GestionnaireStockageCommande : <<use>>
+
+' ==================== PACKAGE ADAPTEUR ====================
+package "com.example.dolorders.ui.adapteur" #LightGoldenRodYellow {
+
+    class ClientAdapteur {
+        - clients: List<Client>
+        - listener: OnClientClickListener
+        __
+        + ClientAdapteur(List<Client>, OnClientClickListener)
+        + onCreateViewHolder(ViewGroup, int): ViewHolder
+        + onBindViewHolder(ViewHolder, int): void
+        + getItemCount(): int
+        + updateClients(List<Client>): void
+    }
+
+    interface "ClientAdapteur.OnClientClickListener" as OnClientClickListener {
+        + onClientClick(Client): void
+        + onClientLongClick(Client): boolean
+    }
+
+    class ClientsAttenteAdapteur {
+        - clients: List<Client>
+        __
+        + ClientsAttenteAdapteur(List<Client>)
+        + onCreateViewHolder(ViewGroup, int): ViewHolder
+        + onBindViewHolder(ViewHolder, int): void
+        + getItemCount(): int
+        + updateClients(List<Client>): void
+    }
+
+    class CommandesAttenteAdapteur {
+        - commandes: List<Commande>
+        __
+        + CommandesAttenteAdapteur(List<Commande>)
+        + onCreateViewHolder(ViewGroup, int): ViewHolder
+        + onBindViewHolder(ViewHolder, int): void
+        + getItemCount(): int
+        + updateCommandes(List<Commande>): void
+    }
+
+    class ProduitAdapter {
+        - produits: List<Produit>
+        - listener: OnProduitClickListener
+        __
+        + ProduitAdapter(List<Produit>, OnProduitClickListener)
+        + onCreateViewHolder(ViewGroup, int): ViewHolder
+        + onBindViewHolder(ViewHolder, int): void
+        + getItemCount(): int
+        + updateProduits(List<Produit>): void
+    }
+
+    interface "ProduitAdapter.OnProduitClickListener" as OnProduitClickListener {
+        + onProduitClick(Produit): void
+    }
+}
+
+ClientAdapteur +-- OnClientClickListener : <<nested>>
+ClientAdapteur ..> Client : <<display>>
+ClientsAttenteAdapteur ..> Client : <<display>>
+CommandesAttenteAdapteur ..> Commande : <<display>>
+ProduitAdapter +-- OnProduitClickListener : <<nested>>
+ProduitAdapter ..> Produit : <<display>>
+
+' ==================== PACKAGE UTIL ====================
+package "com.example.dolorders.ui.util" #WhiteSmoke {
+
+    class NavigationUtils {
+        + {static} navigateToClientAjout(Fragment): void
+        + {static} navigateToClientFormulaire(Fragment): void
+    }
+}
+
+' ==================== RELATIONS PRINCIPALES ====================
+
+MainActivity "1" --> "1..*" HomeFragment : <<host>>
+MainActivity "1" --> "1..*" ClientsFragment : <<host>>
+MainActivity "1" --> "1..*" CommandesFragment : <<host>>
+MainActivity "1" --> "1..*" ListeAttenteFragment : <<host>>
+
+note top of Client
+  Modèle de domaine principal
+  Pattern Builder pour la construction
+end note
+
+note top of Commande
+  Agrège des LigneCommande
+  Calcul automatique du montant total
+end note
+
+note top of GestionnaireStockageClient
+  Gère la persistance JSON
+  Supporte 2 fichiers: clients.json et clients_api.json
+end note
+
+note top of ClientApiRepository
+  Appels API Dolibarr
+  - GET /thirdparties (récupération)
+  - POST /thirdparties (création)
+  - POST /dolcustomersapi/clients (historique)
+end note
+
+note top of CommandeApiRepository
+  Appels API Dolibarr
+  - POST /orders (module natif)
+  - POST /dolordersapi/fournisseurss (historique)
+end note
+
+note top of ListeAttenteFragment
+  Gestion complète de l'envoi vers Dolibarr:
+  1. Envoi clients locaux
+  2. Envoi commandes (module natif + historique)
+  3. Re-synchronisation
+end note
+
+note top of ServiceConnexionInternet
+  Surveillance réseau en temps réel
+  Notification via callback
+  Indicateur visuel (rouge/vert)
+end note
+
+@enduml
+

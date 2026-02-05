@@ -31,6 +31,9 @@ import java.util.List;
 
 public class ListeAttenteFragment extends Fragment {
 
+    private ViewPager2 viewPager;
+    private ViewPagerAdapter viewPagerAdapter;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -42,12 +45,12 @@ public class ListeAttenteFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         TabLayout tabLayout = view.findViewById(R.id.tab_layout);
-        ViewPager2 viewPager = view.findViewById(R.id.view_pager);
+        viewPager = view.findViewById(R.id.view_pager);
         Button btnEnvoyer = view.findViewById(R.id.btn_envoyer_dolibarr);
 
         // Configuration de l'adapter (Seulement 2 onglets maintenant)
-        ViewPagerAdapter adapter = new ViewPagerAdapter(this);
-        viewPager.setAdapter(adapter);
+        viewPagerAdapter = new ViewPagerAdapter(this);
+        viewPager.setAdapter(viewPagerAdapter);
 
         // Liaison TabLayout <-> ViewPager
         new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
@@ -97,10 +100,36 @@ public class ListeAttenteFragment extends Fragment {
         GestionnaireStockageCommande commandeStorage = new GestionnaireStockageCommande(requireContext());
         List<Commande> toutesCommandes = commandeStorage.loadCommandes();
 
-        // Créer une liste de tous les clients qui ont des commandes
-        List<Client> clientsAvecCommandes = new ArrayList<>();
+        // Créer une liste de tous les clients à envoyer (avec ou sans commandes)
+        List<Client> clientsAEnvoyer = new ArrayList<>();
 
-        // Parcourir toutes les commandes et identifier les clients concernés
+        // 1. D'abord ajouter tous les clients LOCAUX (fromApi=false) sans commandes
+        if (clientsLocaux != null && !clientsLocaux.isEmpty()) {
+            for (Client clientLocal : clientsLocaux) {
+                if (!clientLocal.isFromApi()) {
+                    // Vérifier si ce client a des commandes
+                    boolean aDesCommandes = false;
+                    if (toutesCommandes != null && !toutesCommandes.isEmpty()) {
+                        for (Commande cmd : toutesCommandes) {
+                            if (cmd.getClient() != null && cmd.getClient().getNom().equals(clientLocal.getNom())) {
+                                aDesCommandes = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Ajouter le client local qu'il ait des commandes ou non
+                    if (!clientsAEnvoyer.contains(clientLocal)) {
+                        clientsAEnvoyer.add(clientLocal);
+                        Log.d("ListeAttente", "Client local ajouté: " + clientLocal.getNom() +
+                              " (avec commandes: " + aDesCommandes + ")");
+                    }
+                }
+            }
+        }
+
+        // 2. Ensuite ajouter les clients avec commandes qui ne sont pas encore dans la liste
+        //    (cela concerne principalement les clients API qui ont des commandes)
         if (toutesCommandes != null && !toutesCommandes.isEmpty()) {
             for (Commande cmd : toutesCommandes) {
                 if (cmd.getClient() != null) {
@@ -128,26 +157,27 @@ public class ListeAttenteFragment extends Fragment {
                     }
 
                     // Ajouter le client s'il n'est pas déjà dans la liste
-                    if (clientComplet != null && !clientsAvecCommandes.contains(clientComplet)) {
-                        clientsAvecCommandes.add(clientComplet);
+                    if (clientComplet != null && !clientsAEnvoyer.contains(clientComplet)) {
+                        clientsAEnvoyer.add(clientComplet);
+                        Log.d("ListeAttente", "Client avec commandes ajouté: " + clientComplet.getNom());
                     }
                 }
             }
         }
 
-        if (clientsAvecCommandes.isEmpty()) {
+        if (clientsAEnvoyer.isEmpty()) {
             progressDialog.dismiss();
-            Toast.makeText(getContext(), "Aucune commande à envoyer", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "Aucun client ni commande à envoyer", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        Log.d("ListeAttente", "Nombre de clients avec commandes: " + clientsAvecCommandes.size());
+        Log.d("ListeAttente", "Nombre total de clients à envoyer: " + clientsAEnvoyer.size());
 
         // Envoyer chaque client + ses commandes séquentiellement
         ClientApiRepository clientRepo = new ClientApiRepository(requireContext());
         CommandeApiRepository commandeRepo = new CommandeApiRepository(requireContext());
 
-        envoyerClientEtCommandesRecursif(clientsAvecCommandes, 0, clientRepo, commandeRepo,
+        envoyerClientEtCommandesRecursif(clientsAEnvoyer, 0, clientRepo, commandeRepo,
                                          storageLocal, commandeStorage, progressDialog);
     }
 
@@ -398,6 +428,9 @@ public class ListeAttenteFragment extends Fragment {
                 Toast.makeText(getContext(),
                         "✅ Synchronisation terminée ! " + clients.size() + " clients récupérés",
                         Toast.LENGTH_LONG).show();
+
+                // Naviguer vers la page d'accueil au lieu de rafraîchir les fragments
+                naviguerVersAccueil();
             }
 
             @Override
@@ -406,11 +439,125 @@ public class ListeAttenteFragment extends Fragment {
 
                 progressDialog.dismiss();
 
-                Toast.makeText(getContext(),
-                        "Erreur synchronisation: " + message,
-                        Toast.LENGTH_LONG).show();
+                // Convertir le message d'erreur technique en message convivial
+                String messageConvivial = convertirErreurEnMessageConvivial(message);
+
+                // Afficher un dialogue d'erreur au lieu d'un simple Toast
+                new AlertDialog.Builder(requireContext())
+                        .setTitle("❌ Erreur de synchronisation")
+                        .setMessage(messageConvivial)
+                        .setPositiveButton("OK", (dialog, which) -> {
+                            // Naviguer vers la page d'accueil même en cas d'erreur
+                            naviguerVersAccueil();
+                        })
+                        .setNegativeButton("Réessayer", (dialog, which) -> {
+                            // Réessayer en relançant tout le processus
+                            envoyerToutVersDolibarr();
+                        })
+                        .setCancelable(false)
+                        .show();
             }
         });
+    }
+
+    /**
+     * Navigue vers la page d'accueil (Home fragment).
+     * Utilise le BottomNavigationView de l'activité parente.
+     */
+    private void naviguerVersAccueil() {
+        if (getActivity() != null) {
+            // Récupérer le BottomNavigationView depuis l'activité
+            com.google.android.material.bottomnavigation.BottomNavigationView bottomNav =
+                    getActivity().findViewById(R.id.bottomNavigation);
+
+            if (bottomNav != null) {
+                // Sélectionner l'item "Home" du menu
+                bottomNav.setSelectedItemId(R.id.nav_home);
+                Log.d("ListeAttente", "🏠 Navigation vers la page d'accueil");
+            } else {
+                Log.w("ListeAttente", "⚠️ BottomNavigationView non trouvé");
+            }
+        }
+    }
+
+    /**
+     * Convertit un message d'erreur technique en message convivial pour l'utilisateur.
+     * Détecte les types d'erreurs courants (connexion, timeout, authentification, etc.)
+     * et retourne un message clair avec des conseils d'action.
+     */
+    private String convertirErreurEnMessageConvivial(String errorMessage) {
+        if (errorMessage == null || errorMessage.isEmpty()) {
+            return "Une erreur inconnue s'est produite";
+        }
+
+        String lowerMessage = errorMessage.toLowerCase();
+
+        // Détection des problèmes de connexion Internet
+        if (lowerMessage.contains("unknownhostexception") ||
+            lowerMessage.contains("unable to resolve host")) {
+            return "🔍 Impossible de contacter le serveur Dolibarr.\n\n" +
+                   "Veuillez vérifier :\n" +
+                   "• Votre connexion Internet (point rouge en haut = déconnecté)\n" +
+                   "• L'URL de connexion au serveur\n" +
+                   "• L'état serveur";
+        }
+
+        if (lowerMessage.contains("timeout") || lowerMessage.contains("timed out")) {
+            return "⏱️ Le serveur met trop de temps à répondre.\n\n" +
+                   "Vérifiez :\n" +
+                   "• Votre connexion Internet\n" +
+                   "• Le serveur Dolibarr n'est pas surchargé";
+        }
+
+        if (lowerMessage.contains("no connection") ||
+            lowerMessage.contains("no internet") ||
+            lowerMessage.contains("network unavailable")) {
+            return "📡 Aucune connexion Internet détectée.\n\n" +
+                   "Actions :\n" +
+                   "• Activez le WiFi ou les données mobiles\n" +
+                   "• Vérifiez le point rouge en haut de l'écran";
+        }
+
+        if (lowerMessage.contains("connection refused")) {
+            return "🚫 Connexion refusée par le serveur.\n\n" +
+                   "Vérifiez :\n" +
+                   "• L'URL du serveur Dolibarr\n" +
+                   "• Le serveur est bien démarré";
+        }
+
+        // Erreurs d'authentification
+        if (lowerMessage.contains("401") || lowerMessage.contains("unauthorized")) {
+            return "🔐 Authentification échouée.\n\n" +
+                   "Votre clé API est peut-être invalide ou expirée.\n" +
+                   "Reconnectez-vous pour rafraîchir vos identifiants.";
+        }
+
+        // Erreurs serveur
+        if (lowerMessage.contains("404") || lowerMessage.contains("not found")) {
+            return "❓ Ressource introuvable sur le serveur.\n\n" +
+                   "Vérifiez que l'URL du serveur Dolibarr est correcte.";
+        }
+
+        if (lowerMessage.contains("500") || lowerMessage.contains("internal server")) {
+            return "⚠️ Erreur interne du serveur Dolibarr.\n\n" +
+                   "Contactez l'administrateur du serveur.";
+        }
+
+        if (lowerMessage.contains("503") || lowerMessage.contains("service unavailable")) {
+            return "🔧 Serveur temporairement indisponible.\n\n" +
+                   "Réessayez dans quelques instants.";
+        }
+
+        // Si le message est court et ne contient pas de termes techniques, on le garde
+        if (errorMessage.length() < 100 && !errorMessage.contains("Exception") &&
+            !errorMessage.contains("Error") && !errorMessage.contains("error")) {
+            return "❌ " + errorMessage;
+        }
+
+        // Message générique pour les autres cas
+        return "❌ Erreur de communication avec le serveur.\n\n" +
+               "Vérifiez votre connexion Internet et réessayez.\n\n" +
+               "Détail technique : " + errorMessage;
     }
 
     // Adapter interne réduit à 2 onglets
