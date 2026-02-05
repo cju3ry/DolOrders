@@ -3,7 +3,6 @@ package com.example.dolorders.ui.fragment;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.content.Context;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -134,9 +133,6 @@ public class CommandesFragment extends Fragment {
         viewModel.getClientSelectionne().observe(getViewLifecycleOwner(), client -> {
             if (client != null) {
                 autoCompleteClient.setText(client.toString(), false);
-                autoCompleteClient.setEnabled(false);
-                autoCompleteClient.setTextColor(Color.BLACK);
-                autoCompleteClient.setError(null);
                 tvClientAdresse.setText(String.format("Adresse : %s, %s %s", client.getAdresse(), client.getCodePostal(), client.getVille()));
                 tvClientTel.setText(String.format("Tél : %s", client.getTelephone()));
                 layoutInfosClient.setVisibility(View.VISIBLE);
@@ -144,7 +140,6 @@ public class CommandesFragment extends Fragment {
                 btnValider.setEnabled(true);
             } else {
                 autoCompleteClient.setEnabled(true);
-                autoCompleteClient.setText("", false);
                 layoutInfosClient.setVisibility(View.GONE);
                 containerDetailsCommande.setVisibility(View.GONE);
             }
@@ -353,7 +348,20 @@ public class CommandesFragment extends Fragment {
         List<LigneCommande> lignes = viewModel.getLignesCommande().getValue();
         Date dateCommande;
         try {
-            dateCommande = new SimpleDateFormat(REGEX_DATE, Locale.FRANCE).parse(viewModel.getDate().getValue());
+            // Parse la date sélectionnée
+            Date dateParsee = new SimpleDateFormat(REGEX_DATE, Locale.FRANCE).parse(viewModel.getDate().getValue());
+
+            // Crée une nouvelle date avec l'heure actuelle
+            Calendar cal = Calendar.getInstance();
+            Calendar calParsee = Calendar.getInstance();
+            calParsee.setTime(dateParsee);
+
+            // Applique la date sélectionnée mais conserve l'heure actuelle
+            cal.set(Calendar.YEAR, calParsee.get(Calendar.YEAR));
+            cal.set(Calendar.MONTH, calParsee.get(Calendar.MONTH));
+            cal.set(Calendar.DAY_OF_MONTH, calParsee.get(Calendar.DAY_OF_MONTH));
+
+            dateCommande = cal.getTime();
         } catch (ParseException e) { return; }
 
         try {
@@ -399,7 +407,11 @@ public class CommandesFragment extends Fragment {
     private void showDatePickerDialog() {
         Calendar c = Calendar.getInstance();
         new DatePickerDialog(requireContext(), (v, y, m, d) -> {
-            c.set(y, m, d);
+            // Change uniquement la date (jour/mois/année) sans toucher à l'heure
+            c.set(Calendar.YEAR, y);
+            c.set(Calendar.MONTH, m);
+            c.set(Calendar.DAY_OF_MONTH, d);
+            // L'heure de 'c' reste inchangée
             viewModel.setDate(new SimpleDateFormat(REGEX_DATE, Locale.FRANCE).format(c.getTime()));
         }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
     }

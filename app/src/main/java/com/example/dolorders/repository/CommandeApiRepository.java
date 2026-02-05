@@ -386,11 +386,15 @@ public class CommandeApiRepository {
         String nomClient = commande.getClient().getNom();
         json.put("nomclient", nomClient != null ? nomClient : "Unknown");
 
-        // Date de la commande (timestamp Unix - secondes)
-        long dateCommande = commande.getDateCommande() != null ?
-                commande.getDateCommande().getTime() / 1000 :
-                System.currentTimeMillis() / 1000;
-        json.put("datecommande", dateCommande);
+        // Date de la commande (format JJ/MM/AAAA - date sélectionnée via DatePicker)
+        String dateCommandeFormatee;
+        if (commande.getDateCommande() != null) {
+            java.text.SimpleDateFormat sdfDate = new java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.FRANCE);
+            dateCommandeFormatee = sdfDate.format(commande.getDateCommande());
+        } else {
+            dateCommandeFormatee = new java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.FRANCE).format(new java.util.Date());
+        }
+        json.put("datecommande", dateCommandeFormatee);
 
         // Code article (ID du produit)
         json.put("codearticle", ligne.getProduit().getId());
@@ -410,13 +414,16 @@ public class CommandeApiRepository {
         // Créateur
         json.put("creator_name", username != null ? username : "Unknown");
 
-        // Date de création (date de la commande)
-        json.put("creation_date", dateCommande);
+        // Date de création (timestamp Unix - secondes)
+        long dateCreation = commande.getDateCommande() != null ?
+                commande.getDateCommande().getTime() / 1000 :
+                System.currentTimeMillis() / 1000;
+        json.put("creation_date", dateCreation);
 
         // Soumis par
         json.put("submitted_by_name", username != null ? username : "Unknown");
 
-        // Date de soumission (maintenant)
+        // Date de soumission (timestamp Unix - secondes - maintenant)
         long submissionDate = System.currentTimeMillis() / 1000;
         json.put("submission_date", submissionDate);
 
@@ -500,4 +507,3 @@ public class CommandeApiRepository {
         }
     }
 }
-

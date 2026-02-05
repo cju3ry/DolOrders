@@ -20,10 +20,10 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.DialogFragment;
 
+import com.example.dolorders.R;
 import com.example.dolorders.objet.Commande;
 import com.example.dolorders.objet.LigneCommande;
 import com.example.dolorders.objet.Produit;
-import com.example.dolorders.R;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -250,9 +250,18 @@ public class CommandeFormDialogFragment extends DialogFragment {
     private void showDatePicker(EditText edt) {
         Calendar c = Calendar.getInstance();
         c.setTime(dateModifiee != null ? dateModifiee : new Date());
+
         new DatePickerDialog(requireContext(), (view, year, month, dayOfMonth) -> {
+            // Conserve l'heure actuelle de dateModifiee et change uniquement la date
             Calendar newDate = Calendar.getInstance();
-            newDate.set(year, month, dayOfMonth);
+            if (dateModifiee != null) {
+                newDate.setTime(dateModifiee); // Conserve l'heure actuelle
+            }
+            // Change uniquement la date (jour/mois/année) sans toucher à l'heure
+            newDate.set(Calendar.YEAR, year);
+            newDate.set(Calendar.MONTH, month);
+            newDate.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+
             dateModifiee = newDate.getTime();
             updateDateField(edt);
         }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
