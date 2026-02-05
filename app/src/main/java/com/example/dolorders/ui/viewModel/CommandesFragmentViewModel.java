@@ -96,20 +96,29 @@ public class CommandesFragmentViewModel extends ViewModel {
         this.date.setValue(date);
     }
 
-    public void addArticle(Produit produit) {
+    /**
+     * Ajoute ou remplace une ligne de commande complète (venant de la pop-up).
+     */
+    public void addLigne(LigneCommande nouvelleLigne) {
         List<LigneCommande> currentList = lignesCommande.getValue();
         if (currentList == null) currentList = new ArrayList<>();
 
-        // Vérifier si le produit existe déjà
-        for (LigneCommande ligne : currentList) {
-            if (ligne.getProduit().getId().equals(produit.getId())) {
-                return;
+        List<LigneCommande> newList = new ArrayList<>(currentList);
+
+        // On cherche si le produit existe déjà pour le remplacer, sinon on ajoute
+        boolean found = false;
+        for (int i = 0; i < newList.size(); i++) {
+            if (newList.get(i).getProduit().getId().equals(nouvelleLigne.getProduit().getId())) {
+                newList.set(i, nouvelleLigne);
+                found = true;
+                break;
             }
         }
 
-        // Si pas trouvé, on l'ajoute avec quantité 1
-        List<LigneCommande> newList = new ArrayList<>(currentList);
-        newList.add(new LigneCommande(produit, 1, 0.0));
+        if (!found) {
+            newList.add(nouvelleLigne);
+        }
+
         lignesCommande.setValue(newList);
     }
 
@@ -117,73 +126,9 @@ public class CommandesFragmentViewModel extends ViewModel {
         List<LigneCommande> currentList = lignesCommande.getValue();
         if (currentList != null) {
             List<LigneCommande> newList = new ArrayList<>(currentList);
-            // Suppression basée sur l'égalité des objets ou ID
             newList.removeIf(l -> l.getProduit().getId().equals(ligneToDelete.getProduit().getId()));
             lignesCommande.setValue(newList);
         }
-    }
-
-    public void updateLigne(LigneCommande oldLigne, int newQty, double newRemise) {
-        List<LigneCommande> currentList = lignesCommande.getValue();
-        if (currentList != null) {
-            List<LigneCommande> newList = new ArrayList<>();
-            for (LigneCommande l : currentList) {
-                if (l.getProduit().getId().equals(oldLigne.getProduit().getId())) {
-                    if (newQty > 0 && newRemise >= 0 && newRemise <= 100) {
-                        try {
-                            // Conserver l'état validé lors de la mise à jour
-                        newList.add(new LigneCommande(l.getProduit(), newQty, newRemise, l.isValidee()));
-                        } catch (IllegalArgumentException e) {
-                            // Si la création échoue, on garde l'ancienne ligne
-                            newList.add(l);
-                        }
-                    } else {
-                        // Valeurs invalides, on garde l'ancienne ligne
-                        newList.add(l);
-                    }
-                } else {
-                    newList.add(l);
-                }
-            }
-            lignesCommande.setValue(newList);
-        }
-    }
-
-    /**
-     * Bascule l'état de validation d'une ligne (validée ↔ non validée).
-     * Une ligne validée ne peut plus être modifiée jusqu'à ce qu'elle soit dévalidée.
-     */
-    public void toggleValidationLigne(LigneCommande ligneToToggle) {
-        List<LigneCommande> currentList = lignesCommande.getValue();
-        if (currentList != null) {
-            List<LigneCommande> newList = new ArrayList<>();
-            for (LigneCommande l : currentList) {
-                if (l.getProduit().getId().equals(ligneToToggle.getProduit().getId())) {
-                    // Inverser l'état de validation
-                    newList.add(new LigneCommande(l.getProduit(), l.getQuantite(), l.getRemise(), !l.isValidee()));
-                } else {
-                    newList.add(l);
-                }
-            }
-            lignesCommande.setValue(newList);
-        }
-    }
-
-    public double getTotal() {
-        List<LigneCommande> list = lignesCommande.getValue();
-        double total = 0.0;
-        if (list != null) {
-            for (LigneCommande l : list) {
-                total += l.getMontantLigne();
-            }
-        }
-        return total;
-    }
-
-    public void clear() {
-        setClientSelectionne(null);
-        setDate(null);
-        lignesCommande.setValue(new ArrayList<>());
     }
 
     public void startNouvelleCommandePour(Client client) {
@@ -193,36 +138,6 @@ public class CommandesFragmentViewModel extends ViewModel {
         lignesCommande.setValue(new java.util.ArrayList<>());
     }
 
-    /**
-     * Charge les produits depuis le cache local uniquement (pas d'appel API).
-     * Utilisé au démarrage du fragment pour avoir les produits immédiatement disponibles.
-     * Pour synchroniser depuis l'API, utiliser chargerProduits().
-     *
-     * @param context Le contexte nécessaire pour initialiser le storage manager
-     */
-    public void chargerProduitsDepuisCache(Context context) {
-        if (produitStorageManager == null) {
-            produitStorageManager = new ProduitStorageManager(context);
-        }
-
-        // Charger directement depuis le fichier local (pas de Repository)
-        List<Produit> produitsCache = produitStorageManager.loadProduits();
-
-        if (produitsCache != null && !produitsCache.isEmpty()) {
-            Log.d(TAG, "Produits chargés depuis le cache : " + produitsCache.size());
-            listeProduits.postValue(produitsCache);
-        } else {
-            Log.d(TAG, "Aucun produit en cache. Utilisez 'Synchroniser les produits' depuis l'accueil.");
-            listeProduits.postValue(new ArrayList<>());
-        }
-    }
-
-    /**
-     * Synchronise les produits avec l'API et les sauvegarde dans le cache.
-     * Utilisé lors de la synchronisation manuelle depuis l'accueil.
-     *
-     * @param context Le contexte nécessaire pour initialiser le repository
-     */
     public void chargerProduits(Context context) {
         if (produitRepository == null) {
             produitRepository = new ProduitRepository(context);
@@ -260,17 +175,56 @@ public class CommandesFragmentViewModel extends ViewModel {
         });
     }
 
-
-    public void setListeClients(List<Client> clients) {
-        this.listeClients.setValue(clients);
+    public void updateLigne(LigneCommande oldLigne, int newQty, double newRemise) {
+        List<LigneCommande> currentList = lignesCommande.getValue();
+        if (currentList != null) {
+            List<LigneCommande> newList = new ArrayList<>();
+            for (LigneCommande l : currentList) {
+                if (l.getProduit().getId().equals(oldLigne.getProduit().getId())) {
+                    if (newQty > 0 && newRemise >= 0 && newRemise <= 100) {
+                        // On crée une nouvelle ligne validée par défaut
+                        newList.add(new LigneCommande(l.getProduit(), newQty, newRemise, true));
+                    } else {
+                        newList.add(l);
+                    }
+                } else {
+                    newList.add(l);
+                }
+            }
+            lignesCommande.setValue(newList);
+        }
     }
 
-    /**
-     * Charge tous les clients (locaux + API) fusionnés.
-     * Utilisé pour afficher la liste complète dans le formulaire de commande.
-     *
-     * @param context Le contexte nécessaire pour initialiser les storage managers
-     */
+    public double getTotal() {
+        List<LigneCommande> list = lignesCommande.getValue();
+        double total = 0.0;
+        if (list != null) {
+            for (LigneCommande l : list) {
+                total += l.getMontantLigne();
+            }
+        }
+        return total;
+    }
+
+    public void clear() {
+        setClientSelectionne(null);
+        setDate(null);
+        lignesCommande.setValue(new ArrayList<>());
+    }
+
+    public void chargerProduitsDepuisCache(Context context) {
+        if (produitStorageManager == null) {
+            produitStorageManager = new ProduitStorageManager(context);
+        }
+        List<Produit> produitsCache = produitStorageManager.loadProduits();
+        if (produitsCache != null && !produitsCache.isEmpty()) {
+            Log.d(TAG, "Produits chargés depuis le cache : " + produitsCache.size());
+            listeProduits.postValue(produitsCache);
+        } else {
+            listeProduits.postValue(new ArrayList<>());
+        }
+    }
+
     public void chargerTousLesClients(Context context) {
         if (clientStorageManager == null) {
             clientStorageManager = new GestionnaireStockageClient(context);
@@ -278,21 +232,11 @@ public class CommandesFragmentViewModel extends ViewModel {
         if (clientApiStorageManager == null) {
             clientApiStorageManager = new GestionnaireStockageClient(context, GestionnaireStockageClient.API_CLIENTS_FILE);
         }
-
-        // Charger les clients locaux
         List<Client> clientsLocaux = clientStorageManager.loadClients();
-
-        // Charger les clients de l'API
         List<Client> clientsApi = clientApiStorageManager.loadClients();
-
-        // Fusionner les deux listes
         List<Client> tousLesClients = new ArrayList<>();
         tousLesClients.addAll(clientsLocaux);
         tousLesClients.addAll(clientsApi);
-
-        Log.d(TAG, "Clients chargés pour commande : " + clientsLocaux.size() + " locaux + " +
-              clientsApi.size() + " API = " + tousLesClients.size() + " total");
-
         listeClients.setValue(tousLesClients);
     }
 }

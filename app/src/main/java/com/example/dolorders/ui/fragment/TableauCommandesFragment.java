@@ -18,6 +18,7 @@ import com.example.dolorders.data.stockage.commande.GestionnaireStockageCommande
 import com.example.dolorders.data.stockage.produit.ProduitStorageManager;
 import com.example.dolorders.objet.Commande;
 import com.example.dolorders.objet.Produit;
+import com.example.dolorders.ui.fragment.CommandeFormDialogFragment;
 import com.example.dolorders.ui.adapteur.CommandesAttenteAdapteur;
 
 import java.util.ArrayList;
@@ -54,26 +55,23 @@ public class TableauCommandesFragment extends Fragment {
         adapter = new CommandesAttenteAdapteur(listeCommandes, new CommandesAttenteAdapteur.OnCommandeActionListener() {
             @Override
             public void onEdit(Commande commande) {
-                // L'adapter nous dit qu'il faut éditer cette commande
+                // édition de cette commande
                 ouvrirPopupModification(commande);
             }
 
             @Override
             public void onDelete(Commande commande) {
-                // L'adapter nous dit qu'il faut supprimer cette commande
+                // suppression de cette commande
                 confirmerSuppression(commande);
             }
         });
 
         recyclerView.setAdapter(adapter);
-        // chargerCommandes() est appelé dans onResume, pas besoin de le faire ici.
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        // onResume est le meilleur endroit pour rafraîchir la liste,
-        // car il est appelé à chaque fois que le fragment redevient visible.
         chargerCommandes();
     }
 
@@ -84,7 +82,7 @@ public class TableauCommandesFragment extends Fragment {
             listeCommandes.addAll(chargement);
         }
         if (adapter != null) {
-            // Utiliser notifyDataSetChanged ici est acceptable car on recharge toute la liste.
+            // Rechargement de toute la liste.
             adapter.notifyDataSetChanged();
         }
     }
@@ -94,11 +92,11 @@ public class TableauCommandesFragment extends Fragment {
                 .setTitle("Confirmation de suppression")
                 .setMessage("Supprimer la commande de " + commande.getClient().getNom() + " ?")
                 .setPositiveButton("Supprimer", (dialog, which) -> {
-                    // 1. On essaie de supprimer du fichier
+                    // On essaie de supprimer du fichier
                     boolean success = commandeStorage.deleteCommande(commande.getId());
 
                     if (success) {
-                        // 2. Si la suppression a réussi, on met à jour la liste et l'UI
+                        // Si la suppression a réussi, on met à jour la liste et l'UI
                         int index = trouverIndexCommandeParId(commande.getId());
                         if (index != -1) {
                             listeCommandes.remove(index);
@@ -114,11 +112,10 @@ public class TableauCommandesFragment extends Fragment {
                 .show();
     }
 
-    // Cette méthode est la nouvelle version, alignée sur votre logique "Client"
     private void ouvrirPopupModification(Commande commande) {
         // Crée une instance du dialogue en lui passant la commande à modifier
         dialog = CommandeFormDialogFragment.newInstance();
-        dialog.setCommandeInitiale(commande); // On passe la commande initiale pour le pré-remplissage
+        dialog.setCommandeInitiale(commande); // Passe la commande initiale pour le pré-remplissage
         dialog.setListeProduits(getListeProduitsDisponibles()); // On fournit la liste des produits
 
         int index = trouverIndexCommandeParId(commande.getId());
@@ -130,20 +127,20 @@ public class TableauCommandesFragment extends Fragment {
         // On écoute le résultat du dialogue
         dialog.setOnCommandeEditedListener((dateModifiee, lignesModifiees) -> {
             try {
-                // On reconstruit l'objet Commande avec les nouvelles informations
+                // Reconstruction de l'objet Commande avec les nouvelles informations
                 Commande updatedCommande = new Commande.Builder()
-                        .setId(commande.getId()) // L'ID ne change pas
-                        .setClient(commande.getClient()) // Le client ne change pas
-                        .setDateCommande(dateModifiee) // La nouvelle date
-                        .setLignesCommande(lignesModifiees) // Les nouvelles lignes de commande
-                        .setUtilisateur(commande.getUtilisateur()) // L'utilisateur ne change pas
+                        .setId(commande.getId())
+                        .setClient(commande.getClient())
+                        .setDateCommande(dateModifiee)
+                        .setLignesCommande(lignesModifiees)
+                        .setUtilisateur(commande.getUtilisateur())
                         .build();
 
-                // On sauvegarde la commande modifiée dans le fichier
+                // Sauvegarde la commande modifiée dans le fichier
                 boolean success = commandeStorage.modifierCommande(updatedCommande);
 
                 if (success) {
-                    // Si la sauvegarde a réussi, on met à jour la liste et l'UI
+                    // Si la sauvegarde a réussi, met à jour la liste et l'UI
                     listeCommandes.set(index, updatedCommande);
                     // Notifie l'adapter que juste cet item a changé (plus performant)
                     adapter.notifyItemChanged(index);
@@ -169,7 +166,7 @@ public class TableauCommandesFragment extends Fragment {
                 return i;
             }
         }
-        return -1; // Retourne -1 si non trouvé
+        return -1;
     }
 
     // Méthode utilitaire pour fournir la liste des produits disponibles au dialogue.
