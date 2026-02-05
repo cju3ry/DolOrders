@@ -220,8 +220,8 @@ public class CommandeApiRepository {
             // Prix unitaire
             ligneJson.put("subprice", ligne.getProduit().getPrixUnitaire());
 
-            // TVA (0 par défaut)
-            ligneJson.put("tva_tx", 0);
+            // TVA (récupérée depuis le produit)
+            ligneJson.put("tva_tx", ligne.getProduit().getTauxTva());
 
             // Remise
             ligneJson.put("remise_percent", ligne.getRemise());

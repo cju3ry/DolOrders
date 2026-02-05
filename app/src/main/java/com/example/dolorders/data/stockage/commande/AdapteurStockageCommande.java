@@ -93,6 +93,7 @@ public class AdapteurStockageCommande extends TypeAdapter<Commande> {
         out.name("libelle").value(produit.getLibelle());
         out.name("description").value(produit.getDescription());
         out.name("prixUnitaire").value(produit.getPrixUnitaire());
+        out.name("tauxTva").value(produit.getTauxTva());
         out.endObject();
     }
 
@@ -241,6 +242,7 @@ public class AdapteurStockageCommande extends TypeAdapter<Commande> {
         String libelle = "";
         String description = "";
         double prixUnitaire = 0.0;
+        double tauxTva = 20.0; // Valeur par défaut
 
         in.beginObject();
         while (in.hasNext()) {
@@ -265,6 +267,9 @@ public class AdapteurStockageCommande extends TypeAdapter<Commande> {
                 case "prixUnitaire":
                     prixUnitaire = in.nextDouble();
                     break;
+                case "tauxTva":
+                    tauxTva = in.nextDouble(); // ✅ AJOUTÉ
+                    break;
                 default:
                     in.skipValue();
                     break;
@@ -272,7 +277,6 @@ public class AdapteurStockageCommande extends TypeAdapter<Commande> {
         }
         in.endObject();
 
-        return new Produit(id, libelle, description, prixUnitaire);
+        return new Produit(id, libelle, description, prixUnitaire, tauxTva);
     }
 }
-

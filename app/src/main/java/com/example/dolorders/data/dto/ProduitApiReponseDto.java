@@ -20,6 +20,9 @@ public class ProduitApiReponseDto {
     @SerializedName("price")
     private String price;
 
+    @SerializedName("tva_tx")
+    private String tvaTx; // Taux de TVA (ex: "20.0000")
+
     @SerializedName("ref")
     private String ref;
 
@@ -63,6 +66,14 @@ public class ProduitApiReponseDto {
         this.price = price;
     }
 
+    public String getTvaTx() {
+        return tvaTx;
+    }
+
+    public void setTvaTx(String tvaTx) {
+        this.tvaTx = tvaTx;
+    }
+
     public String getRef() {
         return ref;
     }
@@ -86,9 +97,9 @@ public class ProduitApiReponseDto {
                 ", label='" + label + '\'' +
                 ", description='" + description + '\'' +
                 ", price='" + price + '\'' +
+                ", tvaTx='" + tvaTx + '\'' +
                 ", ref='" + ref + '\'' +
                 ", status='" + status + '\'' +
                 '}';
     }
 }
-
