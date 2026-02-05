@@ -1,22 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/container_ligne"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:paddingTop="8dp"
-    android:paddingBottom="8dp"
-    android:background="@drawable/border_bottom">
+    android:paddingTop="12dp"
+    android:paddingBottom="12dp"
+    android:paddingStart="4dp"
+    android:paddingEnd="4dp"
+    android:background="@drawable/border_bottom"
+    android:clickable="true"
+    android:focusable="true"
+    android:backgroundTint="#FFFFFF">
 
     <TextView
         android:id="@+id/text_libelle_article"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="3"
-        android:text="@string/article_nom"
+        android:text="Nom Article"
         android:textColor="@android:color/black"
-        android:textSize="14sp"
+        android:textSize="13sp"
         android:maxLines="2"
         android:ellipsize="end"/>
 
@@ -26,31 +32,30 @@
         android:layout_height="wrap_content"
         android:layout_weight="1.5"
         android:gravity="end"
-        android:text="@string/article_pu_base"
-        android:textSize="12sp"
+        android:text="0.00 €"
+        android:textSize="13sp"
         android:textColor="@android:color/darker_gray"/>
 
-    <EditText
-        android:id="@+id/edit_text_quantite_article"
+    <TextView
+        android:id="@+id/text_quantite_article"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1.2"
         android:gravity="center"
-        android:inputType="number"
-        android:background="@android:drawable/edit_text"
-        android:textSize="14sp"
-        android:text="1"/>
+        android:text="1"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black"/>
 
-    <EditText
-        android:id="@+id/edit_text_remise_ligne"
+    <TextView
+        android:id="@+id/text_remise_ligne"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1.2"
         android:gravity="center"
-        android:inputType="numberDecimal"
-        android:background="@android:drawable/edit_text"
-        android:hint="%"
-        android:textSize="14sp"/>
+        android:text="0%"
+        android:textSize="13sp"
+        android:textColor="@android:color/darker_gray"/>
 
     <TextView
         android:id="@+id/text_total_ligne"
@@ -58,28 +63,30 @@
         android:layout_height="wrap_content"
         android:layout_weight="1.8"
         android:gravity="end"
-        android:text="100 €"
+        android:text="0.00 €"
         android:textStyle="bold"
         android:textColor="@color/blue_dolibarr"
         android:textSize="13sp"
         android:paddingEnd="4dp"/>
 
-    <!-- Bouton valider la ligne (coche) -->
     <ImageButton
-        android:id="@+id/btn_valider_ligne"
-        android:layout_width="30dp"
-        android:layout_height="30dp"
-        android:src="@android:drawable/checkbox_off_background"
+        android:id="@+id/btn_edit_article"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:src="@android:drawable/ic_menu_edit"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Valider la ligne"
-        app:tint="@color/blue_dolibarr" />
+        app:tint="@color/blue_dolibarr"
+        android:padding="6dp"
+        android:contentDescription="Modifier"/>
 
     <ImageButton
         android:id="@+id/btn_delete_article"
-        android:layout_width="30dp"
-        android:layout_height="30dp"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
         android:src="@android:drawable/ic_menu_delete"
         android:background="?attr/selectableItemBackgroundBorderless"
-        app:tint="@android:color/holo_red_dark" />
+        app:tint="@android:color/holo_red_dark"
+        android:padding="6dp"
+        android:contentDescription="Supprimer"/>
 
 </LinearLayout>

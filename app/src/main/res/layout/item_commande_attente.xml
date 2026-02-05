@@ -8,56 +8,73 @@
     android:layout_marginHorizontal="4dp"
     app:cardCornerRadius="4dp"
     app:cardElevation="2dp"
-    app:cardBackgroundColor="#F0F0F0"> <LinearLayout
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:gravity="center_vertical"
-    android:padding="12dp">
+    app:cardBackgroundColor="#F0F0F0">
 
-    <ImageView
-        android:layout_width="24dp"
-        android:layout_height="24dp"
-        android:src="@drawable/ic_box"
-        app:tint="#333333"
-        android:layout_marginEnd="8dp"/>
-
-    <TextView
-        android:id="@+id/tv_id_commande"
-        android:layout_width="0dp"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1.5"
-        android:text="CMD-001"
-        android:textColor="#000000"
-        android:textSize="14sp" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="12dp">
 
-    <TextView
-        android:id="@+id/tv_nom_client"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="2"
-        android:text="Nom client"
-        android:textColor="#333333"
-        android:textSize="14sp" />
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_box"
+            app:tint="#333333"
+            android:layout_marginEnd="8dp"/>
 
-    <TextView
-        android:id="@+id/tv_date"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:text="JJ/MM/AA"
-        android:gravity="end"
-        android:textColor="#333333"
-        android:textSize="13sp" />
+        <TextView
+            android:id="@+id/tv_id_commande"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.2"
+            android:text="CMD-001"
+            android:textColor="#000000"
+            android:textSize="13sp"
+            android:textStyle="bold"/>
 
-    <ImageView
-        android:id="@+id/btn_more_options"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:padding="8dp"
-        android:src="@drawable/ic_more_vert"
-        app:tint="#555555"
-        android:background="?attr/selectableItemBackgroundBorderless"/>
+        <TextView
+            android:id="@+id/tv_nom_client"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.8"
+            android:text="Nom client"
+            android:textColor="#333333"
+            android:textSize="13sp"
+            android:maxLines="1"
+            android:ellipsize="end"/>
 
-</LinearLayout>
+        <TextView
+            android:id="@+id/tv_date"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="JJ/MM/AA"
+            android:gravity="center"
+            android:textColor="#333333"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/tv_total_liste"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="0 €"
+            android:gravity="end"
+            android:textColor="@color/blue_dolibarr"
+            android:textStyle="bold"
+            android:textSize="13sp" />
+
+        <ImageView
+            android:id="@+id/btn_more_options"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingStart="8dp"
+            android:paddingEnd="0dp"
+            android:src="@drawable/ic_more_vert"
+            app:tint="#555555"
+            android:background="?attr/selectableItemBackgroundBorderless"/>
+
+    </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
