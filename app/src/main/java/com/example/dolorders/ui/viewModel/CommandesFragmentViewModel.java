@@ -34,6 +34,9 @@ public class CommandesFragmentViewModel extends ViewModel {
     private final MutableLiveData<String> erreurSynchronisation = new MutableLiveData<>();
     private final MutableLiveData<Boolean> synchronisationReussie = new MutableLiveData<>();
 
+    // Fragment d'origine pour la navigation de retour
+    private final MutableLiveData<String> fragmentOrigine = new MutableLiveData<>("commandes");
+
     private ProduitRepository produitRepository;
     private ProduitStorageManager produitStorageManager;
     private GestionnaireStockageClient clientStorageManager;
@@ -74,6 +77,10 @@ public class CommandesFragmentViewModel extends ViewModel {
 
     public LiveData<Boolean> getSynchronisationReussie() {
         return synchronisationReussie;
+    }
+
+    public LiveData<String> getFragmentOrigine() {
+        return fragmentOrigine;
     }
 
     public void consommerErreur() {

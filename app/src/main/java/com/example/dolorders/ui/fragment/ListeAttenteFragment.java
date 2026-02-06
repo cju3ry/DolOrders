@@ -23,6 +23,7 @@ import com.example.dolorders.objet.Client;
 import com.example.dolorders.objet.Commande;
 import com.example.dolorders.repository.ClientApiRepository;
 import com.example.dolorders.repository.CommandeApiRepository;
+import com.example.dolorders.service.ServiceClient;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
@@ -243,8 +244,9 @@ public class ListeAttenteFragment extends Fragment {
 
                     // 2. Envoyer les commandes de ce client
                     envoyerCommandesDuClient(clientAvecId, commandeRepo, commandeStorage, () -> {
-                        // 3. Supprimer le client du stockage local après tout
-                        boolean supprime = clientStorage.deleteClient(client);
+                        // 3. Supprimer le client du stockage local après tout (avec ses commandes)
+                        ServiceClient serviceClient = new ServiceClient(requireContext());
+                        boolean supprime = serviceClient.deleteClient(client);
 
                         if (supprime) {
                             Log.d("ListeAttente", "✅ Client " + client.getNom() + " supprimé du stockage local");

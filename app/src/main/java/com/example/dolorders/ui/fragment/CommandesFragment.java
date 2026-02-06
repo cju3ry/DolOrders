@@ -378,7 +378,7 @@ public class CommandesFragment extends Fragment {
             if (saved) {
                 Toast.makeText(getContext(), "Commande enregistrée : " + String.format(REGEX_MONTANT, cmd.getMontantTotal()), Toast.LENGTH_LONG).show();
                 viewModel.clear();
-                navigateToHome();
+                navigateToOriginFragment();
             } else {
                 Toast.makeText(getContext(), "Erreur enregistrement", Toast.LENGTH_LONG).show();
             }
@@ -393,15 +393,23 @@ public class CommandesFragment extends Fragment {
                 .setMessage("Tout effacer ?")
                 .setPositiveButton("Oui", (d, w) -> {
                     viewModel.clear();
-                    navigateToHome();
+                    navigateToOriginFragment();
                 })
                 .setNegativeButton("Non", null)
                 .show();
     }
 
-    private void navigateToHome() {
+    private void navigateToOriginFragment() {
         BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottomNavigation);
-        if (bottomNav != null) bottomNav.setSelectedItemId(R.id.nav_home);
+        if (bottomNav != null) {
+            if (viewModel.consumeFromAccueil()) {
+                bottomNav.setSelectedItemId(R.id.nav_home);
+            } else if (viewModel.consumeFromListeClients()) {
+                bottomNav.setSelectedItemId(R.id.nav_clients);
+            } else {
+                bottomNav.setSelectedItemId(R.id.nav_commandes);
+            }
+        }
     }
 
     private void showDatePickerDialog() {

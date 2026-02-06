@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.dolorders.R;
 import com.example.dolorders.data.stockage.client.GestionnaireStockageClient;
 import com.example.dolorders.objet.Client;
+import com.example.dolorders.service.ServiceClient;
 import com.example.dolorders.ui.adapteur.ClientsAttenteAdapteur;
 import com.example.dolorders.ui.viewModel.ClientsFragmentViewModel;
 
@@ -27,6 +28,7 @@ public class TableauClientsFragment extends Fragment {
 
     private ClientsAttenteAdapteur adapter;
     private List<Client> listeClients;
+    private ServiceClient serviceClient;
     private GestionnaireStockageClient gestionnaireStockageClient;
     private ClientFormulaireFragment dialog;
 
@@ -43,6 +45,7 @@ public class TableauClientsFragment extends Fragment {
         RecyclerView recyclerView = view.findViewById(R.id.recycler_clients_attente);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
+        serviceClient = new ServiceClient(requireContext());
         gestionnaireStockageClient = new GestionnaireStockageClient(requireContext());
         dialog = new ClientFormulaireFragment();
 
@@ -72,8 +75,8 @@ public class TableauClientsFragment extends Fragment {
                 .setMessage("Voulez-vous vraiment supprimer " + client.getNom() + " de la liste d'attente ?\nCela supprimera aussi les commandes associées.")
                 .setPositiveButton("Supprimer", (dialog, which) -> {
 
-                    // 1. On essaie d'abord de supprimer du fichier
-                    boolean success = gestionnaireStockageClient.deleteClient(client);
+                    // 1. On essaie d'abord de supprimer du fichier (client + commandes associées)
+                    boolean success = serviceClient.deleteClient(client);
 
                     if (success) {
                         // 2. Si ça a marché dans le fichier, on met à jour l'écran
