@@ -55,7 +55,21 @@ public class ProduitMapper {
             prix = 0.0;
         }
 
-        return new Produit(id, libelle, description, prix);
+        // Taux de TVA : conversion String → double avec gestion d'erreur (défaut = 20%)
+        double tauxTva = 20.0; // Taux par défaut
+        try {
+            if (dto.getTvaTx() != null && !dto.getTvaTx().isEmpty()) {
+                tauxTva = Double.parseDouble(dto.getTvaTx());
+                // Assurer que le taux est positif
+                if (tauxTva < 0) {
+                    tauxTva = 20.0;
+                }
+            }
+        } catch (NumberFormatException e) {
+            // En cas d'erreur de parsing, taux = 20.0
+            tauxTva = 20.0;
+        }
+
+        return new Produit(id, libelle, description, prix, tauxTva);
     }
 }
-
