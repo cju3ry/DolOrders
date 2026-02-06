@@ -83,6 +83,7 @@ public class AdapteurStockageCommande extends TypeAdapter<Commande> {
         out.name("remise").value(ligne.getRemise());
         out.name("montantLigne").value(ligne.getMontantLigne());
         out.name("validee").value(ligne.isValidee());
+        out.name("dateCreation").value(ligne.getDateCreation() != null ? ligne.getDateCreation().getTime() : 0);
 
         out.endObject();
     }
@@ -205,6 +206,7 @@ public class AdapteurStockageCommande extends TypeAdapter<Commande> {
         int quantite = 0;
         double remise = 0.0;
         boolean validee = false;
+        Date dateCreation = null;
 
         in.beginObject();
         while (in.hasNext()) {
@@ -227,6 +229,10 @@ public class AdapteurStockageCommande extends TypeAdapter<Commande> {
                 case "validee":
                     validee = in.nextBoolean();
                     break;
+                case "dateCreation":
+                    long dateMs = in.nextLong();
+                    dateCreation = new Date(dateMs);
+                    break;
                 default:
                     in.skipValue();
                     break;
@@ -234,7 +240,7 @@ public class AdapteurStockageCommande extends TypeAdapter<Commande> {
         }
         in.endObject();
 
-        return new LigneCommande(produit, quantite, remise, validee);
+        return new LigneCommande(produit, quantite, remise, validee, dateCreation);
     }
 
     private Produit readProduit(JsonReader in) throws IOException {

@@ -7,9 +7,9 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
+import android.widget.Filterable;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -24,6 +24,7 @@ import com.example.dolorders.R;
 import com.example.dolorders.objet.Commande;
 import com.example.dolorders.objet.LigneCommande;
 import com.example.dolorders.objet.Produit;
+import com.example.dolorders.ui.adapteur.ProduitAdapter;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -96,8 +97,9 @@ public class CommandeFormDialogFragment extends DialogFragment {
         edtDateCommande.setOnClickListener(view -> showDatePicker(edtDateCommande));
 
         if (tousLesProduits != null) {
-            ArrayAdapter<Produit> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, tousLesProduits);
+            ProduitAdapter adapter = new ProduitAdapter(requireContext(), tousLesProduits);
             autoCompleteAjoutArticle.setAdapter(adapter);
+            autoCompleteAjoutArticle.setThreshold(1);
 
             autoCompleteAjoutArticle.setOnItemClickListener((parent, view, position, id) -> {
                 Produit produitSelectionne = (Produit) parent.getItemAtPosition(position);
@@ -105,7 +107,15 @@ public class CommandeFormDialogFragment extends DialogFragment {
                 // Ouvre pop-up config
                 ouvrirPopupConfigArticle(produitSelectionne, null, containerLignes, tvTotalFinal, tvNbArticles);
 
+                // Vider le champ ET réinitialiser le filtre pour éviter que le filtre persiste
                 autoCompleteAjoutArticle.setText("", false);
+                autoCompleteAjoutArticle.dismissDropDown();
+                autoCompleteAjoutArticle.clearFocus();
+
+                // Forcer la réinitialisation du filtre de l'adaptateur
+                if (autoCompleteAjoutArticle.getAdapter() instanceof Filterable) {
+                    ((Filterable) autoCompleteAjoutArticle.getAdapter()).getFilter().filter("");
+                }
             });
         }
 

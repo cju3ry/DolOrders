@@ -41,11 +41,11 @@ public class CommandeTest {
 
         // Ajout d'une ligne : Produit A (10.0€) x 2 sans remise = 20.0€
         Produit produitA = new Produit("1", "Produit A","Description Produit A", 10.0);
-        lignesValides.add(new LigneCommande(produitA, 2, 0.0));
+        lignesValides.add(new LigneCommande(produitA, 2, 0.0,true));
 
         // Ajout d'une ligne : Produit B (5.0€) x 1 sans remise = 5.0€
         Produit produitB = new Produit("2", "Produit B", "Description Produit B",5.0);
-        lignesValides.add(new LigneCommande(produitB, 1, 0.0));
+        lignesValides.add(new LigneCommande(produitB, 1, 0.0,true));
 
         dateValide = new Date();
         utilisateurValide = "Admin";
@@ -73,7 +73,7 @@ public class CommandeTest {
 
         // Produit à 100€, qté 1, remise 50% -> Doit faire 50€
         Produit produitCher = new Produit("3", "Produit Cher", "Desc Produit Cher", 100.0);
-        lignesAvecRemise.add(new LigneCommande(produitCher, 1, 50.0));
+        lignesAvecRemise.add(new LigneCommande(produitCher, 1, 50.0,true));
 
         Commande commande = new Commande.Builder()
                 .setClient(clientValide)

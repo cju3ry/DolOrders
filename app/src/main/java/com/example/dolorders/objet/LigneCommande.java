@@ -1,16 +1,19 @@
 package com.example.dolorders.objet;
 
+import java.util.Date;
+
 public class LigneCommande {
     private final Produit produit;
     private final int quantite;
     private final double remise; // Remise en pourcentage pour cette ligne
     private final boolean validee; // Indique si la ligne est validée (non modifiable)
-
-    public LigneCommande(Produit produit, int quantite, double remise) {
-        this(produit, quantite, remise, false);
-    }
+    private final Date dateCreation; // Date de création de cette ligne spécifique
 
     public LigneCommande(Produit produit, int quantite, double remise, boolean validee) {
+        this(produit, quantite, remise, validee, new Date());
+    }
+
+    public LigneCommande(Produit produit, int quantite, double remise, boolean validee, Date dateCreation) {
         if (produit == null) {
             throw new IllegalArgumentException("Le produit ne peut pas être nul.");
         }
@@ -24,6 +27,7 @@ public class LigneCommande {
         this.quantite = quantite;
         this.remise = remise;
         this.validee = validee;
+        this.dateCreation = dateCreation != null ? dateCreation : new Date();
     }
 
     public Produit getProduit() {
@@ -40,6 +44,10 @@ public class LigneCommande {
 
     public boolean isValidee() {
         return validee;
+    }
+
+    public Date getDateCreation() {
+        return dateCreation;
     }
 
     public double getMontantLigne() {

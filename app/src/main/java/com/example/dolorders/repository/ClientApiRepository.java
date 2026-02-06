@@ -74,6 +74,14 @@ public class ClientApiRepository {
         void onError(String message);
     }
 
+    /**
+     * Interface de callback pour l'envoi vers l'historique uniquement.
+     */
+    public interface ClientHistoriqueCallback {
+        void onSuccess(String historiqueId);
+        void onError(String message);
+    }
+
     public ClientApiRepository(Context context) {
         this.context = context.getApplicationContext();
         this.requestQueue = Volley.newRequestQueue(context);
@@ -305,6 +313,9 @@ public class ClientApiRepository {
         JSONObject json = new JSONObject();
 
         json.put("name", client.getNom());
+
+        // TODO Enlever ca car c'est pour tester
+        // json.put("name", "");
         json.put("address", client.getAdresse() != null ? client.getAdresse() : "");
         json.put("zip", client.getCodePostal() != null ? client.getCodePostal() : "");
         json.put("town", client.getVille() != null ? client.getVille() : "");
@@ -490,6 +501,8 @@ public class ClientApiRepository {
         JSONObject json = new JSONObject();
 
         json.put("idclient", dolibarrId); // ID du client dans Dolibarr
+        // TODO Et si le client n'a pas de nom ? On peut pas envoyer un client sans nom à Dolibarr,
+        //  mais pour l'historique on peut peut-être mettre "Client sans nom" ou autre chose pour éviter les erreurs
         json.put("nom", client.getNom());
         json.put("adresse", client.getAdresse() != null ? client.getAdresse() : "");
 
@@ -505,9 +518,9 @@ public class ClientApiRepository {
         json.put("codepostal", codePostal);
 
         json.put("ville", client.getVille() != null ? client.getVille() : "");
-
         json.put("telephone", client.getTelephone() != null ? client.getTelephone() : "");
-
+        // TODO Et si le client n'a pas d'email ? Même remarque que pour le nom, on peut peut-être
+        //  mettre "Email non renseigné" pour éviter les erreurs
         json.put("mail", client.getAdresseMail());
         json.put("creator_name", username != null ? username : "Unknown");
 
@@ -515,6 +528,8 @@ public class ClientApiRepository {
         long creationDate = client.getDateSaisie() != null ?
                 client.getDateSaisie().getTime() / 1000 :
                 System.currentTimeMillis() / 1000;
+        // TODO Et si la date de saisie est dans le futur ?
+        //  On peut pas envoyer une date de création dans le futur à Dolibarr,
         json.put("creation_date", creationDate);
 
         json.put("submitted_by_name", username != null ? username : "Unknown");
@@ -530,6 +545,146 @@ public class ClientApiRepository {
         return json;
     }
 
+    /**
+     * Crée le JSON pour envoyer un client vers l'historique avec un update_date personnalisé.
+     */
+    private JSONObject creerJsonHistoriqueAvecUpdateDate(Client client, String dolibarrId, String username, String updateDate) throws JSONException {
+        JSONObject json = new JSONObject();
+
+        json.put("idclient", dolibarrId); // ID du client dans Dolibarr (peut être "0" si pas encore créé)
+        // TODO Et si le client n'a pas de nom ? On peut pas envoyer un client sans nom à Dolibarr,
+        //  mais pour l'historique on peut peut-être mettre "Client sans nom" ou autre chose pour éviter les erreurs
+        json.put("nom", client.getNom());
+        json.put("adresse", client.getAdresse() != null ? client.getAdresse() : "");
+
+        // Convertir code postal en int (ou 0 si vide/null)
+        int codePostal = 0;
+        if (client.getCodePostal() != null && !client.getCodePostal().isEmpty()) {
+            try {
+                codePostal = Integer.parseInt(client.getCodePostal());
+            } catch (NumberFormatException e) {
+                Log.w(TAG, "Code postal invalide: " + client.getCodePostal());
+            }
+        }
+        json.put("codepostal", codePostal);
+
+        json.put("ville", client.getVille() != null ? client.getVille() : "");
+        json.put("telephone", client.getTelephone() != null ? client.getTelephone() : "");
+        // TODO Et si le client n'a pas d'email ? Même remarque que pour le nom, on peut peut-être
+        //  mettre "Email non renseigné" pour éviter les erreurs
+        json.put("mail", client.getAdresseMail());
+        json.put("creator_name", username != null ? username : "Unknown");
+
+        // Date de création du client (en timestamp Unix - secondes)
+        long creationDate = client.getDateSaisie() != null ?
+                client.getDateSaisie().getTime() / 1000 :
+                System.currentTimeMillis() / 1000;
+        json.put("creation_date", creationDate);
+
+        json.put("submitted_by_name", username != null ? username : "Unknown");
+
+        // Date d'envoi (maintenant, en timestamp Unix - secondes)
+        long submissionDate = System.currentTimeMillis() / 1000;
+        json.put("submission_date", submissionDate);
+
+        json.put("update_date", updateDate); // "Oui" ou "Non" selon le cas
+
+        Log.d(TAG, "JSON historique créé (update_date=" + updateDate + "): " + json);
+
+        return json;
+    }
+
+    /**
+     * Envoie un client directement vers l'historique (sans passer par le module natif Dolibarr).
+     * Utilisé en cas d'échec de l'envoi vers le module natif.
+     *
+     * @param client     Client à enregistrer dans l'historique
+     * @param updateDate Valeur du champ update_date ("Oui" ou "Non")
+     * @param callback   Callback pour notifier du résultat
+     */
+    public void envoyerClientVersHistorique(Client client, String updateDate, ClientHistoriqueCallback callback) {
+        String baseUrl = getBaseUrl();
+        String apiKey = getApiKey();
+
+        if (baseUrl == null || apiKey == null) {
+            callback.onError("Configuration manquante");
+            return;
+        }
+
+        String url = baseUrl.endsWith("/")
+                ? baseUrl + "api/index.php/dolcustomersapi/clients"
+                : baseUrl + "/api/index.php/dolcustomersapi/clients";
+
+        final String username = getUsername();
+        Log.d(TAG, "Envoi vers historique (update_date=" + updateDate + ") : " + client.getNom());
+
+        try {
+            // Utiliser "0" comme ID Dolibarr si le client n'a pas encore été créé
+            final String jsonBodyString = creerJsonHistoriqueAvecUpdateDate(
+                    client,
+                    "0", // ID temporaire car le client n'est pas dans Dolibarr
+                    username,
+                    updateDate
+            ).toString();
+
+            StringRequest request = new StringRequest(
+                    Request.Method.POST,
+                    url,
+                    response -> {
+                        try {
+                            Log.d(TAG, "Réponse historique: " + response);
+
+                            String historiqueId;
+                            response = response.trim();
+
+                            if (response.startsWith("{")) {
+                                JSONObject jsonResponse = new JSONObject(response);
+                                historiqueId = jsonResponse.has("id") ? jsonResponse.getString("id") : "success";
+                            } else {
+                                historiqueId = response;
+                            }
+
+                            callback.onSuccess(historiqueId);
+                        } catch (Exception e) {
+                            Log.e(TAG, "Erreur parsing réponse historique", e);
+                            callback.onError("Erreur parsing: " + e.getMessage());
+                        }
+                    },
+                    error -> {
+                        String errorMsg = "Erreur envoi historique";
+                        if (error.networkResponse != null) {
+                            errorMsg += CODE_ERREUR + error.networkResponse.statusCode + ")";
+                            if (error.networkResponse.data != null) {
+                                String body = new String(error.networkResponse.data);
+                                Log.e(TAG, "Réponse serveur historique: " + body);
+                            }
+                        }
+                        Log.e(TAG, errorMsg, error);
+                        callback.onError(errorMsg);
+                    }
+            ) {
+                @Override
+                public Map<String, String> getHeaders() {
+                    Map<String, String> headers = new HashMap<>();
+                    headers.put(APIKEY, apiKey);
+                    headers.put("Content-Type", JSON_APPLICATION);
+                    headers.put(LIBELLE_ACCEPT, JSON_APPLICATION);
+                    return headers;
+                }
+
+                @Override
+                public byte[] getBody() {
+                    return jsonBodyString.getBytes();
+                }
+            };
+
+            requestQueue.add(request);
+
+        } catch (Exception e) {
+            Log.e(TAG, "Erreur création requête historique", e);
+            callback.onError("Erreur création requête: " + e.getMessage());
+        }
+    }
 
     /**
      * Récupère l'ID de l'utilisateur connecté depuis l'API Dolibarr.
