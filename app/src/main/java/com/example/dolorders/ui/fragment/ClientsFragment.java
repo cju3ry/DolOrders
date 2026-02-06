@@ -1,13 +1,13 @@
 package com.example.dolorders.ui.fragment;
 
 import android.annotation.SuppressLint;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
-import android.graphics.Color;
 import android.widget.HorizontalScrollView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -15,21 +15,18 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.annotation.StringRes;
 
 import com.example.dolorders.R;
 import com.example.dolorders.data.stockage.client.GestionnaireStockageClient;
 import com.example.dolorders.objet.Client;
-import com.example.dolorders.service.ServiceClient;
 import com.example.dolorders.ui.adapteur.ClientAdapteur;
 import com.example.dolorders.ui.util.NavigationUtils;
 import com.example.dolorders.ui.viewModel.ClientsFragmentViewModel;
 import com.example.dolorders.ui.viewModel.CommandesFragmentViewModel;
-
-import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.button.MaterialButton;
 import com.google.android.material.badge.BadgeDrawable;
 import com.google.android.material.badge.BadgeUtils;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 
@@ -45,8 +42,6 @@ public class ClientsFragment extends Fragment {
 
     private RecyclerView listeClients;
     private ClientAdapteur clientAdapteur;
-
-    private ServiceClient serviceClient;
 
     private ChipGroup chipGroupActiveFilters;
     private HorizontalScrollView filtersScroll;
@@ -131,8 +126,8 @@ public class ClientsFragment extends Fragment {
                 // Vérifier si le client provient de l'API (on ne peut pas le modifier)
                 if (client.isFromApi()) {
                     Toast.makeText(getContext(),
-                        "Impossible de modifier un client synchronisé depuis Dolibarr",
-                        Toast.LENGTH_LONG).show();
+                            "Impossible de modifier un client synchronisé depuis Dolibarr",
+                            Toast.LENGTH_LONG).show();
                     return;
                 }
 
@@ -329,6 +324,7 @@ public class ClientsFragment extends Fragment {
 
     /**
      * Ajoute une chip "Label: valeur" si valeur non vide.
+     *
      * @return 1 si ajoutée, 0 sinon.
      */
     private int addFilterChipIfNotEmpty(String label, String value, Runnable onRemove) {
@@ -350,7 +346,6 @@ public class ClientsFragment extends Fragment {
         chipGroupActiveFilters.addView(chip);
         return 1;
     }
-
 
 
     private void observeViewModel() {

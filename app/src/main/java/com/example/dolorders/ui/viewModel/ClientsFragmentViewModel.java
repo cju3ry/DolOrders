@@ -86,7 +86,7 @@ public class ClientsFragmentViewModel extends ViewModel {
         tousLesClients.addAll(clientsApi);
 
         Log.d(TAG, "Clients chargés : " + clientsLocaux.size() + " locaux + " +
-              clientsApi.size() + " API = " + tousLesClients.size() + " total");
+                clientsApi.size() + " API = " + tousLesClients.size() + " total");
 
         listeClients.postValue(tousLesClients);
     }

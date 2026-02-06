@@ -12,10 +12,13 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -36,8 +39,6 @@ public class GestionnaireStockageClient {
     private final Gson gson;
     private final String fileName;
 
-    private boolean isCommandeClientSuppr;
-
     /**
      * Constructeur par défaut utilisant le fichier de clients locaux.
      *
@@ -52,7 +53,7 @@ public class GestionnaireStockageClient {
      * Permet de créer des gestionnaires pour différents types de stockage
      * (clients locaux, clients API, etc.)
      *
-     * @param context Contexte de l'application
+     * @param context  Contexte de l'application
      * @param fileName Nom du fichier de stockage
      */
     public GestionnaireStockageClient(Context context, String fileName) {
@@ -173,20 +174,19 @@ public class GestionnaireStockageClient {
      */
     public boolean clearClients() {
         File file = new File(context.getFilesDir(), getFileName());
+        Path path = file.toPath();
 
-        if (file.exists()) {
-            boolean deleted = file.delete();
-            if (deleted) {
-                Log.d(TAG, "Fichier de clients supprimé avec succès");
-            } else {
-                Log.w(TAG, "Échec de la suppression du fichier de clients");
-            }
-            return deleted;
+        try {
+            Files.deleteIfExists(path);
+            Log.d(TAG, "Fichier de clients supprimé avec succès ou inexistant");
+            return true;
+
+        } catch (IOException e) {
+            Log.e(TAG, "Échec de la suppression du fichier de clients", e);
+            return false;
         }
-
-        Log.d(TAG, "Aucun fichier de clients à supprimer");
-        return true;
     }
+
 
     /**
      * Ajoute un client à la liste existante et sauvegarde.
@@ -249,7 +249,6 @@ public class GestionnaireStockageClient {
      * @return true si le client a été trouvé et supprimé, false sinon
      */
     public boolean deleteClient(Client client) {
-        boolean isCommandeClientSuppr = false;
         if (client == null) {
             Log.w(TAG, "Tentative de suppression d'un client null");
             return false;

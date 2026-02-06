@@ -17,6 +17,7 @@ import com.example.dolorders.objet.Client;
 import com.google.gson.Gson;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -36,6 +37,11 @@ import java.util.Map;
 public class ClientApiRepository {
 
     private static final String TAG = "ClientApiRepository";
+    private static final String FICHIER_CRYPTE = "secure_prefs_crypto";
+    private static final String CODE_ERREUR = " (Code: ";
+    private static final String LIBELLE_ACCEPT = "Accept";
+    private static final String JSON_APPLICATION = "application/json";
+    private static final String APIKEY = "DOLAPIKEY";
 
     private final Context context;
     private final RequestQueue requestQueue;
@@ -46,6 +52,7 @@ public class ClientApiRepository {
      */
     public interface ClientCallback {
         void onSuccess(List<Client> clients);
+
         void onError(String message);
     }
 
@@ -54,6 +61,7 @@ public class ClientApiRepository {
      */
     public interface ClientEnvoiCallback {
         void onSuccess(String dolibarrId);
+
         void onError(String message);
     }
 
@@ -62,6 +70,7 @@ public class ClientApiRepository {
      */
     public interface UserIdCallback {
         void onSuccess(String userId);
+
         void onError(String message);
     }
 
@@ -116,7 +125,7 @@ public class ClientApiRepository {
                 error -> {
                     String errorMessage = "Erreur API";
                     if (error.networkResponse != null) {
-                        errorMessage += " (Code: " + error.networkResponse.statusCode + ")";
+                        errorMessage += CODE_ERREUR + error.networkResponse.statusCode + ")";
                     }
                     if (error.getMessage() != null) {
                         errorMessage += " - " + error.getMessage();
@@ -129,8 +138,8 @@ public class ClientApiRepository {
             @Override
             public Map<String, String> getHeaders() {
                 Map<String, String> headers = new HashMap<>();
-                headers.put("DOLAPIKEY", apiKey);
-                headers.put("Accept", "application/json");
+                headers.put(APIKEY, apiKey);
+                headers.put(LIBELLE_ACCEPT, JSON_APPLICATION);
                 return headers;
             }
         };
@@ -141,7 +150,7 @@ public class ClientApiRepository {
     /**
      * Parse la réponse JSON de l'API en liste de Clients.
      */
-    private List<Client> parseJsonResponse(JSONArray jsonArray) throws Exception {
+    private List<Client> parseJsonResponse(JSONArray jsonArray) throws JSONException {
         List<Client> clients = new ArrayList<>();
 
         for (int i = 0; i < jsonArray.length(); i++) {
@@ -164,7 +173,7 @@ public class ClientApiRepository {
      * Envoie un client local vers Dolibarr.
      * POST /thirdparties
      *
-     * @param client Client local à envoyer (sans ID Dolibarr)
+     * @param client   Client local à envoyer (sans ID Dolibarr)
      * @param callback Callback pour notifier du résultat
      */
     public void envoyerClient(Client client, ClientEnvoiCallback callback) {
@@ -255,7 +264,7 @@ public class ClientApiRepository {
                     error -> {
                         String errorMsg = "Erreur envoi client";
                         if (error.networkResponse != null) {
-                            errorMsg += " (Code: " + error.networkResponse.statusCode + ")";
+                            errorMsg += CODE_ERREUR + error.networkResponse.statusCode + ")";
                             if (error.networkResponse.data != null) {
                                 String body = new String(error.networkResponse.data);
                                 Log.e(TAG, "Réponse serveur: " + body);
@@ -268,9 +277,9 @@ public class ClientApiRepository {
                 @Override
                 public Map<String, String> getHeaders() {
                     Map<String, String> headers = new HashMap<>();
-                    headers.put("DOLAPIKEY", apiKey);
-                    headers.put("Content-Type", "application/json");
-                    headers.put("Accept", "application/json");
+                    headers.put(APIKEY, apiKey);
+                    headers.put("Content-Type", JSON_APPLICATION);
+                    headers.put(LIBELLE_ACCEPT, JSON_APPLICATION);
                     return headers;
                 }
 
@@ -292,7 +301,7 @@ public class ClientApiRepository {
      * Crée le JSON pour envoyer un client vers Dolibarr.
      * NE PAS INCLURE l'ID local - Dolibarr génère son propre ID.
      */
-    private JSONObject creerJsonClient(Client client, String userId) throws Exception {
+    private JSONObject creerJsonClient(Client client, String userId) throws JSONException {
         JSONObject json = new JSONObject();
 
         json.put("name", client.getNom());
@@ -313,7 +322,7 @@ public class ClientApiRepository {
         json.put("prospect", "0");     // 0 = pas un prospect
         json.put("fournisseur", "0");  // 0 = pas un fournisseur
         json.put("commercial_id", userId); // ID de l'utilisateur connecté
-        json.put("code_client","auto"); // Auto-génération du code client par Dolibarr
+        json.put("code_client", "auto"); // Auto-génération du code client par Dolibarr
 
         Log.d(TAG, "JSON créé pour client: " + json);
         Log.d(TAG, "ID utilisateur utilisé: " + userId);
@@ -332,7 +341,7 @@ public class ClientApiRepository {
 
             android.content.SharedPreferences securePrefs = EncryptedSharedPreferences.create(
                     context,
-                    "secure_prefs_crypto",
+                    FICHIER_CRYPTE,
                     masterKey,
                     EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
@@ -356,7 +365,7 @@ public class ClientApiRepository {
 
             android.content.SharedPreferences securePrefs = EncryptedSharedPreferences.create(
                     context,
-                    "secure_prefs_crypto",
+                    FICHIER_CRYPTE,
                     masterKey,
                     EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
@@ -380,7 +389,7 @@ public class ClientApiRepository {
 
             android.content.SharedPreferences securePrefs = EncryptedSharedPreferences.create(
                     context,
-                    "secure_prefs_crypto",
+                    FICHIER_CRYPTE,
                     masterKey,
                     EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
@@ -441,7 +450,7 @@ public class ClientApiRepository {
                     error -> {
                         String errorMsg = "Erreur envoi historique";
                         if (error.networkResponse != null) {
-                            errorMsg += " (Code: " + error.networkResponse.statusCode + ")";
+                            errorMsg += CODE_ERREUR + error.networkResponse.statusCode + ")";
                             if (error.networkResponse.data != null) {
                                 String body = new String(error.networkResponse.data);
                                 Log.e(TAG, "Réponse serveur historique: " + body);
@@ -454,9 +463,9 @@ public class ClientApiRepository {
                 @Override
                 public Map<String, String> getHeaders() {
                     Map<String, String> headers = new HashMap<>();
-                    headers.put("DOLAPIKEY", apiKey);
-                    headers.put("Content-Type", "application/json");
-                    headers.put("Accept", "application/json");
+                    headers.put(APIKEY, apiKey);
+                    headers.put("Content-Type", JSON_APPLICATION);
+                    headers.put(LIBELLE_ACCEPT, JSON_APPLICATION);
                     return headers;
                 }
 
@@ -477,7 +486,7 @@ public class ClientApiRepository {
     /**
      * Crée le JSON pour envoyer un client vers le module d'historique.
      */
-    private JSONObject creerJsonHistorique(Client client, String dolibarrId, String username) throws Exception {
+    private JSONObject creerJsonHistorique(Client client, String dolibarrId, String username) throws JSONException {
         JSONObject json = new JSONObject();
 
         json.put("idclient", dolibarrId); // ID du client dans Dolibarr
@@ -497,20 +506,7 @@ public class ClientApiRepository {
 
         json.put("ville", client.getVille() != null ? client.getVille() : "");
 
-        // Convertir téléphone en long (ou 0 si vide/null)
-        long telephone = 0;
-        if (client.getTelephone() != null && !client.getTelephone().isEmpty()) {
-            try {
-                // Enlever les espaces et caractères non numériques
-                String telClean = client.getTelephone().replaceAll("[^0-9]", "");
-                if (!telClean.isEmpty()) {
-                    telephone = Long.parseLong(telClean);
-                }
-            } catch (NumberFormatException e) {
-                Log.w(TAG, "Téléphone invalide: " + client.getTelephone());
-            }
-        }
-        json.put("telephone", telephone);
+        json.put("telephone", client.getTelephone() != null ? client.getTelephone() : "");
 
         json.put("mail", client.getAdresseMail());
         json.put("creator_name", username != null ? username : "Unknown");
@@ -533,7 +529,6 @@ public class ClientApiRepository {
 
         return json;
     }
-
 
 
     /**
@@ -577,7 +572,7 @@ public class ClientApiRepository {
                 error -> {
                     String errorMsg = "Erreur récupération ID utilisateur";
                     if (error.networkResponse != null) {
-                        errorMsg += " (Code: " + error.networkResponse.statusCode + ")";
+                        errorMsg += CODE_ERREUR + error.networkResponse.statusCode + ")";
                     }
                     Log.e(TAG, errorMsg, error);
                     callback.onError(errorMsg);
@@ -586,8 +581,8 @@ public class ClientApiRepository {
             @Override
             public Map<String, String> getHeaders() {
                 Map<String, String> headers = new HashMap<>();
-                headers.put("DOLAPIKEY", apiKey);
-                headers.put("Accept", "application/json");
+                headers.put(APIKEY, apiKey);
+                headers.put(LIBELLE_ACCEPT, JSON_APPLICATION);
                 return headers;
             }
         };

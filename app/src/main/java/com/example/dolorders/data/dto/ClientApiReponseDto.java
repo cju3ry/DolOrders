@@ -5,7 +5,7 @@ import com.google.gson.annotations.SerializedName;
 /**
  * DTO (Data Transfer Object) pour la réponse API de Dolibarr concernant les clients (thirdparties).
  * Représente la structure JSON renvoyée par l'API /thirdparties.
- *
+ * <p>
  * Appel API : GET /thirdparties?sortfield=t.rowid&sortorder=ASC&limit=100&properties=id,name,phone,email,address,zip,town
  */
 public class ClientApiReponseDto {
@@ -31,9 +31,13 @@ public class ClientApiReponseDto {
     @SerializedName("town")
     private String town;
 
-    // Constructeur par défaut
+    /**
+     * Constructeur par defaut obligatoire pour la deserialisation (Jackson/JPA).
+     */
     public ClientApiReponseDto() {
+        // obligatoire pour le framework
     }
+
 
     // Getters et Setters
     public String getId() {

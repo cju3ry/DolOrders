@@ -29,8 +29,11 @@ public class ProduitApiReponseDto {
     @SerializedName("status")
     private String status;
 
-    // Constructeur par défaut
+    /**
+     * Constructeur par defaut obligatoire pour la deserialisation (Jackson/JPA).
+     */
     public ProduitApiReponseDto() {
+        // obligatoire pour le framework
     }
 
     // Getters et Setters

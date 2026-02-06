@@ -68,8 +68,8 @@ public class HomeFragment extends Fragment {
             btnSyncClients.setText("Synchronisation...");
 
             Toast.makeText(requireContext(),
-                "Synchronisation des clients en cours...",
-                Toast.LENGTH_SHORT).show();
+                    "Synchronisation des clients en cours...",
+                    Toast.LENGTH_SHORT).show();
 
             clientsViewModel.synchroniserClientsDepuisApi(requireContext());
 
@@ -108,8 +108,8 @@ public class HomeFragment extends Fragment {
                     int nbClientsTotal = clients != null ? clients.size() : 0;
 
                     Toast.makeText(requireContext(),
-                        "✅ " + nbClientsTotal + " client(s) synchronisé(s) avec succès !",
-                        Toast.LENGTH_LONG).show();
+                            "✅ " + nbClientsTotal + " client(s) synchronisé(s) avec succès !",
+                            Toast.LENGTH_LONG).show();
 
                     // Rafraîchir les stats après synchronisation
                     // Note: Les stats affichent les clients EN ATTENTE (locaux uniquement)
@@ -127,8 +127,8 @@ public class HomeFragment extends Fragment {
             btnSyncProduits.setText("Synchronisation...");
 
             Toast.makeText(requireContext(),
-                "Synchronisation des produits en cours...",
-                Toast.LENGTH_SHORT).show();
+                    "Synchronisation des produits en cours...",
+                    Toast.LENGTH_SHORT).show();
 
             commandesViewModel.chargerProduits(requireContext());
 
@@ -167,8 +167,8 @@ public class HomeFragment extends Fragment {
                     int nbProduits = produits != null ? produits.size() : 0;
 
                     Toast.makeText(requireContext(),
-                        "✅ " + nbProduits + " produit(s) synchronisé(s) avec succès !",
-                        Toast.LENGTH_LONG).show();
+                            "✅ " + nbProduits + " produit(s) synchronisé(s) avec succès !",
+                            Toast.LENGTH_LONG).show();
 
                     commandesViewModel.consommerSucces();
                 }
@@ -216,69 +216,69 @@ public class HomeFragment extends Fragment {
 
         // Détection des problèmes de connexion Internet
         if (lowerMessage.contains("unknownhostexception") ||
-            lowerMessage.contains("unable to resolve host")) {
+                lowerMessage.contains("unable to resolve host")) {
             return "🔍 Impossible de contacter le serveur Dolibarr.\n\n" +
-                   "Veuillez vérifier :\n" +
-                   "• Votre connexion Internet (point rouge en haut = déconnecté)\n" +
-                   "• L'URL de connexion au serveur\n" +
-                   "• L'état du serveur";
+                    "Veuillez vérifier :\n" +
+                    "• Votre connexion Internet (point rouge en haut = déconnecté)\n" +
+                    "• L'URL de connexion au serveur\n" +
+                    "• L'état du serveur";
         }
 
         if (lowerMessage.contains("timeout") || lowerMessage.contains("timed out")) {
             return "⏱️ Le serveur met trop de temps à répondre.\n\n" +
-                   "Vérifiez :\n" +
-                   "• Votre connexion Internet\n" +
-                   "• Le serveur Dolibarr n'est pas surchargé";
+                    "Vérifiez :\n" +
+                    "• Votre connexion Internet\n" +
+                    "• Le serveur Dolibarr n'est pas surchargé";
         }
 
         if (lowerMessage.contains("no connection") ||
-            lowerMessage.contains("no internet") ||
-            lowerMessage.contains("network unavailable")) {
+                lowerMessage.contains("no internet") ||
+                lowerMessage.contains("network unavailable")) {
             return "📡 Aucune connexion Internet détectée.\n\n" +
-                   "Actions :\n" +
-                   "• Activez le WiFi ou les données mobiles\n" +
-                   "• Vérifiez le point rouge en haut de l'écran";
+                    "Actions :\n" +
+                    "• Activez le WiFi ou les données mobiles\n" +
+                    "• Vérifiez le point rouge en haut de l'écran";
         }
 
         if (lowerMessage.contains("connection refused")) {
             return "🚫 Connexion refusée par le serveur.\n\n" +
-                   "Vérifiez :\n" +
-                   "• L'URL du serveur Dolibarr\n" +
-                   "• Le serveur est bien démarré";
+                    "Vérifiez :\n" +
+                    "• L'URL du serveur Dolibarr\n" +
+                    "• Le serveur est bien démarré";
         }
 
         // Erreurs d'authentification
         if (lowerMessage.contains("401") || lowerMessage.contains("unauthorized")) {
             return "🔐 Authentification échouée.\n\n" +
-                   "Votre clé API est peut-être invalide ou expirée.\n" +
-                   "Reconnectez-vous pour rafraîchir vos identifiants.";
+                    "Votre clé API est peut-être invalide ou expirée.\n" +
+                    "Reconnectez-vous pour rafraîchir vos identifiants.";
         }
 
         // Erreurs serveur
         if (lowerMessage.contains("404") || lowerMessage.contains("not found")) {
             return "❓ Ressource introuvable sur le serveur.\n\n" +
-                   "Vérifiez que l'URL du serveur Dolibarr est correcte.";
+                    "Vérifiez que l'URL du serveur Dolibarr est correcte.";
         }
 
         if (lowerMessage.contains("500") || lowerMessage.contains("internal server")) {
             return "⚠️ Erreur interne du serveur Dolibarr.\n\n" +
-                   "Contactez l'administrateur du serveur.";
+                    "Contactez l'administrateur du serveur.";
         }
 
         if (lowerMessage.contains("503") || lowerMessage.contains("service unavailable")) {
             return "🔧 Serveur temporairement indisponible.\n\n" +
-                   "Réessayez dans quelques instants.";
+                    "Réessayez dans quelques instants.";
         }
 
         // Si le message est court et ne contient pas de termes techniques, on le garde
         if (errorMessage.length() < 100 && !errorMessage.contains("Exception") &&
-            !errorMessage.contains("Error") && !errorMessage.contains("error")) {
+                !errorMessage.contains("Error") && !errorMessage.contains("error")) {
             return "❌ " + errorMessage;
         }
 
         // Message générique pour les autres cas
         return "❌ Erreur de communication avec le serveur.\n\n" +
-               "Vérifiez votre connexion Internet et réessayez.\n\n" +
-               "Détail technique : " + errorMessage;
+                "Vérifiez votre connexion Internet et réessayez.\n\n" +
+                "Détail technique : " + errorMessage;
     }
 }

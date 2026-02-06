@@ -267,8 +267,10 @@ public class ClientsAjoutFragment extends Fragment {
 
     private TextWatcher createTextWatcher(TextUpdate action) {
         return new TextWatcher() {
+
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                // Pas utilisé : nécessaire uniquement pour implémenter TextWatcher
             }
 
             @Override
@@ -278,9 +280,11 @@ public class ClientsAjoutFragment extends Fragment {
 
             @Override
             public void afterTextChanged(Editable s) {
+                // Pas utilisé : nécessaire uniquement pour implémenter TextWatcher
             }
         };
     }
+
 
     @FunctionalInterface
     interface TextUpdate {

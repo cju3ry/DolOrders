@@ -86,10 +86,6 @@ public class TableauClientsFragment extends Fragment {
                     } else {
                         // 3. Sinon, on avertit l'utilisateur (probablement que le client n'était pas dans le fichier)
                         Toast.makeText(getContext(), "Erreur : Client introuvable dans le fichier (ID: " + client.getId() + ")", Toast.LENGTH_LONG).show();
-
-                        // Optionnel : Si c'était juste une donnée en mémoire (fake), on le supprime quand même de la vue
-                        // listeClients.remove(client);
-                        // adapter.notifyDataSetChanged();
                     }
                 })
                 .setNegativeButton("Annuler", null)

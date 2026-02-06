@@ -41,6 +41,8 @@ public class CommandeFormDialogFragment extends DialogFragment {
     private List<Produit> tousLesProduits;
     private Date dateModifiee;
 
+    private static final String REGEX_PRIX = "%.2f €";
+
     public interface OnCommandeEditedListener {
         void onCommandeEdited(Date dateCommande, List<LigneCommande> lignes);
     }
@@ -139,7 +141,7 @@ public class CommandeFormDialogFragment extends DialogFragment {
 
             tvLibelle.setText(ligne.getProduit().getLibelle());
             tvPU.setText(String.format(Locale.FRANCE, "%.2f", ligne.getProduit().getPrixUnitaire()));
-            tvTotalLigne.setText(String.format(Locale.FRANCE, "%.2f €", ligne.getMontantLigne()));
+            tvTotalLigne.setText(String.format(Locale.FRANCE, REGEX_PRIX, ligne.getMontantLigne()));
             tvQty.setText(String.valueOf(ligne.getQuantite()));
 
             if (ligne.getRemise() == (long) ligne.getRemise())
@@ -161,7 +163,7 @@ public class CommandeFormDialogFragment extends DialogFragment {
             container.addView(row);
         }
 
-        tvTotal.setText(String.format(Locale.FRANCE, "%.2f €", total));
+        tvTotal.setText(String.format(Locale.FRANCE, REGEX_PRIX, total));
         tvNb.setText(lignesEditees.size() + " articles");
     }
 
@@ -186,23 +188,32 @@ public class CommandeFormDialogFragment extends DialogFragment {
 
         if (ligneExistante != null) {
             edtQty.setText(String.valueOf(ligneExistante.getQuantite()));
-            if(ligneExistante.getRemise() == (long) ligneExistante.getRemise())
-                edtRem.setText(String.valueOf((long)ligneExistante.getRemise()));
+            if (ligneExistante.getRemise() == (long) ligneExistante.getRemise())
+                edtRem.setText(String.valueOf((long) ligneExistante.getRemise()));
             else
                 edtRem.setText(String.valueOf(ligneExistante.getRemise()));
         }
 
         TextWatcher watcher = new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
-            @Override public void afterTextChanged(Editable s) {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                // Pas utilisé : nécessaire pour implémenter TextWatcher
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Pas utilisé : nécessaire pour implémenter TextWatcher
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
                 try {
                     String sQty = edtQty.getText().toString();
                     String sRem = edtRem.getText().toString();
                     int qty = sQty.isEmpty() ? 0 : Integer.parseInt(sQty);
                     double rem = sRem.isEmpty() ? 0.0 : Double.parseDouble(sRem);
                     double total = (produit.getPrixUnitaire() * qty) * (1 - rem / 100);
-                    tvTotalConfig.setText(String.format(Locale.FRANCE, "%.2f €", total));
+                    tvTotalConfig.setText(String.format(Locale.FRANCE, REGEX_PRIX, total));
                 } catch (Exception e) {
                     tvTotalConfig.setText("-");
                 }
@@ -218,8 +229,14 @@ public class CommandeFormDialogFragment extends DialogFragment {
                 int qty = Integer.parseInt(edtQty.getText().toString());
                 double rem = Double.parseDouble(edtRem.getText().toString());
 
-                if (qty <= 0) { edtQty.setError("Min 1"); return; }
-                if (rem < 0 || rem > 100) { edtRem.setError("0-100"); return; }
+                if (qty <= 0) {
+                    edtQty.setError("Min 1");
+                    return;
+                }
+                if (rem < 0 || rem > 100) {
+                    edtRem.setError("0-100");
+                    return;
+                }
 
                 LigneCommande newLine = new LigneCommande(produit, qty, rem, true);
 

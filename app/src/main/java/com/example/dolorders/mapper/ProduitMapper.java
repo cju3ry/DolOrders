@@ -10,8 +10,15 @@ import com.example.dolorders.objet.Produit;
 public class ProduitMapper {
 
     /**
+     * Constructeur privé pour empêcher l'instanciation.
+     */
+    private ProduitMapper() {
+        // Classe utilitaire : ne doit pas être instanciée
+    }
+
+    /**
      * Convertit un ProduitApiReponseDto en Produit.
-     * 
+     *
      * @param dto Le DTO provenant de l'API
      * @return Un objet Produit avec valeurs par défaut si nécessaire
      */
@@ -21,9 +28,9 @@ public class ProduitMapper {
         }
 
         // ID : doit toujours exister
-        String id = dto.getId() != null && !dto.getId().isEmpty() 
-            ? dto.getId() 
-            : "0";
+        String id = dto.getId() != null && !dto.getId().isEmpty()
+                ? dto.getId()
+                : "0";
 
         // Libellé : utilise label ou ref, sinon valeur par défaut
         String libelle;
@@ -36,9 +43,9 @@ public class ProduitMapper {
         }
 
         // Description : peut être vide
-        String description = dto.getDescription() != null 
-            ? dto.getDescription().trim() 
-            : "";
+        String description = dto.getDescription() != null
+                ? dto.getDescription().trim()
+                : "";
 
         // Prix : conversion String → double avec gestion d'erreur
         double prix = 0.0;

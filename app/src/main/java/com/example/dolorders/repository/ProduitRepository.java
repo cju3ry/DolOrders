@@ -16,6 +16,7 @@ import com.example.dolorders.objet.Produit;
 import com.google.gson.Gson;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -43,6 +44,7 @@ public class ProduitRepository {
      */
     public interface ProduitCallback {
         void onSuccess(List<Produit> produits);
+
         void onError(String message);
     }
 
@@ -122,7 +124,7 @@ public class ProduitRepository {
     /**
      * Parse la réponse JSON de l'API en liste de Produits.
      */
-    private List<Produit> parseJsonResponse(JSONArray jsonArray) throws Exception {
+    private List<Produit> parseJsonResponse(JSONArray jsonArray) throws JSONException {
         List<Produit> produits = new ArrayList<>();
 
         for (int i = 0; i < jsonArray.length(); i++) {
