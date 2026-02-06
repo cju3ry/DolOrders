@@ -15,15 +15,11 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.dolorders.R;
 import com.example.dolorders.data.stockage.client.GestionnaireStockageClient;
 import com.example.dolorders.data.stockage.commande.GestionnaireStockageCommande;
-import com.example.dolorders.objet.Client;
-import com.example.dolorders.objet.Produit;
 import com.example.dolorders.ui.util.NavigationUtils;
 import com.example.dolorders.ui.viewModel.ClientsFragmentViewModel;
 import com.example.dolorders.ui.viewModel.CommandesFragmentViewModel;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
-
-import java.util.List;
 
 public class HomeFragment extends Fragment {
 
@@ -103,9 +99,9 @@ public class HomeFragment extends Fragment {
                     btnSyncClients.setEnabled(true);
                     btnSyncClients.setText("Synchroniser les clients");
 
-                    // Récupérer le nombre de clients depuis la liste mise à jour
-                    List<Client> clients = clientsViewModel.getListeClients().getValue();
-                    int nbClientsTotal = clients != null ? clients.size() : 0;
+                    // Récupérer le nombre de clients synchronisés depuis le LiveData dédié
+                    Integer nbClients = clientsViewModel.getNombreClientsSynchronises().getValue();
+                    int nbClientsTotal = nbClients != null ? nbClients : 0;
 
                     Toast.makeText(requireContext(),
                             "✅ " + nbClientsTotal + " client(s) synchronisé(s) avec succès !",
@@ -162,13 +158,13 @@ public class HomeFragment extends Fragment {
                     btnSyncProduits.setEnabled(true);
                     btnSyncProduits.setText("Synchroniser les produits");
 
-                    // Récupérer le nombre de produits depuis la liste mise à jour
-                    List<Produit> produits = commandesViewModel.getListeProduits().getValue();
-                    int nbProduits = produits != null ? produits.size() : 0;
+                    // Récupérer le nombre de produits synchronisés depuis le LiveData dédié
+                    Integer nbProduits = commandesViewModel.getNombreProduitsSynchronises().getValue();
+                    int nbProduitsTotal = nbProduits != null ? nbProduits : 0;
 
                     Toast.makeText(requireContext(),
-                            "✅ " + nbProduits + " produit(s) synchronisé(s) avec succès !",
-                            Toast.LENGTH_LONG).show();
+                        "✅ " + nbProduitsTotal + " produit(s) synchronisé(s) avec succès !",
+                        Toast.LENGTH_LONG).show();
 
                     commandesViewModel.consommerSucces();
                 }
