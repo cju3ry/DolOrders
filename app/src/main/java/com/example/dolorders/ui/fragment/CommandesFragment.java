@@ -115,7 +115,11 @@ public class CommandesFragment extends Fragment {
 
     private void observeViewModel() {
         viewModel.getListeClients().observe(getViewLifecycleOwner(), clients -> {
-            ArrayAdapter<Client> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, clients);
+            // Trier les clients par ordre alphabétique avant de les afficher
+            List<Client> sortedClients = new ArrayList<>(clients);
+            sortedClients.sort((c1, c2) -> c1.getNom().compareToIgnoreCase(c2.getNom()));
+
+            ArrayAdapter<Client> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, sortedClients);
             autoCompleteClient.setAdapter(adapter);
         });
 
