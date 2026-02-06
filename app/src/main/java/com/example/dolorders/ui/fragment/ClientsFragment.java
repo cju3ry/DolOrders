@@ -93,7 +93,7 @@ public class ClientsFragment extends Fragment {
 
         // Badge sur le bouton "Filtrer"
         filtreBadge = BadgeDrawable.create(requireContext());
-        filtreBadge.setBackgroundColor(Color.parseColor("#D32F2F")); // rouge (change si tu veux)
+        filtreBadge.setBackgroundColor(Color.parseColor("#D32F2F"));
         filtreBadge.setBadgeTextColor(Color.WHITE);
         filtreBadge.setVisible(false);
         BadgeUtils.attachBadgeDrawable(filtreBadge, btnFiltre);
@@ -257,6 +257,7 @@ public class ClientsFragment extends Fragment {
                 .filter(c -> (cp == null || cp.isEmpty() || c.getCodePostal().toLowerCase().contains(cp.toLowerCase())))
                 .filter(c -> (ville == null || ville.isEmpty() || c.getVille().toLowerCase().contains(ville.toLowerCase())))
                 .filter(c -> (tel == null || tel.isEmpty() || c.getTelephone().toLowerCase().contains(tel.toLowerCase())))
+                .sorted((c1, c2) -> c1.getNom().compareToIgnoreCase(c2.getNom())) // Tri alphabétique par nom
                 .collect(java.util.stream.Collectors.toList());
 
         clientsDisplayed.addAll(filtered);
@@ -273,9 +274,14 @@ public class ClientsFragment extends Fragment {
         filtreVille = "";
         filtreTel = "";
 
-        // Recharger tous les clients (locaux + API) via le ViewModel
+        // Recharger tous les clients (locaux + API) via le ViewModel avec tri alphabétique
         clientsDisplayed.clear();
-        clientsDisplayed.addAll(clientsSource);
+
+        // Trier les clients par ordre alphabétique avant de les ajouter
+        List<Client> sortedClients = new ArrayList<>(clientsSource);
+        sortedClients.sort((c1, c2) -> c1.getNom().compareToIgnoreCase(c2.getNom()));
+
+        clientsDisplayed.addAll(sortedClients);
         clientAdapteur.notifyDataSetChanged();
         updateActiveFiltersUI();
     }
@@ -356,7 +362,12 @@ public class ClientsFragment extends Fragment {
                 clientsSource.addAll(clients);
 
                 clientsDisplayed.clear();
-                clientsDisplayed.addAll(clients);
+
+                // Trier les clients par ordre alphabétique
+                List<Client> sortedClients = new ArrayList<>(clients);
+                sortedClients.sort((c1, c2) -> c1.getNom().compareToIgnoreCase(c2.getNom()));
+
+                clientsDisplayed.addAll(sortedClients);
 
                 clientAdapteur.notifyDataSetChanged();
 
