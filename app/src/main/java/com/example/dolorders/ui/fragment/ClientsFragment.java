@@ -6,6 +6,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
+import android.graphics.Color;
+import android.widget.HorizontalScrollView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -13,6 +15,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.annotation.StringRes;
 
 import com.example.dolorders.R;
 import com.example.dolorders.data.stockage.client.GestionnaireStockageClient;
@@ -22,8 +25,13 @@ import com.example.dolorders.ui.adapteur.ClientAdapteur;
 import com.example.dolorders.ui.util.NavigationUtils;
 import com.example.dolorders.ui.viewModel.ClientsFragmentViewModel;
 import com.example.dolorders.ui.viewModel.CommandesFragmentViewModel;
+
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.badge.BadgeDrawable;
+import com.google.android.material.badge.BadgeUtils;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +47,11 @@ public class ClientsFragment extends Fragment {
     private ClientAdapteur clientAdapteur;
 
     private ServiceClient serviceClient;
+
+    private ChipGroup chipGroupActiveFilters;
+    private HorizontalScrollView filtersScroll;
+    private BadgeDrawable filtreBadge;
+
 
     private MaterialButton btnFiltre;
     private MaterialButton btnAjoutClient;
@@ -72,12 +85,24 @@ public class ClientsFragment extends Fragment {
         setupRecyclerView();
         setupListeners();
         observeViewModel();
+        updateActiveFiltersUI();
     }
 
     private void setupViews(View view) {
         listeClients = view.findViewById(R.id.listeClient);
         btnFiltre = view.findViewById(R.id.btn_filtrer_clients);
         btnAjoutClient = view.findViewById(R.id.btn_ajouter_client);
+
+        chipGroupActiveFilters = view.findViewById(R.id.chipGroup_active_filters);
+        filtersScroll = view.findViewById(R.id.filters_scroll);
+
+        // Badge sur le bouton "Filtrer"
+        filtreBadge = BadgeDrawable.create(requireContext());
+        filtreBadge.setBackgroundColor(Color.parseColor("#D32F2F")); // rouge (change si tu veux)
+        filtreBadge.setBadgeTextColor(Color.WHITE);
+        filtreBadge.setVisible(false);
+        BadgeUtils.attachBadgeDrawable(filtreBadge, btnFiltre);
+
     }
 
     private void setupRecyclerView() {
@@ -241,6 +266,8 @@ public class ClientsFragment extends Fragment {
 
         clientsDisplayed.addAll(filtered);
         clientAdapteur.notifyDataSetChanged();
+
+        updateActiveFiltersUI();
     }
 
     @SuppressLint("NotifyDataSetChanged")
@@ -255,7 +282,75 @@ public class ClientsFragment extends Fragment {
         clientsDisplayed.clear();
         clientsDisplayed.addAll(clientsSource);
         clientAdapteur.notifyDataSetChanged();
+        updateActiveFiltersUI();
     }
+
+    private void updateActiveFiltersUI() {
+        if (chipGroupActiveFilters == null || filtersScroll == null || filtreBadge == null) return;
+
+        chipGroupActiveFilters.removeAllViews();
+
+        int count = 0;
+
+        count += addFilterChipIfNotEmpty("Nom", filtreNom, () -> {
+            filtreNom = "";
+            applyFilter(filtreNom, filtreAdresse, filtreCP, filtreVille, filtreTel);
+        });
+
+        count += addFilterChipIfNotEmpty("Adresse", filtreAdresse, () -> {
+            filtreAdresse = "";
+            applyFilter(filtreNom, filtreAdresse, filtreCP, filtreVille, filtreTel);
+        });
+
+        count += addFilterChipIfNotEmpty("CP", filtreCP, () -> {
+            filtreCP = "";
+            applyFilter(filtreNom, filtreAdresse, filtreCP, filtreVille, filtreTel);
+        });
+
+        count += addFilterChipIfNotEmpty("Ville", filtreVille, () -> {
+            filtreVille = "";
+            applyFilter(filtreNom, filtreAdresse, filtreCP, filtreVille, filtreTel);
+        });
+
+        count += addFilterChipIfNotEmpty("Téléphone", filtreTel, () -> {
+            filtreTel = "";
+            applyFilter(filtreNom, filtreAdresse, filtreCP, filtreVille, filtreTel);
+        });
+
+        // Affichage/masquage de la zone chips
+        filtersScroll.setVisibility(count > 0 ? View.VISIBLE : View.GONE);
+
+        // Badge sur le bouton
+        filtreBadge.setVisible(count > 0);
+        if (count > 0) {
+            filtreBadge.setNumber(count);
+        }
+    }
+
+    /**
+     * Ajoute une chip "Label: valeur" si valeur non vide.
+     * @return 1 si ajoutée, 0 sinon.
+     */
+    private int addFilterChipIfNotEmpty(String label, String value, Runnable onRemove) {
+        if (value == null) return 0;
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) return 0;
+
+        Chip chip = new Chip(requireContext());
+        chip.setText(label + " : " + trimmed);
+        chip.setCloseIconVisible(true);
+        chip.setClickable(false);
+        chip.setCheckable(false);
+
+        chip.setOnCloseIconClickListener(v -> {
+            onRemove.run();
+            updateActiveFiltersUI(); // refresh chips + badge
+        });
+
+        chipGroupActiveFilters.addView(chip);
+        return 1;
+    }
+
 
 
     private void observeViewModel() {
@@ -269,6 +364,9 @@ public class ClientsFragment extends Fragment {
                 clientsDisplayed.addAll(clients);
 
                 clientAdapteur.notifyDataSetChanged();
+
+                applyFilter(filtreNom, filtreAdresse, filtreCP, filtreVille, filtreTel);
+                updateActiveFiltersUI();
             }
         });
 
