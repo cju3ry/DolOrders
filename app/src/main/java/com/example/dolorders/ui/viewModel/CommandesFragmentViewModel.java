@@ -33,6 +33,7 @@ public class CommandesFragmentViewModel extends ViewModel {
     private final MutableLiveData<Boolean> fromListeClients = new MutableLiveData<>(false);
     private final MutableLiveData<String> erreurSynchronisation = new MutableLiveData<>();
     private final MutableLiveData<Boolean> synchronisationReussie = new MutableLiveData<>();
+    private final MutableLiveData<Integer> nombreProduitsSynchronises = new MutableLiveData<>();
 
     // Fragment d'origine pour la navigation de retour
     private final MutableLiveData<String> fragmentOrigine = new MutableLiveData<>("commandes");
@@ -79,8 +80,8 @@ public class CommandesFragmentViewModel extends ViewModel {
         return synchronisationReussie;
     }
 
-    public LiveData<String> getFragmentOrigine() {
-        return fragmentOrigine;
+    public LiveData<Integer> getNombreProduitsSynchronises() {
+        return nombreProduitsSynchronises;
     }
 
     public void consommerErreur() {
@@ -179,6 +180,9 @@ public class CommandesFragmentViewModel extends ViewModel {
 
                 // Sauvegarder dans le cache
                 produitStorageManager.saveProduits(produits);
+
+                // Stocker le nombre de produits synchronisés
+                nombreProduitsSynchronises.postValue(produits.size());
 
                 // Notifier le succès AVANT de mettre à jour le LiveData
                 synchronisationReussie.postValue(true);

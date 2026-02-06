@@ -22,6 +22,7 @@ public class ClientsFragmentViewModel extends ViewModel {
     private final MutableLiveData<List<Client>> listeClients = new MutableLiveData<>();
     private final MutableLiveData<String> erreurSynchronisation = new MutableLiveData<>();
     private final MutableLiveData<Boolean> synchronisationReussie = new MutableLiveData<>();
+    private final MutableLiveData<Integer> nombreClientsSynchronises = new MutableLiveData<>();
 
     private ClientApiRepository clientApiRepository;
     private GestionnaireStockageClient clientApiStorageManager;
@@ -50,6 +51,10 @@ public class ClientsFragmentViewModel extends ViewModel {
 
     public LiveData<Boolean> getSynchronisationReussie() {
         return synchronisationReussie;
+    }
+
+    public LiveData<Integer> getNombreClientsSynchronises() {
+        return nombreClientsSynchronises;
     }
 
     public void consommerErreur() {
@@ -113,6 +118,9 @@ public class ClientsFragmentViewModel extends ViewModel {
 
                 // Sauvegarder dans le cache API
                 clientApiStorageManager.saveClients(clients);
+
+                // Stocker le nombre de clients synchronisés
+                nombreClientsSynchronises.postValue(clients.size());
 
                 // Notifier le succès AVANT de recharger les clients
                 synchronisationReussie.postValue(true);
