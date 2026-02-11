@@ -211,8 +211,8 @@ public class CommandesFragmentViewModel extends ViewModel {
             for (LigneCommande l : currentList) {
                 if (l.getProduit().getId().equals(oldLigne.getProduit().getId())) {
                     if (newQty > 0 && newRemise >= 0 && newRemise <= 100) {
-                        // On crée une nouvelle ligne validée par défaut
-                        newList.add(new LigneCommande(l.getProduit(), newQty, newRemise, true));
+                        // On crée une nouvelle ligne validée en conservant la date de création originale
+                        newList.add(new LigneCommande(l.getProduit(), newQty, newRemise, true, l.getDateCreation()));
                     } else {
                         newList.add(l);
                     }

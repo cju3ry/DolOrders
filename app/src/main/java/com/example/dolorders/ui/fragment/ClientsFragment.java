@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.dolorders.R;
 import com.example.dolorders.data.stockage.client.GestionnaireStockageClient;
+import com.example.dolorders.data.stockage.commande.GestionnaireStockageCommande;
 import com.example.dolorders.objet.Client;
 import com.example.dolorders.ui.adapteur.ClientAdapteur;
 import com.example.dolorders.ui.util.NavigationUtils;
@@ -158,6 +159,12 @@ public class ClientsFragment extends Fragment {
                         // 2) Modifier dans le gestionnaire de stockage
                         GestionnaireStockageClient storageManager = new GestionnaireStockageClient(requireContext());
                         boolean modiffier = storageManager.modifierClient(updated);
+
+                        // ✅ NOUVEAU : Propager les modifications du client dans ses commandes
+                        if (modiffier && !updated.isFromApi()) {
+                            GestionnaireStockageCommande commandeStorage = new GestionnaireStockageCommande(requireContext());
+                            commandeStorage.updateClientInCommandes(updated);
+                        }
 
                         if (modiffier) {
                             Toast.makeText(getContext(), "Client '" + updated.getNom() + "' modifié et enregistré localement !", Toast.LENGTH_SHORT)

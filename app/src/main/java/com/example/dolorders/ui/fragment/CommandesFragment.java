@@ -1,7 +1,6 @@
 package com.example.dolorders.ui.fragment;
 
 import android.app.AlertDialog;
-import android.app.DatePickerDialog;
 import android.content.Context;
 import android.os.Bundle;
 import android.text.Editable;
@@ -35,10 +34,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -46,7 +42,6 @@ import java.util.Locale;
 public class CommandesFragment extends Fragment {
 
     private static final String REGEX_MONTANT = "%.2f €";
-    private static final String REGEX_DATE = "dd/MM/yyyy";
 
     private CommandesFragmentViewModel viewModel;
     private GestionnaireStockageCommande commandeStorage;
@@ -55,7 +50,6 @@ public class CommandesFragment extends Fragment {
     // Vues
     private AutoCompleteTextView autoCompleteClient;
     private AutoCompleteTextView autoCompleteArticle;
-    private TextInputEditText editTextDate;
     private LinearLayout layoutArticlesSelectionnes;
     private MaterialButton btnAnnuler;
     private MaterialButton btnValider;
@@ -91,17 +85,11 @@ public class CommandesFragment extends Fragment {
         viewModel.chargerTousLesClients(requireContext());
         viewModel.chargerProduitsDepuisCache(requireContext());
         observeViewModel();
-
-        if (viewModel.getClientSelectionne().getValue() == null) {
-            SimpleDateFormat sdf = new SimpleDateFormat(REGEX_DATE, Locale.FRANCE);
-            viewModel.setDate(sdf.format(new Date()));
-        }
     }
 
     private void setupViews(View view) {
         autoCompleteClient = view.findViewById(R.id.auto_complete_client);
         autoCompleteArticle = view.findViewById(R.id.auto_complete_article);
-        editTextDate = view.findViewById(R.id.edit_text_date);
         layoutArticlesSelectionnes = view.findViewById(R.id.layout_articles_selectionnes);
         btnAnnuler = view.findViewById(R.id.btn_annuler);
         btnValider = view.findViewById(R.id.btn_valider);
@@ -149,7 +137,6 @@ public class CommandesFragment extends Fragment {
             }
         });
 
-        viewModel.getDate().observe(getViewLifecycleOwner(), date -> editTextDate.setText(date));
         viewModel.getLignesCommande().observe(getViewLifecycleOwner(), this::updateArticlesListView);
     }
 
@@ -161,7 +148,6 @@ public class CommandesFragment extends Fragment {
             fermerClavier(view);
         });
 
-        editTextDate.setOnClickListener(v -> showDatePickerDialog());
 
         autoCompleteArticle.setOnClickListener(v -> autoCompleteArticle.showDropDown());
         autoCompleteArticle.setOnFocusChangeListener((v, hasFocus) -> {
@@ -178,6 +164,11 @@ public class CommandesFragment extends Fragment {
             autoCompleteArticle.setText("", false);
             autoCompleteArticle.dismissDropDown();
             autoCompleteArticle.clearFocus();
+
+            // Forcer la réinitialisation du filtre de l'adaptateur
+            if (autoCompleteArticle.getAdapter() instanceof android.widget.Filterable) {
+                ((android.widget.Filterable) autoCompleteArticle.getAdapter()).getFilter().filter("");
+            }
         });
 
         btnAnnuler.setOnClickListener(v -> showCancelConfirmationDialog());
@@ -349,35 +340,15 @@ public class CommandesFragment extends Fragment {
             autoCompleteArticle.setError("Au moins un article requis");
             estValide = false;
         }
-        if (viewModel.getDate().getValue() == null) {
-            editTextDate.setError("Date requise");
-            estValide = false;
-        }
         return estValide;
     }
 
     private void enregistrerCommande() {
         Client client = viewModel.getClientSelectionne().getValue();
         List<LigneCommande> lignes = viewModel.getLignesCommande().getValue();
-        Date dateCommande;
-        try {
-            // Parse la date sélectionnée
-            Date dateParsee = new SimpleDateFormat(REGEX_DATE, Locale.FRANCE).parse(viewModel.getDate().getValue());
 
-            // Crée une nouvelle date avec l'heure actuelle
-            Calendar cal = Calendar.getInstance();
-            Calendar calParsee = Calendar.getInstance();
-            calParsee.setTime(dateParsee);
-
-            // Applique la date sélectionnée mais conserve l'heure actuelle
-            cal.set(Calendar.YEAR, calParsee.get(Calendar.YEAR));
-            cal.set(Calendar.MONTH, calParsee.get(Calendar.MONTH));
-            cal.set(Calendar.DAY_OF_MONTH, calParsee.get(Calendar.DAY_OF_MONTH));
-
-            dateCommande = cal.getTime();
-        } catch (ParseException e) {
-            return;
-        }
+        // La date de commande est fixée au moment de la création (maintenant)
+        Date dateCommande = new Date();
 
         try {
             Commande cmd = new Commande.Builder()
@@ -427,17 +398,6 @@ public class CommandesFragment extends Fragment {
         }
     }
 
-    private void showDatePickerDialog() {
-        Calendar c = Calendar.getInstance();
-        new DatePickerDialog(requireContext(), (v, y, m, d) -> {
-            // Change uniquement la date (jour/mois/année) sans toucher à l'heure
-            c.set(Calendar.YEAR, y);
-            c.set(Calendar.MONTH, m);
-            c.set(Calendar.DAY_OF_MONTH, d);
-            // L'heure de 'c' reste inchangée
-            viewModel.setDate(new SimpleDateFormat(REGEX_DATE, Locale.FRANCE).format(c.getTime()));
-        }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
-    }
 
     private void fermerClavier(View view) {
         if (view != null) {

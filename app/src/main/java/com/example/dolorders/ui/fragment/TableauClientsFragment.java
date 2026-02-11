@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.dolorders.R;
 import com.example.dolorders.data.stockage.client.GestionnaireStockageClient;
+import com.example.dolorders.data.stockage.commande.GestionnaireStockageCommande;
 import com.example.dolorders.objet.Client;
 import com.example.dolorders.service.ServiceClient;
 import com.example.dolorders.ui.adapteur.ClientsAttenteAdapteur;
@@ -120,8 +121,14 @@ public class TableauClientsFragment extends Fragment {
                 //notifier l'adaptateur
                 adapter.notifyItemChanged(index);
 
-                // Si tu veux aussi “sauvegarder” ailleurs
+                // Sauvegarder le client modifié
                 boolean modiffier = gestionnaireStockageClient.modifierClient(updated);
+
+                // ✅ NOUVEAU : Propager les modifications du client dans ses commandes
+                if (modiffier && !updated.isFromApi()) {
+                    GestionnaireStockageCommande commandeStorage = new GestionnaireStockageCommande(requireContext());
+                    commandeStorage.updateClientInCommandes(updated);
+                }
 
                 if (modiffier) {
                     Toast.makeText(getContext(), "Client '" + updated.getNom() + "' modifié et enregistré localement !", Toast.LENGTH_SHORT)
@@ -139,11 +146,10 @@ public class TableauClientsFragment extends Fragment {
 
             } catch (IllegalStateException ex) {
                 android.widget.Toast.makeText(requireContext(),
-                        ex.getMessage(),
-                        android.widget.Toast.LENGTH_LONG).show();
+                        "Erreur : " + ex.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
 
-        dialog.show(getParentFragmentManager(), "client_edit");
+        dialog.show(getParentFragmentManager(), "ClientDialog");
     }
 }

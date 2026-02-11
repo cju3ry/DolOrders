@@ -3,6 +3,7 @@ package com.example.dolorders.data.stockage.commande;
 import android.content.Context;
 import android.util.Log;
 
+import com.example.dolorders.objet.Client;
 import com.example.dolorders.objet.Commande;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -331,5 +332,56 @@ public class GestionnaireStockageCommande {
 
         return result;
     }
-}
 
+    /**
+     * Met à jour le client dans toutes ses commandes associées.
+     * Parcourt toutes les commandes, identifie celles qui contiennent le client
+     * et reconstruit ces commandes avec les nouvelles informations du client.
+     *
+     * @param updatedClient Le client avec les nouvelles informations
+     * @return true si la mise à jour a réussi, false sinon
+     */
+    public boolean updateClientInCommandes(Client updatedClient) {
+        if (updatedClient == null || updatedClient.getId() == null) {
+            Log.w(TAG, "Tentative de mise à jour avec un client ou un ID null");
+            return false;
+        }
+
+        List<Commande> commandes = loadCommandes();
+        boolean modified = false;
+
+        // Parcourir toutes les commandes
+        for (int i = 0; i < commandes.size(); i++) {
+            Commande commande = commandes.get(i);
+
+            // Si la commande contient le client à mettre à jour
+            if (commande.getClient() != null &&
+                    updatedClient.getId().equals(commande.getClient().getId())) {
+
+                // Reconstruire la commande avec le client mis à jour
+                Commande updatedCommande = new Commande.Builder()
+                        .setId(commande.getId())
+                        .setClient(updatedClient)
+                        .setDateCommande(commande.getDateCommande())
+                        .setLignesCommande(commande.getLignesCommande())
+                        .setUtilisateur(commande.getUtilisateur())
+                        .build();
+
+                commandes.set(i, updatedCommande);
+                modified = true;
+
+                Log.d(TAG, "Client mis à jour dans la commande : " + commande.getId());
+            }
+        }
+
+        if (modified) {
+            boolean saved = saveCommandes(commandes);
+            Log.d(TAG, "Mise à jour du client dans les commandes : " +
+                    (saved ? "réussie" : "échec de sauvegarde"));
+            return saved;
+        } else {
+            Log.d(TAG, "Aucune commande trouvée pour le client : " + updatedClient.getId());
+            return true;
+        }
+    }
+}

@@ -205,12 +205,13 @@ public class CommandeApiRepository {
         }
         json.put("socid", Integer.parseInt(idClient));
 
+        // TODO enlever ca car c'est pour tester
+        //json.put("socid", 200000);
         // Date de la commande (timestamp Unix - secondes)
         long dateCommande = commande.getDateCommande() != null ?
                 commande.getDateCommande().getTime() / 1000 :
                 System.currentTimeMillis() / 1000;
         json.put("date", dateCommande);
-
         // Type de commande (0 par défaut)
         json.put("type", 0);
 
@@ -222,6 +223,8 @@ public class CommandeApiRepository {
             // ID du produit
             ligneJson.put("fk_product", Integer.parseInt(ligne.getProduit().getId()));
 
+            // TODO enlever ca car c'est pour tester
+            // ligneJson.put("fk_product", 200000000);
             // Quantité
             ligneJson.put("qty", ligne.getQuantite());
 
@@ -265,6 +268,29 @@ public class CommandeApiRepository {
     }
 
     /**
+     * Envoie une commande vers l'historique SANS ID Dolibarr (en cas d'échec du module natif).
+     * Utilisé quand l'envoi vers le module natif a échoué.
+     * Toutes les lignes sont enregistrées avec update_date = "Non".
+     *
+     * @param commande Commande à enregistrer dans l'historique
+     * @param callback Callback pour notifier du résultat
+     */
+    public void envoyerCommandeVersHistoriqueSansId(Commande commande, CommandeEnvoiCallback callback) {
+        if (commande.getLignesCommande() == null || commande.getLignesCommande().isEmpty()) {
+            callback.onError("La commande ne contient aucune ligne");
+            return;
+        }
+
+        String username = getUsername();
+
+        Log.d(TAG, "Envoi commande vers historique SANS ID Dolibarr (update_date=Non) - " +
+                commande.getLignesCommande().size() + " ligne(s)");
+
+        // Envoyer chaque ligne avec idcommande="0" et update_date="Non"
+        envoyerLigneRecursiveSansId(commande, 0, username, callback);
+    }
+
+    /**
      * Envoie les lignes de commande vers l'historique avec l'ID Dolibarr.
      */
     private void envoyerLigneRecursiveAvecId(Commande commande, String dolibarrCommandeId, int index, String username, CommandeEnvoiCallback callback) {
@@ -293,6 +319,39 @@ public class CommandeApiRepository {
                 Log.e(TAG, "❌ Erreur envoi ligne " + (index + 1) + " vers l'historique: " + message);
                 // Continuer avec la ligne suivante même en cas d'erreur
                 envoyerLigneRecursiveAvecId(commande, dolibarrCommandeId, index + 1, username, callback);
+            }
+        });
+    }
+
+    /**
+     * Envoie les lignes de commande vers l'historique SANS ID Dolibarr (récursif).
+     */
+    private void envoyerLigneRecursiveSansId(Commande commande, int index, String username, CommandeEnvoiCallback callback) {
+        if (index >= commande.getLignesCommande().size()) {
+            // Toutes les lignes ont été envoyées
+            Log.d(TAG, "✅ Toutes les lignes de la commande envoyées vers l'historique (update_date=Non)");
+            callback.onSuccess("all_lines_sent_without_id");
+            return;
+        }
+
+        LigneCommande ligne = commande.getLignesCommande().get(index);
+
+        Log.d(TAG, "Envoi ligne " + (index + 1) + "/" + commande.getLignesCommande().size() +
+                " vers l'historique (update_date=Non) - Produit: " + ligne.getProduit().getLibelle());
+
+        envoyerLigneVersHistoriqueSansId(commande, ligne, username, new CommandeEnvoiCallback() {
+            @Override
+            public void onSuccess(String historiqueId) {
+                Log.d(TAG, "✅ Ligne " + (index + 1) + " envoyée vers l'historique (update_date=Non). ID: " + historiqueId);
+                // Envoyer la ligne suivante
+                envoyerLigneRecursiveSansId(commande, index + 1, username, callback);
+            }
+
+            @Override
+            public void onError(String message) {
+                Log.e(TAG, "❌ Erreur envoi ligne " + (index + 1) + " vers l'historique: " + message);
+                // Continuer avec la ligne suivante même en cas d'erreur
+                envoyerLigneRecursiveSansId(commande, index + 1, username, callback);
             }
         });
     }
@@ -377,6 +436,85 @@ public class CommandeApiRepository {
     }
 
     /**
+     * Envoie une ligne de commande vers le module d'historique SANS ID Dolibarr (en cas d'échec).
+     * POST /dolordersapi/fournisseurss avec idcommande=0 et update_date="Non"
+     */
+    private void envoyerLigneVersHistoriqueSansId(Commande commande, LigneCommande ligne, String username, CommandeEnvoiCallback callback) {
+        String baseUrl = getBaseUrl();
+        String apiKey = getApiKey();
+
+        if (baseUrl == null || apiKey == null) {
+            callback.onError("Configuration manquante");
+            return;
+        }
+
+        String url = baseUrl.endsWith("/")
+                ? baseUrl + "api/index.php/dolordersapi/fournisseurss"
+                : baseUrl + "/api/index.php/dolordersapi/fournisseurss";
+
+        try {
+            final String jsonBodyString = creerJsonLigneCommandeSansId(commande, ligne, username).toString();
+
+            StringRequest request = new StringRequest(
+                    Request.Method.POST,
+                    url,
+                    response -> {
+                        try {
+                            Log.d(TAG, "Réponse historique commande (update_date=Non): " + response);
+
+                            String historiqueId;
+                            response = response.trim();
+
+                            if (response.startsWith("{")) {
+                                JSONObject jsonResponse = new JSONObject(response);
+                                historiqueId = jsonResponse.has("id") ? jsonResponse.getString("id") : "success";
+                            } else {
+                                historiqueId = response;
+                            }
+
+                            callback.onSuccess(historiqueId);
+                        } catch (Exception e) {
+                            Log.e(TAG, "Erreur parsing réponse historique commande", e);
+                            callback.onError("Erreur parsing: " + e.getMessage());
+                        }
+                    },
+                    error -> {
+                        String errorMsg = "Erreur envoi historique commande (update_date=Non)";
+                        if (error.networkResponse != null) {
+                            errorMsg += " (Code: " + error.networkResponse.statusCode + ")";
+                            if (error.networkResponse.data != null) {
+                                String body = new String(error.networkResponse.data);
+                                Log.e(TAG, "Réponse serveur historique commande: " + body);
+                            }
+                        }
+                        Log.e(TAG, errorMsg, error);
+                        callback.onError(errorMsg);
+                    }
+            ) {
+                @Override
+                public Map<String, String> getHeaders() {
+                    Map<String, String> headers = new HashMap<>();
+                    headers.put("DOLAPIKEY", apiKey);
+                    headers.put("Content-Type", JSON_APPLICATION);
+                    headers.put("Accept", JSON_APPLICATION);
+                    return headers;
+                }
+
+                @Override
+                public byte[] getBody() {
+                    return jsonBodyString.getBytes();
+                }
+            };
+
+            requestQueue.add(request);
+
+        } catch (Exception e) {
+            Log.e(TAG, "Erreur création requête historique commande (update_date=Non)", e);
+            callback.onError("Erreur création requête: " + e.getMessage());
+        }
+    }
+
+    /**
      * Crée le JSON pour envoyer une ligne de commande vers le module d'historique avec l'ID Dolibarr.
      */
     private JSONObject creerJsonLigneCommandeAvecId(Commande commande, LigneCommande ligne, String dolibarrCommandeId, String username) throws JSONException {
@@ -422,9 +560,9 @@ public class CommandeApiRepository {
         // Créateur
         json.put("creator_name", username != null ? username : UNKNOWN_LIBELLE);
 
-        // Date de création (timestamp Unix - secondes)
-        long dateCreation = commande.getDateCommande() != null ?
-                commande.getDateCommande().getTime() / 1000 :
+        // Date de création (timestamp Unix - secondes) - MAINTENANT BASÉE SUR LA DATE DE CRÉATION DE LA LIGNE
+        long dateCreation = ligne.getDateCreation() != null ?
+                ligne.getDateCreation().getTime() / 1000 :
                 System.currentTimeMillis() / 1000;
         json.put("creation_date", dateCreation);
 
@@ -439,6 +577,74 @@ public class CommandeApiRepository {
         json.put("update_date", "Oui");
 
         Log.d(TAG, "JSON ligne commande avec ID Dolibarr créé: " + json);
+
+        return json;
+    }
+
+    /**
+     * Crée le JSON pour envoyer une ligne de commande vers l'historique SANS ID Dolibarr.
+     * Utilisé en cas d'échec de l'envoi vers le module natif.
+     * idcommande = 0, update_date = "Non"
+     */
+    private JSONObject creerJsonLigneCommandeSansId(Commande commande, LigneCommande ligne, String username) throws JSONException {
+        JSONObject json = new JSONObject();
+
+        // ID du client (récupéré depuis le client de la commande)
+        String idClient = commande.getClient() != null ? commande.getClient().getId() : "1";
+        json.put("idclient", Integer.parseInt(idClient));
+
+        // ID de la commande = 0 (pas encore créée dans Dolibarr)
+        json.put("idcommande", 0);
+
+        // Nom du client
+        String nomClient = commande.getClient().getNom();
+        json.put("nomclient", nomClient != null ? nomClient : UNKNOWN_LIBELLE);
+
+        // Date de la commande (format JJ/MM/AAAA)
+        String dateCommandeFormatee;
+        if (commande.getDateCommande() != null) {
+            java.text.SimpleDateFormat sdfDate = new java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.FRANCE);
+            dateCommandeFormatee = sdfDate.format(commande.getDateCommande());
+        } else {
+            dateCommandeFormatee = new java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.FRANCE).format(new java.util.Date());
+        }
+        json.put("datecommande", dateCommandeFormatee);
+
+        // Code article (ID du produit)
+        json.put("codearticle", ligne.getProduit().getId());
+
+        // Label (Libellé du produit)
+        json.put("label", ligne.getProduit().getLibelle());
+
+        // Quantité
+        json.put("qte", ligne.getQuantite());
+
+        // Prix unitaire
+        json.put("price", ligne.getProduit().getPrixUnitaire());
+
+        // Remise
+        json.put("remise", ligne.getRemise());
+
+        // Créateur
+        json.put("creator_name", username != null ? username : UNKNOWN_LIBELLE);
+
+        // Date de création (timestamp Unix - secondes) - basée sur la date de création de la ligne
+        long dateCreation = ligne.getDateCreation() != null ?
+                ligne.getDateCreation().getTime() / 1000 :
+                System.currentTimeMillis() / 1000;
+        json.put("creation_date", dateCreation);
+
+        // Soumis par
+        json.put("submitted_by_name", username != null ? username : UNKNOWN_LIBELLE);
+
+        // Date de soumission (timestamp Unix - secondes - maintenant)
+        long submissionDate = System.currentTimeMillis() / 1000;
+        json.put("submission_date", submissionDate);
+
+        // ✅ Update date = "Non" car la commande n'a pas été créée dans le module natif
+        json.put("update_date", "Non");
+
+        Log.d(TAG, "JSON ligne commande SANS ID Dolibarr créé (update_date=Non): " + json);
 
         return json;
     }
