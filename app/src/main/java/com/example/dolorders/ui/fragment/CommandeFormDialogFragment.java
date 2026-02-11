@@ -1,6 +1,5 @@
 package com.example.dolorders.ui.fragment;
 
-import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.os.Bundle;
 import android.text.Editable;
@@ -30,7 +29,6 @@ import com.google.android.material.textfield.TextInputEditText;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -91,10 +89,9 @@ public class CommandeFormDialogFragment extends DialogFragment {
         }
         updateDateField(edtDateCommande);
 
+        // Champs non modifiables en mode édition
         edtClientNom.setEnabled(false);
-        edtDateCommande.setFocusable(false);
-        edtDateCommande.setClickable(true);
-        edtDateCommande.setOnClickListener(view -> showDatePicker(edtDateCommande));
+        edtDateCommande.setEnabled(false);  // Date non modifiable
 
         if (tousLesProduits != null) {
             ProduitAdapter adapter = new ProduitAdapter(requireContext(), tousLesProduits);
@@ -272,25 +269,5 @@ public class CommandeFormDialogFragment extends DialogFragment {
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE);
             edt.setText(sdf.format(dateModifiee));
         }
-    }
-
-    private void showDatePicker(EditText edt) {
-        Calendar c = Calendar.getInstance();
-        c.setTime(dateModifiee != null ? dateModifiee : new Date());
-
-        new DatePickerDialog(requireContext(), (view, year, month, dayOfMonth) -> {
-            // Conserve l'heure actuelle de dateModifiee et change uniquement la date
-            Calendar newDate = Calendar.getInstance();
-            if (dateModifiee != null) {
-                newDate.setTime(dateModifiee); // Conserve l'heure actuelle
-            }
-            // Change uniquement la date (jour/mois/année) sans toucher à l'heure
-            newDate.set(Calendar.YEAR, year);
-            newDate.set(Calendar.MONTH, month);
-            newDate.set(Calendar.DAY_OF_MONTH, dayOfMonth);
-
-            dateModifiee = newDate.getTime();
-            updateDateField(edt);
-        }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
     }
 }

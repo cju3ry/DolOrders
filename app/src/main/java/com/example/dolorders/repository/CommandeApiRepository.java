@@ -203,10 +203,10 @@ public class CommandeApiRepository {
         if (idClient == null) {
             throw new IllegalArgumentException("Le client doit avoir un ID Dolibarr");
         }
-        // json.put("socid", Integer.parseInt(idClient));
+        json.put("socid", Integer.parseInt(idClient));
 
         // TODO enlever ca car c'est pour tester
-        json.put("socid", 200000);
+        //json.put("socid", 200000);
         // Date de la commande (timestamp Unix - secondes)
         long dateCommande = commande.getDateCommande() != null ?
                 commande.getDateCommande().getTime() / 1000 :

@@ -312,10 +312,11 @@ public class ClientApiRepository {
     private JSONObject creerJsonClient(Client client, String userId) throws JSONException {
         JSONObject json = new JSONObject();
 
-        json.put("name", client.getNom());
+       json.put("name", client.getNom());
 
         // TODO Enlever ca car c'est pour tester
-        // json.put("name", "");
+
+        //json.put("name", "");
         json.put("address", client.getAdresse() != null ? client.getAdresse() : "");
         json.put("zip", client.getCodePostal() != null ? client.getCodePostal() : "");
         json.put("town", client.getVille() != null ? client.getVille() : "");
