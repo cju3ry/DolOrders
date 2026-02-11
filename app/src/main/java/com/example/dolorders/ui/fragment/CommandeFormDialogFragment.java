@@ -157,8 +157,17 @@ public class CommandeFormDialogFragment extends DialogFragment {
                 tvRem.setText(String.format(Locale.US, "%.1f%%", ligne.getRemise()));
 
             btnDel.setOnClickListener(v -> {
-                lignesEditees.remove(ligne);
-                rafraichirListeArticles(container, tvTotal, tvNb);
+                // Pop-up de confirmation avant suppression
+                new AlertDialog.Builder(requireContext())
+                        .setTitle("Supprimer le produit")
+                        .setMessage("Êtes-vous sûr de vouloir supprimer \"" + ligne.getProduit().getLibelle() + "\" de la commande ?")
+                        .setPositiveButton("Supprimer", (dialog, which) -> {
+                            lignesEditees.remove(ligne);
+                            rafraichirListeArticles(container, tvTotal, tvNb);
+                        })
+                        .setNegativeButton("Annuler", null)
+                        .setIcon(android.R.drawable.ic_dialog_alert)
+                        .show();
             });
 
             View.OnClickListener editAction = v ->

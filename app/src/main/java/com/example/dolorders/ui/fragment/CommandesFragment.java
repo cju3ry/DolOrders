@@ -221,7 +221,16 @@ public class CommandesFragment extends Fragment {
 
         tvTotal.setText(String.format(Locale.FRANCE, REGEX_MONTANT, ligne.getMontantLigne()));
 
-        btnDel.setOnClickListener(v -> viewModel.removeLigne(ligne));
+        btnDel.setOnClickListener(v -> {
+            // Pop-up de confirmation avant suppression
+            new AlertDialog.Builder(requireContext())
+                    .setTitle("Supprimer le produit")
+                    .setMessage("Êtes-vous sûr de vouloir supprimer \"" + ligne.getProduit().getLibelle() + "\" de la commande ?")
+                    .setPositiveButton("Supprimer", (dialog, which) -> viewModel.removeLigne(ligne))
+                    .setNegativeButton("Annuler", null)
+                    .setIcon(android.R.drawable.ic_dialog_alert)
+                    .show();
+        });
 
         // Ouvre la pop-up avec les données existantes
         View.OnClickListener editAction = v -> ouvrirPopupConfigArticle(ligne.getProduit(), ligne);
