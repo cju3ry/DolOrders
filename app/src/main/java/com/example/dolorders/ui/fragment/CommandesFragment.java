@@ -124,16 +124,32 @@ public class CommandesFragment extends Fragment {
 
         viewModel.getClientSelectionne().observe(getViewLifecycleOwner(), client -> {
             if (client != null) {
+                // Remplir le champ texte
                 autoCompleteClient.setText(client.toString(), false);
+
+                // afficher les infos détaillées
                 tvClientAdresse.setText(String.format("Adresse : %s, %s %s", client.getAdresse(), client.getCodePostal(), client.getVille()));
                 tvClientTel.setText(String.format("Tél : %s", client.getTelephone()));
                 layoutInfosClient.setVisibility(View.VISIBLE);
                 containerDetailsCommande.setVisibility(View.VISIBLE);
                 btnValider.setEnabled(true);
+
+                // verrouiller le champ
+                autoCompleteClient.setEnabled(false);
+                autoCompleteClient.setFocusable(false);
+                autoCompleteClient.setAlpha(0.5f); // Griser visuellement
+
             } else {
+                // déverouiller si aucun client
                 autoCompleteClient.setEnabled(true);
+                autoCompleteClient.setFocusable(true); // Rendre focusable
+                autoCompleteClient.setFocusableInTouchMode(true);
+                autoCompleteClient.setAlpha(1.0f); // Rétablir l'opacité
+                autoCompleteClient.setText("", false);
+
                 layoutInfosClient.setVisibility(View.GONE);
                 containerDetailsCommande.setVisibility(View.GONE);
+                btnValider.setEnabled(false); // Désactiver le bouton valider si pas de client
             }
         });
 
