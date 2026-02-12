@@ -241,19 +241,50 @@ public class CommandeFormDialogFragment extends DialogFragment {
 
         btnAnnuler.setOnClickListener(v -> dialog.dismiss());
         btnValider.setOnClickListener(v -> {
-            try {
-                int qty = Integer.parseInt(edtQty.getText().toString());
-                double rem = Double.parseDouble(edtRem.getText().toString());
+            // 1. Reset erreurs
+            edtQty.setError(null);
+            edtRem.setError(null);
 
+            boolean erreur = false;
+            View focusView = null;
+
+            try {
+                String sQty = edtQty.getText().toString();
+                String sRem = edtRem.getText().toString();
+
+                int qty = sQty.isEmpty() ? 0 : Integer.parseInt(sQty);
+                double rem = sRem.isEmpty() ? 0.0 : Double.parseDouble(sRem);
+
+                // 2. Vérifications (Bas vers Haut)
+
+                // Remise
+                if (rem < 0 || rem > 100) {
+                    edtRem.setError("Doit être entre 0 et 100%");
+                    focusView = edtRem;
+                    erreur = true;
+                }
+
+                // Quantité
                 if (qty <= 0) {
                     edtQty.setError("Min 1");
-                    return;
+                    focusView = edtQty;
+                    erreur = true;
                 }
-                if (rem < 0 || rem > 100) {
-                    edtRem.setError("0-100");
+
+                // 3. Gestion Erreur & Focus
+                if (erreur) {
+                    if (focusView != null) {
+                        focusView.requestFocus();
+                        // Ouvrir le clavier
+                        android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+                        if (imm != null) {
+                            imm.showSoftInput(focusView, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
+                        }
+                    }
                     return;
                 }
 
+                // Validation réussie
                 LigneCommande newLine = new LigneCommande(produit, qty, rem, true);
 
                 if (ligneExistante != null) {
