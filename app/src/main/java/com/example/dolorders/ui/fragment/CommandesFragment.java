@@ -146,6 +146,11 @@ public class CommandesFragment extends Fragment {
             viewModel.setClientSelectionne(client);
             autoCompleteClient.clearFocus();
             fermerClavier(view);
+
+            // Bloque la sélection d'un client différent après en avoir choisi un
+            autoCompleteClient.setEnabled(false);
+            autoCompleteClient.setFocusable(false);
+            autoCompleteClient.setAlpha(0.5f); // Rendre visuellement désactivé
         });
 
 
