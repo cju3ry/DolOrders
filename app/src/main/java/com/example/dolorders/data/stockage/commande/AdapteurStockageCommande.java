@@ -20,8 +20,10 @@ import java.util.List;
  */
 public class AdapteurStockageCommande extends TypeAdapter<Commande> {
 
+    /** Nom de la clé pour stocker l'utilisateur dans les objets JSON */
     private static final String CLE_UTILISATEUR = "utilisateur";
 
+    /** Override de la méthode write pour sérialiser un objet Commande en JSON */
     @Override
     public void write(JsonWriter out, Commande commande) throws IOException {
         if (commande == null) {
@@ -56,6 +58,10 @@ public class AdapteurStockageCommande extends TypeAdapter<Commande> {
         out.endObject();
     }
 
+    /** Méthode pour sérialiser un objet Client en JSON
+     * @param out Le JsonWriter utilisé pour écrire le JSON
+     * @param client Le Client à sérialiser
+     */
     private void writeClient(JsonWriter out, Client client) throws IOException {
         out.beginObject();
         out.name("id").value(client.getId());
@@ -70,6 +76,10 @@ public class AdapteurStockageCommande extends TypeAdapter<Commande> {
         out.endObject();
     }
 
+    /** Méthode pour sérialiser un objet LigneCommande en JSON
+     * @param out Le JsonWriter utilisé pour écrire le JSON * @param ligne La LigneCommande à sérialiser
+     * @param ligne La LigneCommande à sérialiser
+     */
     private void writeLigneCommande(JsonWriter out, LigneCommande ligne) throws IOException {
         out.beginObject();
 
@@ -88,6 +98,10 @@ public class AdapteurStockageCommande extends TypeAdapter<Commande> {
         out.endObject();
     }
 
+    /** Méthode pour sérialiser un objet Produit en JSON
+     * @param out Le JsonWriter utilisé pour écrire le JSON
+     * @param produit Le Produit à sérialiser
+     */
     private void writeProduit(JsonWriter out, Produit produit) throws IOException {
         out.beginObject();
         out.name("id").value(produit.getId());
@@ -98,6 +112,10 @@ public class AdapteurStockageCommande extends TypeAdapter<Commande> {
         out.endObject();
     }
 
+    /** Override de la méthode read pour désérialiser un JSON en objet Commande *
+     * @param in Le JsonReader utilisé pour lire le JSON
+     * @return Un objet Commande construit à partir du JSON lu
+     */
     @Override
     public Commande read(JsonReader in) throws IOException {
         if (in == null) {
@@ -142,7 +160,10 @@ public class AdapteurStockageCommande extends TypeAdapter<Commande> {
 
         return builder.build();
     }
-
+    /** Méthode pour désérialiser un objet Client à partir d'un JSON
+     * @param in Le JsonReader utilisé pour lire le JSON
+     * @return Un objet Client construit à partir du JSON lu
+     */
     private Client readClient(JsonReader in) throws IOException {
         Client.Builder builder = new Client.Builder();
 
@@ -188,7 +209,10 @@ public class AdapteurStockageCommande extends TypeAdapter<Commande> {
 
         return builder.build();
     }
-
+    /** Méthode pour désérialiser une liste de LigneCommande à partir d'un JSON
+     * @param in Le JsonReader utilisé pour lire le JSON
+     * @return Une liste de LigneCommande construite à partir du JSON lu
+     */
     private List<LigneCommande> readLignesCommande(JsonReader in) throws IOException {
         List<LigneCommande> lignes = new ArrayList<>();
 
@@ -200,7 +224,10 @@ public class AdapteurStockageCommande extends TypeAdapter<Commande> {
 
         return lignes;
     }
-
+    /** Méthode pour désérialiser un objet LigneCommande à partir d'un JSON
+     * @param in Le JsonReader utilisé pour lire le JSON
+     * @return Un objet LigneCommande construit à partir du JSON lu
+     */
     private LigneCommande readLigneCommande(JsonReader in) throws IOException {
         Produit produit = null;
         int quantite = 0;
@@ -242,7 +269,9 @@ public class AdapteurStockageCommande extends TypeAdapter<Commande> {
 
         return new LigneCommande(produit, quantite, remise, validee, dateCreation);
     }
-
+    /** Méthode pour désérialiser un objet Produit à partir d'un JSON
+     * @param in Le JsonReader utilisé pour lire le JSON
+     * @return Un objet Produit construit à partir du JSON lu */
     private Produit readProduit(JsonReader in) throws IOException {
         String id = "0";
         String libelle = "";
@@ -274,7 +303,7 @@ public class AdapteurStockageCommande extends TypeAdapter<Commande> {
                     prixUnitaire = in.nextDouble();
                     break;
                 case "tauxTva":
-                    tauxTva = in.nextDouble(); // ✅ AJOUTÉ
+                    tauxTva = in.nextDouble();
                     break;
                 default:
                     in.skipValue();

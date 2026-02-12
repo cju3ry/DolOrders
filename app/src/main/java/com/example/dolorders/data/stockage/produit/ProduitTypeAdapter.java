@@ -13,6 +13,11 @@ import java.io.IOException;
  */
 public class ProduitTypeAdapter extends TypeAdapter<Produit> {
 
+    /** Sérialise un objet Produit en JSON.
+     * @param out Le JsonWriter pour écrire le JSON
+     * @param produit L'objet Produit à sérialiser
+     * @throws IOException Si une erreur d'écriture se produit
+     */
     @Override
     public void write(JsonWriter out, Produit produit) throws IOException {
         if (produit == null) {
@@ -29,6 +34,11 @@ public class ProduitTypeAdapter extends TypeAdapter<Produit> {
         out.endObject();
     }
 
+    /** Désérialise un objet Produit à partir de JSON.
+     * @param in Le JsonReader pour lire le JSON
+     * @return L'objet Produit désérialisé
+     * @throws IOException Si une erreur de lecture se produit
+     */
     @Override
     public Produit read(JsonReader in) throws IOException {
         String id = "0";

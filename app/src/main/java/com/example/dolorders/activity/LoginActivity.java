@@ -28,21 +28,35 @@ import java.security.GeneralSecurityException;
 import java.util.List;
 
 public class LoginActivity extends AppCompatActivity {
-
+    /** TextInputEditText pour le nom d'utilisateur */
     private TextInputEditText etUsername;
-    private TextInputEditText etPassword;
+    /** TextInputEditText pour le mot de passe */
+     private TextInputEditText etPassword;
+    /** AutoCompleteTextView pour l'URL du serveur Dolibarr, avec auto-complétion basée sur les
+     * URLs précédemment utilisées */
     private AutoCompleteTextView etUrl;
+    /** Bouton de connexion */
     private Button btnLogin;
-    private RequestQueue requestQueue;
-    private SharedPreferences securePrefs;
-    private ServiceUrl serviceUrl;
 
+    /** RequestQueue de Volley pour les requêtes réseau */
+    private RequestQueue requestQueue;
+
+    /** SharedPreferences sécurisées pour stocker les credentials de manière cryptée */
+    private SharedPreferences securePrefs;
+
+    /** ServiceUrl pour gérer les URLs enregistrées et l'auto-complétion */
+     private ServiceUrl serviceUrl;
+
+    /** Clé pour stocker le nom d'utilisateur dans les SharedPreferences cryptées */
     private static final String USER_NAME = "username";
 
+    /** Tag pour les logs liés à l'activité de connexion */
     private static final String LOGIN_ACTIVITY = "LoginActivity";
 
+    /** Nom du fichier pour les SharedPreferences cryptées */
     private static final String CRYPTED_FILE_NAME = "secure_prefs_crypto";
 
+    /** Tag pour les logs de débogage liés à la connexion */
     private static final String DEBUG_TAG = "LOGIN_DEBUG";
 
     @Override
@@ -50,12 +64,16 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
+        // Initialisation des vues
         etUsername = findViewById(R.id.etUsername);
         etPassword = findViewById(R.id.etPassword);
         etUrl = findViewById(R.id.etUrl);
         btnLogin = findViewById(R.id.btnLogin);
 
+        // Initialisation de la RequestQueue de Volley
         requestQueue = Volley.newRequestQueue(this);
+
+        // Initialisation du service pour gérer les URLs
         serviceUrl = new ServiceUrl(this);
 
         // Initialisation des SharedPreferences cryptées
@@ -76,6 +94,7 @@ public class LoginActivity extends AppCompatActivity {
         final String lastUrl = getLastUsedUrl();
         final boolean[] urlWasPrefilled = {false};
 
+        // Si une URL a été récupérée, la pré-remplir
         if (lastUrl != null && !lastUrl.isEmpty()) {
             etUrl.setText(lastUrl);
             urlWasPrefilled[0] = true;
@@ -102,7 +121,7 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
 
-        // --- Vérification si déjà connecté ---
+        // Vérification si l'utilisateur est déjà connecté
         if (securePrefs.getBoolean("is_logged_in", false)) {
             startActivity(new Intent(LoginActivity.this, MainActivity.class));
             finish();
@@ -112,7 +131,6 @@ public class LoginActivity extends AppCompatActivity {
     /**
      * Configure l'auto-complétion pour le champ URL avec les URLs enregistrées.
      */
-
     private void setupUrlAutoComplete() {
         List<String> urls = serviceUrl.getAllUrls();
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
@@ -129,7 +147,8 @@ public class LoginActivity extends AppCompatActivity {
         etUrl.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_URI);
     }
 
-    private SharedPreferences getEncryptedSharedPreferences()
+    /** Initialise les SharedPreferences cryptées pour stocker les credentials de manière sécurisée */
+     private SharedPreferences getEncryptedSharedPreferences()
             throws GeneralSecurityException, IOException {
         MasterKey masterKey = new MasterKey.Builder(this)
                 .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
@@ -144,7 +163,14 @@ public class LoginActivity extends AppCompatActivity {
         );
     }
 
-    private boolean validateInputs(String username, String password, String url) {
+    /** Valide les entrées utilisateur pour le nom d'utilisateur, le mot de passe et l'URL.
+     * Affiche des erreurs sur les champs correspondants si des entrées sont invalides.
+     * @param username Le nom d'utilisateur saisi
+     * @param password Le mot de passe saisi
+     * @param url L'URL du serveur Dolibarr saisie
+     * @return true si toutes les entrées sont valides, false sinon
+     */
+     private boolean validateInputs(String username, String password, String url) {
         if (username.isEmpty()) {
             etUsername.setError("Identifiant requis");
             return false;
@@ -164,16 +190,21 @@ public class LoginActivity extends AppCompatActivity {
      * Effectue la connexion au serveur Dolibarr.
      * Si baseUrl est "stub" ou "bouchon", simule une connexion réussie.
      *
-     * @param username
-     * @param password
-     * @param baseUrl
+     * @param username Le nom d'utilisateur saisi
+     * @param password Le mot de passe saisi
+     * @param baseUrl  L'URL du serveur Dolibarr saisi
      */
     private void login(String username, String password, String baseUrl) {
 
         btnLogin.setEnabled(false);
 
+        // Service de gestion de session pour effectuer la connexion
         ServiceGestionSession api = new ServiceGestionSession(this);
 
+        // Appel de la méthode de connexion du service, avec un callback pour gérer la réponse
+        // Si la connexion est réussie, handleLoginSuccess sera appelé pour traiter la réponse
+        // et sauvegarder les credentials
+        // En cas d'erreur, un message d'erreur sera affiché à l'utilisateur
         api.login(baseUrl, username, password, new ServiceGestionSession.ApiCallback() {
             @Override
             public void onSuccess(JSONObject response) {
@@ -189,7 +220,13 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
-    private void handleLoginSuccess(JSONObject response, String username, String baseUrl) {
+    /** Traite la réponse de connexion réussie, extrait la clé API, sauvegarde les credentials
+     * de manière sécurisée et lance MainActivity.
+     * @param response La réponse JSON de l'API contenant la clé API
+     * @param username Le nom d'utilisateur utilisé pour la connexion
+     * @param baseUrl L'URL du serveur Dolibarr utilisé pour la connexion
+     */
+     private void handleLoginSuccess(JSONObject response, String username, String baseUrl) {
         try {
             if (response.has("success")) {
                 JSONObject successObj = response.getJSONObject("success");
@@ -216,7 +253,12 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
-    private void saveCredentials(String username, String apiKey, String baseUrl) {
+    /** Sauvegarde les credentials de manière sécurisée dans les SharedPreferences cryptées.
+     * @param username Le nom d'utilisateur à sauvegarder
+     * @param apiKey La clé API à sauvegarder
+     * @param baseUrl L'URL du serveur Dolibarr à sauvegarder
+     */
+     private void saveCredentials(String username, String apiKey, String baseUrl) {
         android.util.Log.d(DEBUG_TAG, "Sauvegarde des credentials - username: " + username);
 
         SharedPreferences.Editor editor = securePrefs.edit();
@@ -256,6 +298,8 @@ public class LoginActivity extends AppCompatActivity {
 
     /**
      * Récupère le nom d'utilisateur depuis les SharedPreferences cryptées
+     * @param context Le contexte de l'activité pour accéder aux SharedPreferences
+     * @return Le nom d'utilisateur récupéré ou null en cas d'erreur
      */
     public static String getUsername(android.content.Context context) {
         try {
@@ -264,7 +308,7 @@ public class LoginActivity extends AppCompatActivity {
             MasterKey masterKey = new MasterKey.Builder(context)
                     .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
                     .build();
-
+            // Accès aux SharedPreferences cryptées
             SharedPreferences securePrefs = EncryptedSharedPreferences.create(
                     context,
                     CRYPTED_FILE_NAME,
@@ -272,7 +316,7 @@ public class LoginActivity extends AppCompatActivity {
                     EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             );
-
+            // Récupération du nom d'utilisateur
             String username = securePrefs.getString(USER_NAME, null);
             android.util.Log.d(LOGIN_ACTIVITY, "Username récupéré: " + username);
             return username;
@@ -282,8 +326,10 @@ public class LoginActivity extends AppCompatActivity {
             return null;
         }
     }
-
-    private void showError(String message) {
+    /** Affiche un message d'erreur à l'utilisateur et réactive le bouton de connexion.
+     * @param message Le message d'erreur à afficher
+     */
+     private void showError(String message) {
         btnLogin.setEnabled(true);
         Toast.makeText(this, message, Toast.LENGTH_LONG).show();
     }
@@ -294,15 +340,14 @@ public class LoginActivity extends AppCompatActivity {
      */
     private String getLastUsedUrl() {
         try {
-            // D'abord, vérifier les SharedPreferences normales (sauvegardées lors de la déconnexion)
+            // D'abord, vérifie les SharedPreferences normales (après déconnexion)
             SharedPreferences normalPrefs = getSharedPreferences("DolOrdersPrefs", MODE_PRIVATE);
             String lastUrl = normalPrefs.getString("last_used_url", null);
-
+            // Si une URL est trouvée dans les SharedPreferences normales, la retourner
             if (lastUrl != null && !lastUrl.isEmpty()) {
                 Log.d(LOGIN_ACTIVITY, "URL récupérée depuis SharedPreferences normales: " + lastUrl);
                 return lastUrl;
             }
-
             // Sinon, vérifier les SharedPreferences cryptées (si encore connecté)
             if (securePrefs != null) {
                 lastUrl = securePrefs.getString("base_url", null);

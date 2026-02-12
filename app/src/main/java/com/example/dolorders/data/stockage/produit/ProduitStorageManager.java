@@ -30,10 +30,16 @@ import java.util.List;
  */
 public class ProduitStorageManager {
 
+    /** Nom du fichier de stockage pour les produits */
     private static final String FILE_NAME = "produits_data.json";
+
+    /** Tag de log pour le gestionnaire de stockage des produits */
     private static final String TAG = "ProduitStorage";
 
+    /** Contexte de l'application pour accéder au système de fichiers internes */
     private final Context context;
+
+    /** Instance de Gson configurée avec l'adaptateur personnalisé pour Produit */
     private final Gson gson;
 
     /**

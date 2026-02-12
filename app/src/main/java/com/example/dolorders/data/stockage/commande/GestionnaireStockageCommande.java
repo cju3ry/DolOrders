@@ -30,12 +30,22 @@ import java.util.List;
  */
 public class GestionnaireStockageCommande {
 
+    /** Nom du fichier de stockage pour les commandes */
     private static final String FILE_NAME = "commandes_data.json";
+
+    /** Tag de log pour le gestionnaire de stockage des commandes */
     private static final String TAG = "CommandeStorage";
 
+    /** Contexte de l'application pour accéder au système de fichiers internes */
     private final Context context;
+
+    /** Instance de Gson configurée avec l'adaptateur personnalisé pour Commande */
     private final Gson gson;
 
+    /**
+     * Constructeur du gestionnaire de stockage des commandes.
+     * @param context Contexte de l'application
+     */
     public GestionnaireStockageCommande(Context context) {
         this.context = context;
         // Configuration de Gson avec l'adaptateur personnalisé pour Commande
@@ -350,7 +360,7 @@ public class GestionnaireStockageCommande {
         List<Commande> commandes = loadCommandes();
         boolean modified = false;
 
-        // Parcourir toutes les commandes
+        // Parcourt toutes les commandes
         for (int i = 0; i < commandes.size(); i++) {
             Commande commande = commandes.get(i);
 

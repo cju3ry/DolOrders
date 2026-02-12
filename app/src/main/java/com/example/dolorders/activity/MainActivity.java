@@ -30,11 +30,15 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 
 public class MainActivity extends AppCompatActivity {
-
+    /** TAG pour les logs de MainActivity */
     private static final String TAG = "MainActivity";
+    /** Service pour gérer les URL de connexion */
     private ServiceUrl serviceUrl;
+    /** Service pour surveiller la connexion Internet en temps réel */
     private ServiceConnexionInternet serviceConnexion;
-    private View connectionIndicator;
+
+    /** Indicateur visuel de l'état de la connexion Internet */
+     private View connectionIndicator;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,7 +54,7 @@ public class MainActivity extends AppCompatActivity {
             getSupportActionBar().setDisplayShowTitleEnabled(false);
         }
 
-        // Initialiser l'indicateur de connexion
+        // Initialise l'indicateur de connexion
         connectionIndicator = findViewById(R.id.connectionIndicator);
         setupConnectionMonitoring();
 
@@ -68,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
         // Récupère l'URL utilisée pour se connecter et la sauvegarde
         recupererUrl();
 
+        // Gère la sélection des items du Bottom Navigation
         bottomNav.setOnItemSelectedListener(item -> {
             Fragment selectedFragment = null;
             int id = item.getItemId();
@@ -98,7 +103,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void recupererUrl() {
+    /** Récupère l'URL de connexion utilisée pour se connecter et la sauvegarde dans ServiceUrl */
+     private void recupererUrl() {
         String baseUrl = getBaseUrl();
         if (baseUrl != null) {
             boolean success = serviceUrl.addUrl(baseUrl);
@@ -110,7 +116,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void recupererUtilisateur() {
+    /** Récupère le nom d'utilisateur depuis LoginActivity et met à jour le TextView de bienvenue */
+     private void recupererUtilisateur() {
         String username = LoginActivity.getUsername(this);
         Log.d(TAG, "Username récupéré: " + username);
         TextView tvWelcomeUser = findViewById(R.id.tvWelcomeUser);
@@ -153,7 +160,7 @@ public class MainActivity extends AppCompatActivity {
     private void setupConnectionMonitoring() {
         serviceConnexion = new ServiceConnexionInternet(this);
 
-        // Mettre à jour l'indicateur avec l'état initial
+        // Mise à jour l'indicateur avec l'état initial
         updateConnectionIndicator(serviceConnexion.isInternetAvailable());
 
         // Démarrer la surveillance en temps réel
