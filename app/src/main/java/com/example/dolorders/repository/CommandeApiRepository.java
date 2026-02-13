@@ -203,10 +203,11 @@ public class CommandeApiRepository {
         if (idClient == null) {
             throw new IllegalArgumentException("Le client doit avoir un ID Dolibarr");
         }
+
         json.put("socid", Integer.parseInt(idClient));
 
         // TODO enlever ca car c'est pour tester
-        //json.put("socid", 200000);
+        // json.put("socid", 200000);
         // Date de la commande (timestamp Unix - secondes)
         long dateCommande = commande.getDateCommande() != null ?
                 commande.getDateCommande().getTime() / 1000 :
@@ -263,8 +264,12 @@ public class CommandeApiRepository {
         Log.d(TAG, "Début envoi commande vers historique avec ID Dolibarr: " + dolibarrCommandeId +
                 " (" + commande.getLignesCommande().size() + " lignes)");
 
+        // ✅ NOUVEAU : Utiliser un compteur d'erreurs pour traquer les échecs
+        final int[] erreurCount = {0};
+        final int totalLignes = commande.getLignesCommande().size();
+
         // Envoyer chaque ligne de commande séparément avec l'ID Dolibarr
-        envoyerLigneRecursiveAvecId(commande, dolibarrCommandeId, 0, username, callback);
+        envoyerLigneRecursiveAvecIdEtCompteur(commande, dolibarrCommandeId, 0, username, erreurCount, totalLignes, callback);
     }
 
     /**
@@ -286,18 +291,31 @@ public class CommandeApiRepository {
         Log.d(TAG, "Envoi commande vers historique SANS ID Dolibarr (update_date=Non) - " +
                 commande.getLignesCommande().size() + " ligne(s)");
 
+        // ✅ NOUVEAU : Utiliser un compteur d'erreurs pour traquer les échecs
+        final int[] erreurCount = {0};
+        final int totalLignes = commande.getLignesCommande().size();
+
         // Envoyer chaque ligne avec idcommande="0" et update_date="Non"
-        envoyerLigneRecursiveSansId(commande, 0, username, callback);
+        envoyerLigneRecursiveSansIdAvecCompteur(commande, 0, username, erreurCount, totalLignes, callback);
     }
 
     /**
-     * Envoie les lignes de commande vers l'historique avec l'ID Dolibarr.
+     * Envoie les lignes de commande vers l'historique avec l'ID Dolibarr (avec compteur d'erreurs).
      */
-    private void envoyerLigneRecursiveAvecId(Commande commande, String dolibarrCommandeId, int index, String username, CommandeEnvoiCallback callback) {
+    private void envoyerLigneRecursiveAvecIdEtCompteur(Commande commande, String dolibarrCommandeId, int index,
+                                                       String username, int[] erreurCount, int totalLignes,
+                                                       CommandeEnvoiCallback callback) {
         if (index >= commande.getLignesCommande().size()) {
-            // Toutes les lignes ont été envoyées
-            Log.d(TAG, "✅ Toutes les lignes de la commande envoyées vers l'historique");
-            callback.onSuccess("all_lines_sent");
+            // Toutes les lignes ont été traitées
+            if (erreurCount[0] > 0) {
+                // ❌ Au moins une ligne a échoué
+                Log.e(TAG, "❌ Échec envoi historique : " + erreurCount[0] + "/" + totalLignes + " ligne(s) en erreur");
+                callback.onError("Échec envoi historique (" + erreurCount[0] + "/" + totalLignes + " lignes en erreur)");
+            } else {
+                // ✅ Toutes les lignes ont réussi
+                Log.d(TAG, "✅ Toutes les lignes de la commande envoyées vers l'historique");
+                callback.onSuccess("all_lines_sent");
+            }
             return;
         }
 
@@ -311,26 +329,37 @@ public class CommandeApiRepository {
             public void onSuccess(String historiqueId) {
                 Log.d(TAG, "✅ Ligne " + (index + 1) + " envoyée vers l'historique. ID: " + historiqueId);
                 // Envoyer la ligne suivante
-                envoyerLigneRecursiveAvecId(commande, dolibarrCommandeId, index + 1, username, callback);
+                envoyerLigneRecursiveAvecIdEtCompteur(commande, dolibarrCommandeId, index + 1, username, erreurCount, totalLignes, callback);
             }
 
             @Override
             public void onError(String message) {
                 Log.e(TAG, "❌ Erreur envoi ligne " + (index + 1) + " vers l'historique: " + message);
-                // Continuer avec la ligne suivante même en cas d'erreur
-                envoyerLigneRecursiveAvecId(commande, dolibarrCommandeId, index + 1, username, callback);
+                // ✅ Incrémenter le compteur d'erreurs
+                erreurCount[0]++;
+                // Continuer avec la ligne suivante
+                envoyerLigneRecursiveAvecIdEtCompteur(commande, dolibarrCommandeId, index + 1, username, erreurCount, totalLignes, callback);
             }
         });
     }
 
     /**
-     * Envoie les lignes de commande vers l'historique SANS ID Dolibarr (récursif).
+     * Envoie les lignes de commande vers l'historique SANS ID Dolibarr (récursif) avec compteur d'erreurs.
      */
-    private void envoyerLigneRecursiveSansId(Commande commande, int index, String username, CommandeEnvoiCallback callback) {
+    private void envoyerLigneRecursiveSansIdAvecCompteur(Commande commande, int index, String username,
+                                                         int[] erreurCount, int totalLignes,
+                                                         CommandeEnvoiCallback callback) {
         if (index >= commande.getLignesCommande().size()) {
-            // Toutes les lignes ont été envoyées
-            Log.d(TAG, "✅ Toutes les lignes de la commande envoyées vers l'historique (update_date=Non)");
-            callback.onSuccess("all_lines_sent_without_id");
+            // Toutes les lignes ont été traitées
+            if (erreurCount[0] > 0) {
+                // ❌ Au moins une ligne a échoué
+                Log.e(TAG, "❌ Échec envoi historique : " + erreurCount[0] + "/" + totalLignes + " ligne(s) en erreur");
+                callback.onError("Échec envoi historique (" + erreurCount[0] + "/" + totalLignes + " lignes en erreur)");
+            } else {
+                // ✅ Toutes les lignes ont réussi
+                Log.d(TAG, "✅ Toutes les lignes de la commande envoyées vers l'historique (update_date=Non)");
+                callback.onSuccess("all_lines_sent_without_id");
+            }
             return;
         }
 
@@ -344,14 +373,16 @@ public class CommandeApiRepository {
             public void onSuccess(String historiqueId) {
                 Log.d(TAG, "✅ Ligne " + (index + 1) + " envoyée vers l'historique (update_date=Non). ID: " + historiqueId);
                 // Envoyer la ligne suivante
-                envoyerLigneRecursiveSansId(commande, index + 1, username, callback);
+                envoyerLigneRecursiveSansIdAvecCompteur(commande, index + 1, username, erreurCount, totalLignes, callback);
             }
 
             @Override
             public void onError(String message) {
                 Log.e(TAG, "❌ Erreur envoi ligne " + (index + 1) + " vers l'historique: " + message);
-                // Continuer avec la ligne suivante même en cas d'erreur
-                envoyerLigneRecursiveSansId(commande, index + 1, username, callback);
+                // ✅ Incrémenter le compteur d'erreurs
+                erreurCount[0]++;
+                // Continuer avec la ligne suivante
+                envoyerLigneRecursiveSansIdAvecCompteur(commande, index + 1, username, erreurCount, totalLignes, callback);
             }
         });
     }

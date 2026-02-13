@@ -308,12 +308,17 @@ public class ListeAttenteFragment extends Fragment {
                             public void onSuccess(String historiqueId) {
                                 Log.d(LISTE_ATTENTE, "✅ Client " + client.getNom() + " enregistré dans l'historique (update_date=Non)");
 
-                                // Ajouter au rapport avec mention spéciale SEULEMENT si vraiment enregistré
                                 rapport.ajouterClientEchoue(client.getNom(),
                                     simplifierMessageErreur(message) + " (enregistré dans l'historique pour correction)");
 
-                                // ✅ Le client RESTE en local pour permettre la correction
-                                Log.d(LISTE_ATTENTE, "⚠️ Client " + client.getNom() + " conservé en local pour correction");
+                                ServiceClient serviceClient = new ServiceClient(requireContext());
+                                boolean supprime = serviceClient.deleteClient(client);
+
+                                if (supprime) {
+                                    Log.d(LISTE_ATTENTE, "✅ Client " + client.getNom() + " supprimé du stockage local (historique OK)");
+                                } else {
+                                    Log.w(LISTE_ATTENTE, "⚠️ Erreur suppression du client local: " + client.getNom());
+                                }
 
                                 // Passer au client suivant
                                 envoyerClientEtCommandesRecursif(clients, index + 1, clientRepo, commandeRepo,
@@ -490,12 +495,16 @@ public class ListeAttenteFragment extends Fragment {
                         public void onSuccess(String historiqueId) {
                             Log.d(LISTE_ATTENTE, "✅ Commande " + commande.getId() + " enregistrée dans l'historique (update_date=Non)");
 
-                            // Ajouter au rapport avec mention spéciale SEULEMENT si vraiment enregistré
                             rapport.ajouterCommandeEchouee(commande.getId(),
                                     simplifierMessageErreur(message) + " (lignes enregistrées dans l'historique pour correction)");
 
-                            // ✅ La commande RESTE en local pour permettre la correction
-                            Log.d(LISTE_ATTENTE, "⚠️ Commande " + commande.getId() + " conservée en local pour correction");
+                            boolean supprime = storage.deleteCommande(commande.getId());
+
+                            if (supprime) {
+                                Log.d(LISTE_ATTENTE, "✅ Commande " + commande.getId() + " supprimée du stockage local (historique OK)");
+                            } else {
+                                Log.w(LISTE_ATTENTE, "⚠️ Erreur suppression de la commande locale: " + commande.getId());
+                            }
 
                             // Continuer avec la commande suivante
                             envoyerCommandesRecursif(commandes, index + 1, repo, storage, rapport, onTermine);
