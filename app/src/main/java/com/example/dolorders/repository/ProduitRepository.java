@@ -70,11 +70,11 @@ public class ProduitRepository {
             callback.onError("Configuration manquante (URL ou clé API)");
             return;
         }
-        //TODO récupérer uniquement les champs nécessaires
-        // Construction de l'URL de l'API
+        //TODO a vérifier
         String url = baseUrl.endsWith("/")
-                ? baseUrl + "api/index.php/products?sortfield=t.ref&sortorder=ASC&limit=99999"
-                : baseUrl + "/api/index.php/products?sortfield=t.ref&sortorder=ASC&limit=99999";
+               ? baseUrl + "api/index.php/products?sortfield=t.ref&sortorder=ASC&limit=99999&properties=id%2Clabel%2Cdescription%2Cprice%2Ctva_tx%2Cref%2Cstatus"
+               : baseUrl + "/api/index.php/products?sortfield=t.ref&sortorder=ASC&limit=99999&properties=id%2Clabel%2Cdescription%2Cprice%2Ctva_tx%2Cref%2Cstatus";
+
 
         Log.d(TAG, "Récupération des produits depuis l'API : " + url);
 
