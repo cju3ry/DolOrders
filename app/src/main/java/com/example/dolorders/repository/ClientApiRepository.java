@@ -245,22 +245,22 @@ public class ClientApiRepository {
                                 dolibarrId = response;
                             }
 
-                            Log.d(TAG, "✅ Client envoyé avec succès. ID Dolibarr: " + dolibarrId);
+                            Log.d(TAG, "✅ Client envoyé avec succès dans le module natif. ID Dolibarr: " + dolibarrId);
 
                             // Maintenant envoyer vers le module d'historique
                             envoyerVersHistorique(client, dolibarrId, username, new ClientEnvoiCallback() {
                                 @Override
                                 public void onSuccess(String historiqueId) {
                                     Log.d(TAG, "✅ Client enregistré dans l'historique. ID: " + historiqueId);
-                                    // Retourner le succès avec l'ID Dolibarr original
+                                    // ✅ Historique OK → on peut supprimer le client local
                                     callback.onSuccess(dolibarrId);
                                 }
 
                                 @Override
                                 public void onError(String message) {
                                     Log.w(TAG, "⚠️ Erreur enregistrement historique: " + message);
-                                    // Même si l'historique échoue, on considère la création du client comme réussie
-                                    callback.onSuccess(dolibarrId);
+                                    // ❌ Historique échoué → on garde le client en local pour permettre une nouvelle tentative
+                                    callback.onError("Client créé dans Dolibarr mais échec historique: " + message);
                                 }
                             });
 
