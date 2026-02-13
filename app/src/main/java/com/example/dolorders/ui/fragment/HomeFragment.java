@@ -6,6 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ProgressBar;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -44,6 +45,8 @@ public class HomeFragment extends Fragment {
         MaterialButton btnPendingData = view.findViewById(R.id.btnPendingData);
         MaterialButton btnSyncClients = view.findViewById(R.id.btnSyncClients);
         MaterialButton btnSyncProduits = view.findViewById(R.id.btnSyncProduits);
+        ProgressBar progressSyncProduits = view.findViewById(R.id.progressSyncProduits);
+        TextView tvProgressSyncProduits = view.findViewById(R.id.tvProgressSyncProduits);
         CommandesFragmentViewModel commandesViewModel = new ViewModelProvider(requireActivity()).get(CommandesFragmentViewModel.class);
         ClientsFragmentViewModel clientsViewModel = new ViewModelProvider(requireActivity()).get(ClientsFragmentViewModel.class);
 
@@ -57,6 +60,27 @@ public class HomeFragment extends Fragment {
         final int nbCommandesEnAttente = gestionnaireCommande.loadCommandes().size();
 
         updateStats(nbClientsEnAttente, nbCommandesEnAttente);
+
+        commandesViewModel.getSyncProduitsEnCours().observe(getViewLifecycleOwner(), enCours -> {
+            boolean running = enCours != null && enCours;
+
+            progressSyncProduits.setVisibility(running ? View.VISIBLE : View.GONE);
+            tvProgressSyncProduits.setVisibility(running ? View.VISIBLE : View.GONE);
+
+            if (running) {
+                btnSyncProduits.setEnabled(false);
+                btnSyncProduits.setText("Synchronisation...");
+            } else {
+                btnSyncProduits.setEnabled(true);
+                btnSyncProduits.setText("Synchroniser les produits");
+            }
+        });
+
+        commandesViewModel.getProgressSyncProduitsPercent().observe(getViewLifecycleOwner(), percent -> {
+            int p = (percent == null) ? 0 : percent;
+            progressSyncProduits.setProgress(p);
+            tvProgressSyncProduits.setText(p + "%");
+        });
 
         // Bouton de synchronisation des clients
         btnSyncClients.setOnClickListener(v -> {
@@ -119,56 +143,11 @@ public class HomeFragment extends Fragment {
 
         // Bouton de synchronisation des produits
         btnSyncProduits.setOnClickListener(v -> {
-            btnSyncProduits.setEnabled(false);
-            btnSyncProduits.setText("Synchronisation...");
-
             Toast.makeText(requireContext(),
                     "Synchronisation des produits en cours...",
                     Toast.LENGTH_SHORT).show();
 
             commandesViewModel.chargerProduits(requireContext());
-
-            // Observer les ERREURS de synchronisation
-            commandesViewModel.getErreurSynchronisation().observe(getViewLifecycleOwner(), erreur -> {
-                if (erreur != null && !erreur.isEmpty()) {
-                    btnSyncProduits.setEnabled(true);
-                    btnSyncProduits.setText("Synchroniser les produits");
-
-                    // Convertir l'erreur technique en message convivial
-                    String messageConvivial = convertirErreurEnMessageConvivial(erreur);
-
-                    // Afficher un dialogue d'erreur
-                    new android.app.AlertDialog.Builder(requireContext())
-                            .setTitle("❌ Erreur de synchronisation produits")
-                            .setMessage(messageConvivial)
-                            .setPositiveButton("OK", null)
-                            .setNegativeButton("Réessayer", (dialog, which) -> {
-                                commandesViewModel.consommerErreur();
-                                btnSyncProduits.performClick();
-                            })
-                            .show();
-
-                    commandesViewModel.consommerErreur();
-                }
-            });
-
-            // Observer le SUCCÈS de la synchronisation (ne s'affiche QUE si succès)
-            commandesViewModel.getSynchronisationReussie().observe(getViewLifecycleOwner(), reussie -> {
-                if (reussie != null && reussie) {
-                    btnSyncProduits.setEnabled(true);
-                    btnSyncProduits.setText("Synchroniser les produits");
-
-                    // Récupérer le nombre de produits synchronisés depuis le LiveData dédié
-                    Integer nbProduits = commandesViewModel.getNombreProduitsSynchronises().getValue();
-                    int nbProduitsTotal = nbProduits != null ? nbProduits : 0;
-
-                    Toast.makeText(requireContext(),
-                        "✅ " + nbProduitsTotal + " produit(s) synchronisé(s) avec succès !",
-                        Toast.LENGTH_LONG).show();
-
-                    commandesViewModel.consommerSucces();
-                }
-            });
         });
 
         // Navigation via les boutons
