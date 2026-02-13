@@ -31,7 +31,7 @@ public class LoginActivity extends AppCompatActivity {
     /** TextInputEditText pour le nom d'utilisateur */
     private TextInputEditText etUsername;
     /** TextInputEditText pour le mot de passe */
-     private TextInputEditText etPassword;
+    private TextInputEditText etPassword;
     /** AutoCompleteTextView pour l'URL du serveur Dolibarr, avec auto-complétion basée sur les
      * URLs précédemment utilisées */
     private AutoCompleteTextView etUrl;
@@ -45,7 +45,7 @@ public class LoginActivity extends AppCompatActivity {
     private SharedPreferences securePrefs;
 
     /** ServiceUrl pour gérer les URLs enregistrées et l'auto-complétion */
-     private ServiceUrl serviceUrl;
+    private ServiceUrl serviceUrl;
 
     /** Clé pour stocker le nom d'utilisateur dans les SharedPreferences cryptées */
     private static final String USER_NAME = "username";
@@ -123,7 +123,7 @@ public class LoginActivity extends AppCompatActivity {
 
         // Vérification si l'utilisateur est déjà connecté
         if (securePrefs.getBoolean("is_logged_in", false)) {
-            // ✅ NOUVEAU : Valider la clé API avant de reconnecter automatiquement
+            // Valide la clé API avant de reconnecter automatiquement
             validerSessionAvantReconnexion();
         }
     }
@@ -148,7 +148,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     /** Initialise les SharedPreferences cryptées pour stocker les credentials de manière sécurisée */
-     private SharedPreferences getEncryptedSharedPreferences()
+    private SharedPreferences getEncryptedSharedPreferences()
             throws GeneralSecurityException, IOException {
         MasterKey masterKey = new MasterKey.Builder(this)
                 .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
@@ -170,7 +170,7 @@ public class LoginActivity extends AppCompatActivity {
      * @param url L'URL du serveur Dolibarr saisie
      * @return true si toutes les entrées sont valides, false sinon
      */
-     private boolean validateInputs(String username, String password, String url) {
+    private boolean validateInputs(String username, String password, String url) {
         if (username.isEmpty()) {
             etUsername.setError("Identifiant requis");
             return false;
@@ -226,7 +226,7 @@ public class LoginActivity extends AppCompatActivity {
      * @param username Le nom d'utilisateur utilisé pour la connexion
      * @param baseUrl L'URL du serveur Dolibarr utilisé pour la connexion
      */
-     private void handleLoginSuccess(JSONObject response, String username, String baseUrl) {
+    private void handleLoginSuccess(JSONObject response, String username, String baseUrl) {
         try {
             if (response.has("success")) {
                 JSONObject successObj = response.getJSONObject("success");
@@ -258,7 +258,7 @@ public class LoginActivity extends AppCompatActivity {
      * @param apiKey La clé API à sauvegarder
      * @param baseUrl L'URL du serveur Dolibarr à sauvegarder
      */
-     private void saveCredentials(String username, String apiKey, String baseUrl) {
+    private void saveCredentials(String username, String apiKey, String baseUrl) {
         android.util.Log.d(DEBUG_TAG, "Sauvegarde des credentials - username: " + username);
 
         SharedPreferences.Editor editor = securePrefs.edit();
@@ -329,7 +329,7 @@ public class LoginActivity extends AppCompatActivity {
     /** Affiche un message d'erreur à l'utilisateur et réactive le bouton de connexion.
      * @param message Le message d'erreur à afficher
      */
-     private void showError(String message) {
+    private void showError(String message) {
         btnLogin.setEnabled(true);
         Toast.makeText(this, message, Toast.LENGTH_LONG).show();
     }

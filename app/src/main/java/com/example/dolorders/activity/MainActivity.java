@@ -1,5 +1,6 @@
 package com.example.dolorders.activity;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
@@ -213,6 +214,7 @@ public class MainActivity extends AppCompatActivity {
             ServiceGestionSession.logout(this);
             return true;
         } else if (id == R.id.action_about) {
+            startActivity(new Intent(this, AboutActivity.class));
             Toast.makeText(this, "À propos", Toast.LENGTH_SHORT).show();
             return true;
         }
