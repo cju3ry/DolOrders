@@ -119,6 +119,25 @@
                 app:iconGravity="textStart"
                 app:iconPadding="16dp" />
 
+            <ProgressBar
+                android:id="@+id/progressSyncClients"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:indeterminate="false"
+                android:max="100"
+                android:progress="0"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tvProgressSyncClients"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="0%"
+                android:visibility="gone" />
+
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSyncProduits"
                 android:layout_width="match_parent"
@@ -132,6 +151,26 @@
                 app:iconTint="@android:color/white"
                 app:iconGravity="textStart"
                 app:iconPadding="16dp" />
+
+            <ProgressBar
+                android:id="@+id/progressSyncProduits"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:indeterminate="false"
+                android:max="100"
+                android:progress="0"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tvProgressSyncProduits"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="0%"
+                android:visibility="gone" />
+
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnNewClient"

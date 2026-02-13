@@ -543,6 +543,11 @@ public class ListeAttenteFragment extends Fragment {
         );
 
         repo.synchroniserDepuisApi(new ClientApiRepository.ClientCallback() {
+
+            @Override
+            public void onProgress(int current, int total) {
+                // Corps vide pour éviter une erreur
+            }
             @Override
             public void onSuccess(List<Client> clients) {
                 Log.d(LISTE_ATTENTE, "✅ " + clients.size() + " clients récupérés depuis l'API");
