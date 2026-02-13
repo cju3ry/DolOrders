@@ -123,8 +123,8 @@ public class LoginActivity extends AppCompatActivity {
 
         // Vérification si l'utilisateur est déjà connecté
         if (securePrefs.getBoolean("is_logged_in", false)) {
-            startActivity(new Intent(LoginActivity.this, MainActivity.class));
-            finish();
+            // ✅ NOUVEAU : Valider la clé API avant de reconnecter automatiquement
+            validerSessionAvantReconnexion();
         }
     }
 
@@ -360,6 +360,107 @@ public class LoginActivity extends AppCompatActivity {
             Log.e(LOGIN_ACTIVITY, "Erreur lors de la récupération de la dernière URL", e);
         }
         return null;
+    }
+
+    /**
+     * Valide la session existante en vérifiant la validité de la clé API.
+     * Appelle GET /users/info/ pour vérifier si la clé API est toujours valide.
+     * Si valide → reconnexion automatique
+     * Si invalide → déconnexion et affichage du formulaire de login
+     */
+    private void validerSessionAvantReconnexion() {
+        Log.d(LOGIN_ACTIVITY, "🔐 Validation de la session avant reconnexion automatique...");
+
+        // Récupérer l'URL et la clé API depuis les SharedPreferences
+        String baseUrl = securePrefs.getString("base_url", null);
+        String apiKey = securePrefs.getString("api_key", null);
+
+        if (baseUrl == null || apiKey == null) {
+            Log.w(LOGIN_ACTIVITY, "❌ Configuration manquante (URL ou clé API)");
+            deconnecterUtilisateur();
+            Toast.makeText(this, "Session expirée. Veuillez vous reconnecter.", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        // Construction de l'URL pour l'endpoint /users/info/
+        String url = baseUrl.endsWith("/")
+                ? baseUrl + "api/index.php/users/info/"
+                : baseUrl + "/api/index.php/users/info/";
+
+        Log.d(LOGIN_ACTIVITY, "📡 Appel API : " + url);
+
+        // Requête Volley pour valider la clé API
+        com.android.volley.toolbox.StringRequest request = new com.android.volley.toolbox.StringRequest(
+                com.android.volley.Request.Method.GET,
+                url,
+                response -> {
+                    try {
+                        // La réponse est un JSON avec les infos utilisateur
+                        JSONObject jsonResponse = new JSONObject(response);
+                        String userId = jsonResponse.getString("id");
+                        String username = jsonResponse.getString("login");
+
+                        Log.d(LOGIN_ACTIVITY, "✅ Clé API valide. Utilisateur: " + username + " (ID: " + userId + ")");
+
+                        // La clé API est valide → reconnexion automatique
+                        runOnUiThread(() -> {
+                            startActivity(new Intent(LoginActivity.this, MainActivity.class));
+                            finish();
+                        });
+
+                    } catch (JSONException e) {
+                        Log.e(LOGIN_ACTIVITY, "❌ Erreur parsing réponse validation", e);
+                        deconnecterUtilisateur();
+                        Toast.makeText(LoginActivity.this,
+                                "Session expirée. Veuillez vous reconnecter.",
+                                Toast.LENGTH_LONG).show();
+                    }
+                },
+                error -> {
+                    // La requête a échoué → clé API invalide ou réseau
+                    String errorMsg = "Clé API invalide ou expirée";
+                    if (error.networkResponse != null) {
+                        errorMsg += " (Code: " + error.networkResponse.statusCode + ")";
+                    }
+                    Log.w(LOGIN_ACTIVITY, "❌ " + errorMsg);
+
+                    // Déconnecter l'utilisateur
+                    runOnUiThread(() -> {
+                        deconnecterUtilisateur();
+                        Toast.makeText(LoginActivity.this,
+                                "Session expirée. Veuillez vous reconnecter.",
+                                Toast.LENGTH_LONG).show();
+                    });
+                }
+        ) {
+            @Override
+            public java.util.Map<String, String> getHeaders() {
+                java.util.Map<String, String> headers = new java.util.HashMap<>();
+                headers.put("DOLAPIKEY", apiKey);
+                headers.put("Accept", "application/json");
+                return headers;
+            }
+        };
+
+        // Ajouter la requête à la queue
+        requestQueue.add(request);
+    }
+
+    /**
+     * Déconnecte l'utilisateur en supprimant ses credentials des SharedPreferences.
+     */
+    private void deconnecterUtilisateur() {
+        try {
+            SharedPreferences.Editor editor = securePrefs.edit();
+            editor.putBoolean("is_logged_in", false);
+            editor.remove("api_key");
+            editor.remove(USER_NAME);
+            editor.apply();
+
+            Log.d(LOGIN_ACTIVITY, "🔓 Utilisateur déconnecté");
+        } catch (Exception e) {
+            Log.e(LOGIN_ACTIVITY, "Erreur lors de la déconnexion", e);
+        }
     }
 
     /**

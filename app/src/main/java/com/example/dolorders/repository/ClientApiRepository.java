@@ -314,6 +314,7 @@ public class ClientApiRepository {
 
        json.put("name", client.getNom());
 
+
         // TODO Enlever ca car c'est pour tester
         // json.put("name", "");
 

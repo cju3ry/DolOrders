@@ -208,6 +208,7 @@ public class CommandeApiRepository {
 
         // TODO enlever ca car c'est pour tester
         // json.put("socid", 200000);
+
         // Date de la commande (timestamp Unix - secondes)
         long dateCommande = commande.getDateCommande() != null ?
                 commande.getDateCommande().getTime() / 1000 :
