@@ -23,6 +23,8 @@ public class ClientsFragmentViewModel extends ViewModel {
     private final MutableLiveData<String> erreurSynchronisation = new MutableLiveData<>();
     private final MutableLiveData<Boolean> synchronisationReussie = new MutableLiveData<>();
     private final MutableLiveData<Integer> nombreClientsSynchronises = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> syncClientsEnCours = new MutableLiveData<>(false);
+    private final MutableLiveData<Integer> progressSyncClientsPercent = new MutableLiveData<>(0);
 
     private ClientApiRepository clientApiRepository;
     private GestionnaireStockageClient clientApiStorageManager;
@@ -56,6 +58,8 @@ public class ClientsFragmentViewModel extends ViewModel {
     public LiveData<Integer> getNombreClientsSynchronises() {
         return nombreClientsSynchronises;
     }
+    public LiveData<Boolean> getSyncClientsEnCours() { return syncClientsEnCours; }
+    public LiveData<Integer> getProgressSyncClientsPercent() { return progressSyncClientsPercent; }
 
     public void consommerErreur() {
         erreurSynchronisation.setValue(null);
@@ -111,34 +115,54 @@ public class ClientsFragmentViewModel extends ViewModel {
         }
 
         // Appeler l'API via le Repository
+        syncClientsEnCours.postValue(true);
+        progressSyncClientsPercent.postValue(0);
+
         clientApiRepository.synchroniserDepuisApi(new ClientApiRepository.ClientCallback() {
+
+            private int lastPercent = -1;
+
+            @Override
+            public void onProgress(int current, int total) {
+                if (total <= 0) {
+                    progressSyncClientsPercent.postValue(0);
+                    return;
+                }
+                int percent = (int) Math.round((current * 100.0) / total);
+
+                // throttling (évite de spammer la UI)
+                if (percent != lastPercent) {
+                    lastPercent = percent;
+                    progressSyncClientsPercent.postValue(percent);
+                }
+            }
+
             @Override
             public void onSuccess(List<Client> clients) {
                 Log.d(TAG, "Clients synchronisés depuis l'API : " + clients.size());
 
-                // Sauvegarder dans le cache API
                 clientApiStorageManager.saveClients(clients);
 
-                // Stocker le nombre de clients synchronisés
                 nombreClientsSynchronises.postValue(clients.size());
+                progressSyncClientsPercent.postValue(100);
 
-                // Notifier le succès AVANT de recharger les clients
                 synchronisationReussie.postValue(true);
 
-                // Recharger tous les clients pour mettre à jour l'affichage
                 chargerTousLesClients(context);
+
+                syncClientsEnCours.postValue(false);
             }
 
             @Override
             public void onError(String message) {
                 Log.e(TAG, "Erreur lors de la synchronisation des clients : " + message);
 
-                // Notifier l'erreur via LiveData pour afficher un dialogue convivial
-                erreurSynchronisation.postValue(message);
+                syncClientsEnCours.postValue(false);
+                progressSyncClientsPercent.postValue(0);
 
-                // NE PAS recharger les clients en cas d'erreur pour éviter le Toast de succès
-                // L'utilisateur verra le dialogue d'erreur uniquement
+                erreurSynchronisation.postValue(message);
             }
         });
+
     }
 }

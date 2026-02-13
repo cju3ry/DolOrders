@@ -44,11 +44,35 @@ public class HomeFragment extends Fragment {
         MaterialButton btnNewCommande = view.findViewById(R.id.btnNewCommande);
         MaterialButton btnPendingData = view.findViewById(R.id.btnPendingData);
         MaterialButton btnSyncClients = view.findViewById(R.id.btnSyncClients);
+        ProgressBar progressSyncClients = view.findViewById(R.id.progressSyncClients);
+        TextView tvProgressSyncClients = view.findViewById(R.id.tvProgressSyncClients);
         MaterialButton btnSyncProduits = view.findViewById(R.id.btnSyncProduits);
         ProgressBar progressSyncProduits = view.findViewById(R.id.progressSyncProduits);
         TextView tvProgressSyncProduits = view.findViewById(R.id.tvProgressSyncProduits);
         CommandesFragmentViewModel commandesViewModel = new ViewModelProvider(requireActivity()).get(CommandesFragmentViewModel.class);
         ClientsFragmentViewModel clientsViewModel = new ViewModelProvider(requireActivity()).get(ClientsFragmentViewModel.class);
+
+        clientsViewModel.getSyncClientsEnCours().observe(getViewLifecycleOwner(), enCours -> {
+            boolean running = enCours != null && enCours;
+
+            progressSyncClients.setVisibility(running ? View.VISIBLE : View.GONE);
+            tvProgressSyncClients.setVisibility(running ? View.VISIBLE : View.GONE);
+
+            if (running) {
+                btnSyncClients.setEnabled(false);
+                btnSyncClients.setText("Synchronisation...");
+            } else {
+                btnSyncClients.setEnabled(true);
+                btnSyncClients.setText("Synchroniser les clients");
+            }
+        });
+
+        clientsViewModel.getProgressSyncClientsPercent().observe(getViewLifecycleOwner(), percent -> {
+            int p = (percent == null) ? 0 : percent;
+            progressSyncClients.setProgress(p);
+            tvProgressSyncClients.setText(p + "%");
+        });
+
 
         // Récupération réelle des données
         // Charger UNIQUEMENT les clients EN ATTENTE (locaux, pas encore envoyés à Dolibarr)
@@ -84,62 +108,13 @@ public class HomeFragment extends Fragment {
 
         // Bouton de synchronisation des clients
         btnSyncClients.setOnClickListener(v -> {
-            btnSyncClients.setEnabled(false);
-            btnSyncClients.setText("Synchronisation...");
-
             Toast.makeText(requireContext(),
                     "Synchronisation des clients en cours...",
                     Toast.LENGTH_SHORT).show();
 
             clientsViewModel.synchroniserClientsDepuisApi(requireContext());
-
-            // Observer les ERREURS de synchronisation
-            clientsViewModel.getErreurSynchronisation().observe(getViewLifecycleOwner(), erreur -> {
-                if (erreur != null && !erreur.isEmpty()) {
-                    btnSyncClients.setEnabled(true);
-                    btnSyncClients.setText("Synchroniser les clients");
-
-                    // Convertir l'erreur technique en message convivial
-                    String messageConvivial = convertirErreurEnMessageConvivial(erreur);
-
-                    // Afficher un dialogue d'erreur
-                    new android.app.AlertDialog.Builder(requireContext())
-                            .setTitle("❌ Erreur de synchronisation clients")
-                            .setMessage(messageConvivial)
-                            .setPositiveButton("OK", null)
-                            .setNegativeButton("Réessayer", (dialog, which) -> {
-                                clientsViewModel.consommerErreur();
-                                btnSyncClients.performClick();
-                            })
-                            .show();
-
-                    clientsViewModel.consommerErreur();
-                }
-            });
-
-            // Observer le SUCCÈS de la synchronisation (ne s'affiche QUE si succès)
-            clientsViewModel.getSynchronisationReussie().observe(getViewLifecycleOwner(), reussie -> {
-                if (reussie != null && reussie) {
-                    btnSyncClients.setEnabled(true);
-                    btnSyncClients.setText("Synchroniser les clients");
-
-                    // Récupérer le nombre de clients synchronisés depuis le LiveData dédié
-                    Integer nbClients = clientsViewModel.getNombreClientsSynchronises().getValue();
-                    int nbClientsTotal = nbClients != null ? nbClients : 0;
-
-                    Toast.makeText(requireContext(),
-                            "✅ " + nbClientsTotal + " client(s) synchronisé(s) avec succès !",
-                            Toast.LENGTH_LONG).show();
-
-                    // Rafraîchir les stats après synchronisation
-                    // Note: Les stats affichent les clients EN ATTENTE (locaux uniquement)
-                    // donc on ne met pas à jour ici car les clients synchronisés ne sont plus "en attente"
-                    // Les stats seront mises à jour au prochain rechargement du fragment
-
-                    clientsViewModel.consommerSucces();
-                }
-            });
         });
+
 
         // Bouton de synchronisation des produits
         btnSyncProduits.setOnClickListener(v -> {
