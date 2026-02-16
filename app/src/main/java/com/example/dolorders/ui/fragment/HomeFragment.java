@@ -116,14 +116,12 @@ public class HomeFragment extends Fragment {
                 new android.app.AlertDialog.Builder(requireContext())
                         .setTitle("❌ Erreur de synchronisation produits")
                         .setMessage(messageConvivial)
-                        .setPositiveButton("OK", null)
+                        .setPositiveButton("OK", (dialog, which) -> commandesViewModel.consommerErreur())
                         .setNegativeButton("Réessayer", (dialog, which) -> {
                             commandesViewModel.consommerErreur();
                             btnSyncProduits.performClick();
                         })
                         .show();
-
-                commandesViewModel.consommerErreur();
             }
         });
 
