@@ -83,14 +83,14 @@ public class HomeFragment extends Fragment {
                 new android.app.AlertDialog.Builder(requireContext())
                         .setTitle("❌ Erreur de synchronisation clients")
                         .setMessage(messageConvivial)
-                        .setPositiveButton("OK", null)
+                        .setPositiveButton("OK", (dialog, which) -> {
+                            clientsViewModel.consommerErreur();
+                        })
                         .setNegativeButton("Réessayer", (dialog, which) -> {
                             clientsViewModel.consommerErreur();
-                            btnSyncClients.performClick();
+                            startClientSync(clientsViewModel);
                         })
                         .show();
-
-                clientsViewModel.consommerErreur();
             }
         });
 
@@ -143,13 +143,7 @@ public class HomeFragment extends Fragment {
         });
 
         // Bouton de synchronisation des clients
-        btnSyncClients.setOnClickListener(v -> {
-            Toast.makeText(requireContext(),
-                    "Synchronisation des clients en cours...",
-                    Toast.LENGTH_SHORT).show();
-
-            clientsViewModel.synchroniserClientsDepuisApi(requireContext());
-        });
+        btnSyncClients.setOnClickListener(v -> startClientSync(clientsViewModel));
 
 
         // Bouton de synchronisation des produits
@@ -180,6 +174,18 @@ public class HomeFragment extends Fragment {
         });
 
         return view;
+    }
+
+    /**
+     * Lance la synchronisation des clients depuis l'API.
+     * Méthode utilitaire pour éviter la duplication de code.
+     */
+    private void startClientSync(ClientsFragmentViewModel clientsViewModel) {
+        Toast.makeText(requireContext(),
+                "Synchronisation des clients en cours...",
+                Toast.LENGTH_SHORT).show();
+
+        clientsViewModel.synchroniserClientsDepuisApi(requireContext());
     }
 
     private void updateStats(int nbClients, int nbCommandes) {
