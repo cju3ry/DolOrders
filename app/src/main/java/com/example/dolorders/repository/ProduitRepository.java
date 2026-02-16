@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
 
 /**
  * Repository pour gérer la récupération des produits depuis l'API Dolibarr.
@@ -43,8 +44,8 @@ public class ProduitRepository {
      * Interface de callback pour les opérations asynchrones.
      */
     public interface ProduitCallback {
+        void onProgress(int current, int total);
         void onSuccess(List<Produit> produits);
-
         void onError(String message);
     }
 
@@ -84,18 +85,39 @@ public class ProduitRepository {
                 url,
                 null,
                 response -> {
-                    try {
-                        List<Produit> produits = parseJsonResponse(response);
+                    Executors.newSingleThreadExecutor().execute(() -> {
+                        try {
+                            List<Produit> produits = new ArrayList<>();
+                            int total = response.length();
 
-                        // La sauvegarde dans le cache est gérée par le ViewModel
-                        Log.d(TAG, "Produits récupérés depuis l'API : " + produits.size());
-                        callback.onSuccess(produits);
+                            if (total == 0) {
+                                callback.onProgress(0, 0);
+                                callback.onSuccess(produits);
+                                return;
+                            }
 
-                    } catch (Exception e) {
-                        Log.e(TAG, "Erreur lors du parsing JSON", e);
-                        callback.onError("Erreur de traitement des données : " + e.getMessage());
-                    }
+                            for (int i = 0; i < total; i++) {
+                                JSONObject jsonObject = response.getJSONObject(i);
+
+                                ProduitApiReponseDto dto = gson.fromJson(jsonObject.toString(), ProduitApiReponseDto.class);
+                                Produit produit = ProduitMapper.fromDto(dto);
+                                produits.add(produit);
+
+                                callback.onProgress(i + 1, total);
+
+                                // OPTIONNEL : si ta boucle est ultra rapide, ça rend visible la progression
+                                // Thread.sleep(2);
+                            }
+
+                            callback.onSuccess(produits);
+
+                        } catch (Exception e) {
+                            callback.onError("Erreur de traitement des données : " + e.getMessage());
+                        }
+                    });
                 },
+
+
                 error -> {
                     String errorMessage = "Erreur API";
                     if (error.networkResponse != null) {
