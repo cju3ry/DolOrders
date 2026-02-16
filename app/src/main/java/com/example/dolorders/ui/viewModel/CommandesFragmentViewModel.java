@@ -34,8 +34,6 @@ public class CommandesFragmentViewModel extends ViewModel {
     private final MutableLiveData<String> erreurSynchronisation = new MutableLiveData<>();
     private final MutableLiveData<Boolean> synchronisationReussie = new MutableLiveData<>();
     private final MutableLiveData<Integer> nombreProduitsSynchronises = new MutableLiveData<>();
-    private final MutableLiveData<Boolean> syncProduitsEnCours = new MutableLiveData<>(false);
-    private final MutableLiveData<Integer> progressSyncProduitsPercent = new MutableLiveData<>(0);
 
     // Fragment d'origine pour la navigation de retour
     private final MutableLiveData<String> fragmentOrigine = new MutableLiveData<>("commandes");
@@ -85,9 +83,6 @@ public class CommandesFragmentViewModel extends ViewModel {
     public LiveData<Integer> getNombreProduitsSynchronises() {
         return nombreProduitsSynchronises;
     }
-
-    public LiveData<Boolean> getSyncProduitsEnCours() { return syncProduitsEnCours; }
-    public LiveData<Integer> getProgressSyncProduitsPercent() { return progressSyncProduitsPercent; }
 
     public void consommerErreur() {
         erreurSynchronisation.setValue(null);
@@ -177,62 +172,34 @@ public class CommandesFragmentViewModel extends ViewModel {
             produitStorageManager = new ProduitStorageManager(context);
         }
 
-        // UI state
-        syncProduitsEnCours.postValue(true);
-        progressSyncProduitsPercent.postValue(0);
-
+        // Appeler l'API via le Repository (qui s'occupe uniquement de l'API)
         produitRepository.synchroniserDepuisApi(new ProduitRepository.ProduitCallback() {
-
-            private int lastPercent = -1;
-
-            @Override
-            public void onProgress(int current, int total) {
-                if (total <= 0) return;
-                int percent = (int) Math.round((current * 100.0) / total);
-
-                if (percent != lastPercent) {
-                    lastPercent = percent;
-                    progressSyncProduitsPercent.postValue(percent);
-                    Log.d("SYNC", "progress=" + percent);
-                }
-            }
-
             @Override
             public void onSuccess(List<Produit> produits) {
                 Log.d(TAG, "Produits synchronisés depuis l'API : " + produits.size());
 
                 // Sauvegarder dans le cache
-                boolean ok = produitStorageManager.saveProduits(produits);
-                if (!ok) {
-                    syncProduitsEnCours.postValue(false);
-                    erreurSynchronisation.postValue("Échec lors de la sauvegarde locale des produits.");
-                    return;
-                }
+                produitStorageManager.saveProduits(produits);
 
-                // Progress à 100% (au cas où)
-                progressSyncProduitsPercent.postValue(100);
-
-                // Stocker le nombre
+                // Stocker le nombre de produits synchronisés
                 nombreProduitsSynchronises.postValue(produits.size());
 
-                // Succès
+                // Notifier le succès AVANT de mettre à jour le LiveData
                 synchronisationReussie.postValue(true);
 
-                // LiveData produits
+                // Mettre à jour le LiveData
                 listeProduits.postValue(produits);
-
-                // Fin
-                syncProduitsEnCours.postValue(false);
             }
 
             @Override
             public void onError(String message) {
                 Log.e(TAG, "Erreur lors de la synchronisation des produits : " + message);
 
-                syncProduitsEnCours.postValue(false);
-                progressSyncProduitsPercent.postValue(0);
-
+                // Notifier l'erreur via LiveData pour afficher un dialogue convivial
                 erreurSynchronisation.postValue(message);
+
+                // NE PAS mettre à jour listeProduits en cas d'erreur pour éviter le Toast de succès
+                // L'utilisateur verra le dialogue d'erreur uniquement
             }
         });
     }

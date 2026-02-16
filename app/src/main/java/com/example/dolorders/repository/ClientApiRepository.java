@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.Executors;
 
 /**
  * Repository pour gérer la récupération et l'envoi des clients vers l'API Dolibarr.
@@ -52,7 +51,6 @@ public class ClientApiRepository {
      * Interface de callback pour les opérations asynchrones (GET).
      */
     public interface ClientCallback {
-        void onProgress(int current, int total);
         void onSuccess(List<Client> clients);
 
         void onError(String message);
@@ -121,32 +119,8 @@ public class ClientApiRepository {
                 url,
                 null,
                 response -> {
-                    Executors.newSingleThreadExecutor().execute(() -> {
-
-                        try {
-                        List<Client> clients = new ArrayList<>();
-                        int total = response.length();
-
-                        if (total == 0) {
-                            callback.onProgress(0, 0);
-                            callback.onSuccess(clients);
-                            return;
-                        }
-
-                        for (int i = 0; i < total; i++) {
-                            JSONObject jsonObject = response.getJSONObject(i);
-
-                            // JSON -> DTO
-                            ClientApiReponseDto dto = gson.fromJson(jsonObject.toString(), ClientApiReponseDto.class);
-
-                            // DTO -> Client
-                            Client client = ClientApiMapper.fromDto(dto);
-                            if (client != null) {
-                                clients.add(client);
-                            }
-
-                            callback.onProgress(i + 1, total);
-                        }
+                    try {
+                        List<Client> clients = parseJsonResponse(response);
 
                         Log.d(TAG, "Clients récupérés depuis l'API : " + clients.size());
                         callback.onSuccess(clients);
@@ -155,9 +129,7 @@ public class ClientApiRepository {
                         Log.e(TAG, "Erreur lors du parsing JSON", e);
                         callback.onError("Erreur de traitement des données : " + e.getMessage());
                     }
-                });
                 },
-
                 error -> {
                     String errorMessage = "Erreur API";
                     if (error.networkResponse != null) {
