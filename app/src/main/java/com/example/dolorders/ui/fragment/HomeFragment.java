@@ -142,6 +142,40 @@ public class HomeFragment extends Fragment {
             tvProgressSyncProduits.setText(p + "%");
         });
 
+        // Observer les ERREURS de synchronisation des produits
+        commandesViewModel.getErreurSynchronisation().observe(getViewLifecycleOwner(), erreur -> {
+            if (erreur != null && !erreur.isEmpty()) {
+                // Convertir l'erreur technique en message convivial
+                String messageConvivial = convertirErreurEnMessageConvivial(erreur);
+
+                // Afficher un dialogue d'erreur
+                new android.app.AlertDialog.Builder(requireContext())
+                        .setTitle("❌ Erreur de synchronisation produits")
+                        .setMessage(messageConvivial)
+                        .setPositiveButton("OK", (dialog, which) -> commandesViewModel.consommerErreur())
+                        .setNegativeButton("Réessayer", (dialog, which) -> {
+                            commandesViewModel.consommerErreur();
+                            btnSyncProduits.performClick();
+                        })
+                        .show();
+            }
+        });
+
+        // Observer le SUCCÈS de la synchronisation des produits
+        commandesViewModel.getSynchronisationReussie().observe(getViewLifecycleOwner(), reussie -> {
+            if (reussie != null && reussie) {
+                // Récupérer le nombre de produits synchronisés depuis le LiveData dédié
+                Integer nbProduits = commandesViewModel.getNombreProduitsSynchronises().getValue();
+                int nbProduitsTotal = nbProduits != null ? nbProduits : 0;
+
+                Toast.makeText(requireContext(),
+                    "✅ " + nbProduitsTotal + " produit(s) synchronisé(s) avec succès !",
+                    Toast.LENGTH_LONG).show();
+
+                commandesViewModel.consommerSucces();
+            }
+        });
+
         // Bouton de synchronisation des clients
         btnSyncClients.setOnClickListener(v -> startClientSync(clientsViewModel));
 
