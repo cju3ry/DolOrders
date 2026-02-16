@@ -73,42 +73,6 @@ public class HomeFragment extends Fragment {
             tvProgressSyncClients.setText(p + "%");
         });
 
-        // Observer les ERREURS de synchronisation
-        clientsViewModel.getErreurSynchronisation().observe(getViewLifecycleOwner(), erreur -> {
-            if (erreur != null && !erreur.isEmpty()) {
-                // Convertir l'erreur technique en message convivial
-                String messageConvivial = convertirErreurEnMessageConvivial(erreur);
-
-                // Afficher un dialogue d'erreur
-                new android.app.AlertDialog.Builder(requireContext())
-                        .setTitle("❌ Erreur de synchronisation clients")
-                        .setMessage(messageConvivial)
-                        .setPositiveButton("OK", (dialog, which) -> {
-                            clientsViewModel.consommerErreur();
-                        })
-                        .setNegativeButton("Réessayer", (dialog, which) -> {
-                            clientsViewModel.consommerErreur();
-                            startClientSync(clientsViewModel);
-                        })
-                        .show();
-            }
-        });
-
-        // Observer le SUCCÈS de la synchronisation
-        clientsViewModel.getSynchronisationReussie().observe(getViewLifecycleOwner(), reussie -> {
-            if (reussie != null && reussie) {
-                // Récupérer le nombre de clients synchronisés depuis le LiveData dédié
-                Integer nbClients = clientsViewModel.getNombreClientsSynchronises().getValue();
-                int nbClientsTotal = nbClients != null ? nbClients : 0;
-
-                Toast.makeText(requireContext(),
-                        "✅ " + nbClientsTotal + " client(s) synchronisé(s) avec succès !",
-                        Toast.LENGTH_LONG).show();
-
-                clientsViewModel.consommerSucces();
-            }
-        });
-
 
         // Récupération réelle des données
         // Charger UNIQUEMENT les clients EN ATTENTE (locaux, pas encore envoyés à Dolibarr)
@@ -143,7 +107,13 @@ public class HomeFragment extends Fragment {
         });
 
         // Bouton de synchronisation des clients
-        btnSyncClients.setOnClickListener(v -> startClientSync(clientsViewModel));
+        btnSyncClients.setOnClickListener(v -> {
+            Toast.makeText(requireContext(),
+                    "Synchronisation des clients en cours...",
+                    Toast.LENGTH_SHORT).show();
+
+            clientsViewModel.synchroniserClientsDepuisApi(requireContext());
+        });
 
 
         // Bouton de synchronisation des produits
@@ -174,18 +144,6 @@ public class HomeFragment extends Fragment {
         });
 
         return view;
-    }
-
-    /**
-     * Lance la synchronisation des clients depuis l'API.
-     * Méthode utilitaire pour éviter la duplication de code.
-     */
-    private void startClientSync(ClientsFragmentViewModel clientsViewModel) {
-        Toast.makeText(requireContext(),
-                "Synchronisation des clients en cours...",
-                Toast.LENGTH_SHORT).show();
-
-        clientsViewModel.synchroniserClientsDepuisApi(requireContext());
     }
 
     private void updateStats(int nbClients, int nbCommandes) {
