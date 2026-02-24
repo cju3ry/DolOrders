@@ -31,12 +31,22 @@ import java.util.Objects;
  */
 public class GestionnaireStockageClient {
 
+    /** Nom du fichier de stockage par défaut pour les clients locaux */
     private static final String DEFAULT_FILE_NAME = "clients_data.json";
+
+    /** Nom du fichier de stockage pour les clients provenant de l'API Dolibarr */
     public static final String API_CLIENTS_FILE = "clients_api_data.json";
+
+    /** Tag de log pour le gestionnaire de stockage des clients */
     private static final String TAG = "ClientStorage";
 
+    /** Contexte de l'application pour accéder au système de fichiers internes */
     private final Context context;
+
+    /** Instance de Gson configurée avec l'adaptateur unifié pour Client */
     private final Gson gson;
+
+    /** Nom du fichier de stockage utilisé par cette instance du gestionnaire */
     private final String fileName;
 
     /**
@@ -117,7 +127,7 @@ public class GestionnaireStockageClient {
             StringBuilder jsonBuilder;
             try (FileInputStream fis = context.openFileInput(getFileName())) {
                 jsonBuilder = new StringBuilder();
-
+                // Utilisation d'un BufferedReader pour lire le contenu du fichier
                 try (InputStreamReader reader = new InputStreamReader(fis, StandardCharsets.UTF_8)) {
                     try (BufferedReader bufferedReader = new BufferedReader(reader)) {
                         String line;
@@ -229,7 +239,7 @@ public class GestionnaireStockageClient {
 
         List<Client> clients = loadClients();
 
-        // Remplacer le client
+        // Remplace le client
         boolean trouve = false;
         for (int i = 0; i < clients.size() && !trouve; i++) {
             if (Objects.equals(clients.get(i).getId(), updatedClient.getId())) {

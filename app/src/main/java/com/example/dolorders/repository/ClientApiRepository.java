@@ -245,22 +245,22 @@ public class ClientApiRepository {
                                 dolibarrId = response;
                             }
 
-                            Log.d(TAG, "✅ Client envoyé avec succès. ID Dolibarr: " + dolibarrId);
+                            Log.d(TAG, "✅ Client envoyé avec succès dans le module natif. ID Dolibarr: " + dolibarrId);
 
                             // Maintenant envoyer vers le module d'historique
                             envoyerVersHistorique(client, dolibarrId, username, new ClientEnvoiCallback() {
                                 @Override
                                 public void onSuccess(String historiqueId) {
                                     Log.d(TAG, "✅ Client enregistré dans l'historique. ID: " + historiqueId);
-                                    // Retourner le succès avec l'ID Dolibarr original
+                                    // ✅ Historique OK → on peut supprimer le client local
                                     callback.onSuccess(dolibarrId);
                                 }
 
                                 @Override
                                 public void onError(String message) {
                                     Log.w(TAG, "⚠️ Erreur enregistrement historique: " + message);
-                                    // Même si l'historique échoue, on considère la création du client comme réussie
-                                    callback.onSuccess(dolibarrId);
+                                    // ❌ Historique échoué → on garde le client en local pour permettre une nouvelle tentative
+                                    callback.onError("Client créé dans Dolibarr mais échec historique: " + message);
                                 }
                             });
 
@@ -314,9 +314,10 @@ public class ClientApiRepository {
 
        json.put("name", client.getNom());
 
-        // TODO Enlever ca car c'est pour tester
 
-        //json.put("name", "");
+        // TODO Enlever ca car c'est pour tester
+        // json.put("name", "");
+
         json.put("address", client.getAdresse() != null ? client.getAdresse() : "");
         json.put("zip", client.getCodePostal() != null ? client.getCodePostal() : "");
         json.put("town", client.getVille() != null ? client.getVille() : "");
@@ -502,9 +503,7 @@ public class ClientApiRepository {
         JSONObject json = new JSONObject();
 
         json.put("idclient", dolibarrId); // ID du client dans Dolibarr
-        // TODO Et si le client n'a pas de nom ? On peut pas envoyer un client sans nom à Dolibarr,
-        //  mais pour l'historique on peut peut-être mettre "Client sans nom" ou autre chose pour éviter les erreurs
-        json.put("nom", client.getNom());
+        json.put("nom", client.getNom() != null ? client.getNom() : "");
         json.put("adresse", client.getAdresse() != null ? client.getAdresse() : "");
 
         // Convertir code postal en int (ou 0 si vide/null)
@@ -520,8 +519,6 @@ public class ClientApiRepository {
 
         json.put("ville", client.getVille() != null ? client.getVille() : "");
         json.put("telephone", client.getTelephone() != null ? client.getTelephone() : "");
-        // TODO Et si le client n'a pas d'email ? Même remarque que pour le nom, on peut peut-être
-        //  mettre "Email non renseigné" pour éviter les erreurs
         json.put("mail", client.getAdresseMail());
         json.put("creator_name", username != null ? username : "Unknown");
 
@@ -529,8 +526,6 @@ public class ClientApiRepository {
         long creationDate = client.getDateSaisie() != null ?
                 client.getDateSaisie().getTime() / 1000 :
                 System.currentTimeMillis() / 1000;
-        // TODO Et si la date de saisie est dans le futur ?
-        //  On peut pas envoyer une date de création dans le futur à Dolibarr,
         json.put("creation_date", creationDate);
 
         json.put("submitted_by_name", username != null ? username : "Unknown");
@@ -553,9 +548,7 @@ public class ClientApiRepository {
         JSONObject json = new JSONObject();
 
         json.put("idclient", dolibarrId); // ID du client dans Dolibarr (peut être "0" si pas encore créé)
-        // TODO Et si le client n'a pas de nom ? On peut pas envoyer un client sans nom à Dolibarr,
-        //  mais pour l'historique on peut peut-être mettre "Client sans nom" ou autre chose pour éviter les erreurs
-        json.put("nom", client.getNom());
+        json.put("nom", client.getNom() != null ? client.getNom() : "");
         json.put("adresse", client.getAdresse() != null ? client.getAdresse() : "");
 
         // Convertir code postal en int (ou 0 si vide/null)
@@ -571,9 +564,7 @@ public class ClientApiRepository {
 
         json.put("ville", client.getVille() != null ? client.getVille() : "");
         json.put("telephone", client.getTelephone() != null ? client.getTelephone() : "");
-        // TODO Et si le client n'a pas d'email ? Même remarque que pour le nom, on peut peut-être
-        //  mettre "Email non renseigné" pour éviter les erreurs
-        json.put("mail", client.getAdresseMail());
+        json.put("mail", client.getAdresseMail() != null ? client.getAdresseMail() : "");
         json.put("creator_name", username != null ? username : "Unknown");
 
         // Date de création du client (en timestamp Unix - secondes)

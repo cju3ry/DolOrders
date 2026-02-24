@@ -124,16 +124,32 @@ public class CommandesFragment extends Fragment {
 
         viewModel.getClientSelectionne().observe(getViewLifecycleOwner(), client -> {
             if (client != null) {
+                // Remplir le champ texte
                 autoCompleteClient.setText(client.toString(), false);
+
+                // afficher les infos détaillées
                 tvClientAdresse.setText(String.format("Adresse : %s, %s %s", client.getAdresse(), client.getCodePostal(), client.getVille()));
                 tvClientTel.setText(String.format("Tél : %s", client.getTelephone()));
                 layoutInfosClient.setVisibility(View.VISIBLE);
                 containerDetailsCommande.setVisibility(View.VISIBLE);
                 btnValider.setEnabled(true);
+
+                // verrouiller le champ
+                autoCompleteClient.setEnabled(false);
+                autoCompleteClient.setFocusable(false);
+                autoCompleteClient.setAlpha(0.5f); // Griser visuellement
+
             } else {
+                // déverouiller si aucun client
                 autoCompleteClient.setEnabled(true);
+                autoCompleteClient.setFocusable(true); // Rendre focusable
+                autoCompleteClient.setFocusableInTouchMode(true);
+                autoCompleteClient.setAlpha(1.0f); // Rétablir l'opacité
+                autoCompleteClient.setText("", false);
+
                 layoutInfosClient.setVisibility(View.GONE);
                 containerDetailsCommande.setVisibility(View.GONE);
+                btnValider.setEnabled(false); // Désactiver le bouton valider si pas de client
             }
         });
 
@@ -146,6 +162,11 @@ public class CommandesFragment extends Fragment {
             viewModel.setClientSelectionne(client);
             autoCompleteClient.clearFocus();
             fermerClavier(view);
+
+            // Bloque la sélection d'un client différent après en avoir choisi un
+            autoCompleteClient.setEnabled(false);
+            autoCompleteClient.setFocusable(false);
+            autoCompleteClient.setAlpha(0.5f); // Rendre visuellement désactivé
         });
 
 
@@ -221,7 +242,16 @@ public class CommandesFragment extends Fragment {
 
         tvTotal.setText(String.format(Locale.FRANCE, REGEX_MONTANT, ligne.getMontantLigne()));
 
-        btnDel.setOnClickListener(v -> viewModel.removeLigne(ligne));
+        btnDel.setOnClickListener(v -> {
+            // Pop-up de confirmation avant suppression
+            new AlertDialog.Builder(requireContext())
+                    .setTitle("Supprimer le produit")
+                    .setMessage("Êtes-vous sûr de vouloir supprimer \"" + ligne.getProduit().getLibelle() + "\" de la commande ?")
+                    .setPositiveButton("Supprimer", (dialog, which) -> viewModel.removeLigne(ligne))
+                    .setNegativeButton("Annuler", null)
+                    .setIcon(android.R.drawable.ic_dialog_alert)
+                    .show();
+        });
 
         // Ouvre la pop-up avec les données existantes
         View.OnClickListener editAction = v -> ouvrirPopupConfigArticle(ligne.getProduit(), ligne);
@@ -295,27 +325,56 @@ public class CommandesFragment extends Fragment {
         btnAnnulerConfig.setOnClickListener(v -> dialog.dismiss());
 
         btnValiderConfig.setOnClickListener(v -> {
+            // Réinitialiser les erreurs
+            edtQty.setError(null);
+            edtRem.setError(null);
+
+            boolean erreur = false;
+            View focusView = null;
+
             try {
                 String sQty = edtQty.getText().toString();
                 String sRem = edtRem.getText().toString();
 
+                // Conversion
                 int qty = sQty.isEmpty() ? 0 : Integer.parseInt(sQty);
                 double rem = sRem.isEmpty() ? 0.0 : Double.parseDouble(sRem);
 
-                if (qty <= 0) {
-                    edtQty.setError("Min 1");
-                    return;
-                }
+                // Vérifications (Bas vers Haut)
+
+                // Remise
                 if (rem < 0 || rem > 100) {
-                    edtRem.setError("0-100%");
-                    return;
+                    edtRem.setError("Doit être entre 0 et 100%");
+                    focusView = edtRem;
+                    erreur = true;
                 }
 
-                // Ajoute ou remplace la ligne dans le ViewModel
+                // Quantité (Champ le plus haut)
+                if (qty <= 0) {
+                    edtQty.setError("La quantité doit être au moins 1");
+                    focusView = edtQty;
+                    erreur = true;
+                }
+
+                // Traitement
+                if (erreur) {
+                    if (focusView != null) {
+                        focusView.requestFocus();
+                        // Force l'ouverture du clavier
+                        InputMethodManager imm = (InputMethodManager) requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                        if (imm != null) {
+                            imm.showSoftInput(focusView, InputMethodManager.SHOW_IMPLICIT);
+                        }
+                    }
+                    return; // On arrête là
+                }
+
+                // Tout est bon, on ajoute
                 LigneCommande nouvelleLigne = new LigneCommande(produit, qty, rem, true);
                 viewModel.addLigne(nouvelleLigne);
 
                 dialog.dismiss();
+
             } catch (NumberFormatException e) {
                 Toast.makeText(requireContext(), "Format invalide", Toast.LENGTH_SHORT).show();
             }
@@ -330,16 +389,35 @@ public class CommandesFragment extends Fragment {
     }
 
     private boolean isFormulaireValide() {
+        // Réinitialiser les erreurs
+        autoCompleteClient.setError(null);
+        autoCompleteArticle.setError(null);
+
         boolean estValide = true;
-        if (viewModel.getClientSelectionne().getValue() == null) {
-            autoCompleteClient.setError("Client requis");
-            estValide = false;
-        }
+        View focusView = null;
+
+        // Vérifications (du bas vers le haut pour que le focus final soit sur le plus haut)
+
+        // Vérification Lignes de commande
         List<LigneCommande> lignes = viewModel.getLignesCommande().getValue();
         if (lignes == null || lignes.isEmpty()) {
-            autoCompleteArticle.setError("Au moins un article requis");
+            autoCompleteArticle.setError("Veuillez ajouter au moins un article");
+            focusView = autoCompleteArticle; // On focus le champ d'ajout d'article
             estValide = false;
         }
+
+        // Vérification Client (c'est le champ le plus haut, donc vérifié en dernier pour le focus)
+        if (viewModel.getClientSelectionne().getValue() == null) {
+            autoCompleteClient.setError("Le client est requis");
+            focusView = autoCompleteClient;
+            estValide = false;
+        }
+
+        // 3. Gestion du Focus
+        if (!estValide && focusView != null) {
+            focusView.requestFocus();
+        }
+
         return estValide;
     }
 

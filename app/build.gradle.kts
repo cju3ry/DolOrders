@@ -81,7 +81,6 @@ dependencies {
     implementation("androidx.fragment:fragment-ktx:$fragmentVersion")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycleVersion")
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:$lifecycleVersion")
-
     // Tests locaux JVM
     implementation(libs.appcompat)
     implementation(libs.material)

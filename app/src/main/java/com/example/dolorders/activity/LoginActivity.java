@@ -28,21 +28,35 @@ import java.security.GeneralSecurityException;
 import java.util.List;
 
 public class LoginActivity extends AppCompatActivity {
-
+    /** TextInputEditText pour le nom d'utilisateur */
     private TextInputEditText etUsername;
+    /** TextInputEditText pour le mot de passe */
     private TextInputEditText etPassword;
+    /** AutoCompleteTextView pour l'URL du serveur Dolibarr, avec auto-complétion basée sur les
+     * URLs précédemment utilisées */
     private AutoCompleteTextView etUrl;
+    /** Bouton de connexion */
     private Button btnLogin;
+
+    /** RequestQueue de Volley pour les requêtes réseau */
     private RequestQueue requestQueue;
+
+    /** SharedPreferences sécurisées pour stocker les credentials de manière cryptée */
     private SharedPreferences securePrefs;
+
+    /** ServiceUrl pour gérer les URLs enregistrées et l'auto-complétion */
     private ServiceUrl serviceUrl;
 
+    /** Clé pour stocker le nom d'utilisateur dans les SharedPreferences cryptées */
     private static final String USER_NAME = "username";
 
+    /** Tag pour les logs liés à l'activité de connexion */
     private static final String LOGIN_ACTIVITY = "LoginActivity";
 
+    /** Nom du fichier pour les SharedPreferences cryptées */
     private static final String CRYPTED_FILE_NAME = "secure_prefs_crypto";
 
+    /** Tag pour les logs de débogage liés à la connexion */
     private static final String DEBUG_TAG = "LOGIN_DEBUG";
 
     @Override
@@ -50,12 +64,16 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
+        // Initialisation des vues
         etUsername = findViewById(R.id.etUsername);
         etPassword = findViewById(R.id.etPassword);
         etUrl = findViewById(R.id.etUrl);
         btnLogin = findViewById(R.id.btnLogin);
 
+        // Initialisation de la RequestQueue de Volley
         requestQueue = Volley.newRequestQueue(this);
+
+        // Initialisation du service pour gérer les URLs
         serviceUrl = new ServiceUrl(this);
 
         // Initialisation des SharedPreferences cryptées
@@ -76,6 +94,7 @@ public class LoginActivity extends AppCompatActivity {
         final String lastUrl = getLastUsedUrl();
         final boolean[] urlWasPrefilled = {false};
 
+        // Si une URL a été récupérée, la pré-remplir
         if (lastUrl != null && !lastUrl.isEmpty()) {
             etUrl.setText(lastUrl);
             urlWasPrefilled[0] = true;
@@ -102,17 +121,16 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
 
-        // --- Vérification si déjà connecté ---
+        // Vérification si l'utilisateur est déjà connecté
         if (securePrefs.getBoolean("is_logged_in", false)) {
-            startActivity(new Intent(LoginActivity.this, MainActivity.class));
-            finish();
+            // Valide la clé API avant de reconnecter automatiquement
+            validerSessionAvantReconnexion();
         }
     }
 
     /**
      * Configure l'auto-complétion pour le champ URL avec les URLs enregistrées.
      */
-
     private void setupUrlAutoComplete() {
         List<String> urls = serviceUrl.getAllUrls();
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
@@ -129,6 +147,7 @@ public class LoginActivity extends AppCompatActivity {
         etUrl.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_URI);
     }
 
+    /** Initialise les SharedPreferences cryptées pour stocker les credentials de manière sécurisée */
     private SharedPreferences getEncryptedSharedPreferences()
             throws GeneralSecurityException, IOException {
         MasterKey masterKey = new MasterKey.Builder(this)
@@ -144,6 +163,13 @@ public class LoginActivity extends AppCompatActivity {
         );
     }
 
+    /** Valide les entrées utilisateur pour le nom d'utilisateur, le mot de passe et l'URL.
+     * Affiche des erreurs sur les champs correspondants si des entrées sont invalides.
+     * @param username Le nom d'utilisateur saisi
+     * @param password Le mot de passe saisi
+     * @param url L'URL du serveur Dolibarr saisie
+     * @return true si toutes les entrées sont valides, false sinon
+     */
     private boolean validateInputs(String username, String password, String url) {
         if (username.isEmpty()) {
             etUsername.setError("Identifiant requis");
@@ -164,16 +190,21 @@ public class LoginActivity extends AppCompatActivity {
      * Effectue la connexion au serveur Dolibarr.
      * Si baseUrl est "stub" ou "bouchon", simule une connexion réussie.
      *
-     * @param username
-     * @param password
-     * @param baseUrl
+     * @param username Le nom d'utilisateur saisi
+     * @param password Le mot de passe saisi
+     * @param baseUrl  L'URL du serveur Dolibarr saisi
      */
     private void login(String username, String password, String baseUrl) {
 
         btnLogin.setEnabled(false);
 
+        // Service de gestion de session pour effectuer la connexion
         ServiceGestionSession api = new ServiceGestionSession(this);
 
+        // Appel de la méthode de connexion du service, avec un callback pour gérer la réponse
+        // Si la connexion est réussie, handleLoginSuccess sera appelé pour traiter la réponse
+        // et sauvegarder les credentials
+        // En cas d'erreur, un message d'erreur sera affiché à l'utilisateur
         api.login(baseUrl, username, password, new ServiceGestionSession.ApiCallback() {
             @Override
             public void onSuccess(JSONObject response) {
@@ -189,6 +220,12 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
+    /** Traite la réponse de connexion réussie, extrait la clé API, sauvegarde les credentials
+     * de manière sécurisée et lance MainActivity.
+     * @param response La réponse JSON de l'API contenant la clé API
+     * @param username Le nom d'utilisateur utilisé pour la connexion
+     * @param baseUrl L'URL du serveur Dolibarr utilisé pour la connexion
+     */
     private void handleLoginSuccess(JSONObject response, String username, String baseUrl) {
         try {
             if (response.has("success")) {
@@ -216,6 +253,11 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
+    /** Sauvegarde les credentials de manière sécurisée dans les SharedPreferences cryptées.
+     * @param username Le nom d'utilisateur à sauvegarder
+     * @param apiKey La clé API à sauvegarder
+     * @param baseUrl L'URL du serveur Dolibarr à sauvegarder
+     */
     private void saveCredentials(String username, String apiKey, String baseUrl) {
         android.util.Log.d(DEBUG_TAG, "Sauvegarde des credentials - username: " + username);
 
@@ -256,6 +298,8 @@ public class LoginActivity extends AppCompatActivity {
 
     /**
      * Récupère le nom d'utilisateur depuis les SharedPreferences cryptées
+     * @param context Le contexte de l'activité pour accéder aux SharedPreferences
+     * @return Le nom d'utilisateur récupéré ou null en cas d'erreur
      */
     public static String getUsername(android.content.Context context) {
         try {
@@ -264,7 +308,7 @@ public class LoginActivity extends AppCompatActivity {
             MasterKey masterKey = new MasterKey.Builder(context)
                     .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
                     .build();
-
+            // Accès aux SharedPreferences cryptées
             SharedPreferences securePrefs = EncryptedSharedPreferences.create(
                     context,
                     CRYPTED_FILE_NAME,
@@ -272,7 +316,7 @@ public class LoginActivity extends AppCompatActivity {
                     EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             );
-
+            // Récupération du nom d'utilisateur
             String username = securePrefs.getString(USER_NAME, null);
             android.util.Log.d(LOGIN_ACTIVITY, "Username récupéré: " + username);
             return username;
@@ -282,7 +326,9 @@ public class LoginActivity extends AppCompatActivity {
             return null;
         }
     }
-
+    /** Affiche un message d'erreur à l'utilisateur et réactive le bouton de connexion.
+     * @param message Le message d'erreur à afficher
+     */
     private void showError(String message) {
         btnLogin.setEnabled(true);
         Toast.makeText(this, message, Toast.LENGTH_LONG).show();
@@ -294,15 +340,14 @@ public class LoginActivity extends AppCompatActivity {
      */
     private String getLastUsedUrl() {
         try {
-            // D'abord, vérifier les SharedPreferences normales (sauvegardées lors de la déconnexion)
+            // D'abord, vérifie les SharedPreferences normales (après déconnexion)
             SharedPreferences normalPrefs = getSharedPreferences("DolOrdersPrefs", MODE_PRIVATE);
             String lastUrl = normalPrefs.getString("last_used_url", null);
-
+            // Si une URL est trouvée dans les SharedPreferences normales, la retourner
             if (lastUrl != null && !lastUrl.isEmpty()) {
                 Log.d(LOGIN_ACTIVITY, "URL récupérée depuis SharedPreferences normales: " + lastUrl);
                 return lastUrl;
             }
-
             // Sinon, vérifier les SharedPreferences cryptées (si encore connecté)
             if (securePrefs != null) {
                 lastUrl = securePrefs.getString("base_url", null);
@@ -315,6 +360,107 @@ public class LoginActivity extends AppCompatActivity {
             Log.e(LOGIN_ACTIVITY, "Erreur lors de la récupération de la dernière URL", e);
         }
         return null;
+    }
+
+    /**
+     * Valide la session existante en vérifiant la validité de la clé API.
+     * Appelle GET /users/info/ pour vérifier si la clé API est toujours valide.
+     * Si valide → reconnexion automatique
+     * Si invalide → déconnexion et affichage du formulaire de login
+     */
+    private void validerSessionAvantReconnexion() {
+        Log.d(LOGIN_ACTIVITY, "🔐 Validation de la session avant reconnexion automatique...");
+
+        // Récupérer l'URL et la clé API depuis les SharedPreferences
+        String baseUrl = securePrefs.getString("base_url", null);
+        String apiKey = securePrefs.getString("api_key", null);
+
+        if (baseUrl == null || apiKey == null) {
+            Log.w(LOGIN_ACTIVITY, "❌ Configuration manquante (URL ou clé API)");
+            deconnecterUtilisateur();
+            Toast.makeText(this, "Session expirée. Veuillez vous reconnecter.", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        // Construction de l'URL pour l'endpoint /users/info/
+        String url = baseUrl.endsWith("/")
+                ? baseUrl + "api/index.php/users/info/"
+                : baseUrl + "/api/index.php/users/info/";
+
+        Log.d(LOGIN_ACTIVITY, "📡 Appel API : " + url);
+
+        // Requête Volley pour valider la clé API
+        com.android.volley.toolbox.StringRequest request = new com.android.volley.toolbox.StringRequest(
+                com.android.volley.Request.Method.GET,
+                url,
+                response -> {
+                    try {
+                        // La réponse est un JSON avec les infos utilisateur
+                        JSONObject jsonResponse = new JSONObject(response);
+                        String userId = jsonResponse.getString("id");
+                        String username = jsonResponse.getString("login");
+
+                        Log.d(LOGIN_ACTIVITY, "✅ Clé API valide. Utilisateur: " + username + " (ID: " + userId + ")");
+
+                        // La clé API est valide → reconnexion automatique
+                        runOnUiThread(() -> {
+                            startActivity(new Intent(LoginActivity.this, MainActivity.class));
+                            finish();
+                        });
+
+                    } catch (JSONException e) {
+                        Log.e(LOGIN_ACTIVITY, "❌ Erreur parsing réponse validation", e);
+                        deconnecterUtilisateur();
+                        Toast.makeText(LoginActivity.this,
+                                "Session expirée. Veuillez vous reconnecter.",
+                                Toast.LENGTH_LONG).show();
+                    }
+                },
+                error -> {
+                    // La requête a échoué → clé API invalide ou réseau
+                    String errorMsg = "Clé API invalide ou expirée";
+                    if (error.networkResponse != null) {
+                        errorMsg += " (Code: " + error.networkResponse.statusCode + ")";
+                    }
+                    Log.w(LOGIN_ACTIVITY, "❌ " + errorMsg);
+
+                    // Déconnecter l'utilisateur
+                    runOnUiThread(() -> {
+                        deconnecterUtilisateur();
+                        Toast.makeText(LoginActivity.this,
+                                "Session expirée. Veuillez vous reconnecter.",
+                                Toast.LENGTH_LONG).show();
+                    });
+                }
+        ) {
+            @Override
+            public java.util.Map<String, String> getHeaders() {
+                java.util.Map<String, String> headers = new java.util.HashMap<>();
+                headers.put("DOLAPIKEY", apiKey);
+                headers.put("Accept", "application/json");
+                return headers;
+            }
+        };
+
+        // Ajouter la requête à la queue
+        requestQueue.add(request);
+    }
+
+    /**
+     * Déconnecte l'utilisateur en supprimant ses credentials des SharedPreferences.
+     */
+    private void deconnecterUtilisateur() {
+        try {
+            SharedPreferences.Editor editor = securePrefs.edit();
+            editor.putBoolean("is_logged_in", false);
+            editor.remove("api_key");
+            editor.remove(USER_NAME);
+            editor.apply();
+
+            Log.d(LOGIN_ACTIVITY, "🔓 Utilisateur déconnecté");
+        } catch (Exception e) {
+            Log.e(LOGIN_ACTIVITY, "Erreur lors de la déconnexion", e);
+        }
     }
 
     /**

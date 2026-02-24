@@ -187,13 +187,11 @@ public class ClientsAjoutFragment extends Fragment {
     }
 
     /**
-     * Valide les champs du formulaire et affiche des erreurs sur les champs
-     * invalides.
-     *
-     * @return true si tous les champs sont valides, false sinon.
+     * Valide tous les champs, affiche toutes les erreurs et place le focus sur la première erreur.
+     * @return true si tout est valide, false sinon.
      */
     private boolean isFormulaireValide() {
-        // Nettoie les erreurs précédentes
+        // Réinitialiser les erreurs
         editTextNom.setError(null);
         editTextAdresse.setError(null);
         editTextCodePostal.setError(null);
@@ -201,49 +199,70 @@ public class ClientsAjoutFragment extends Fragment {
         editTextEmail.setError(null);
         editTextTelephone.setError(null);
 
-        String nom = viewModel.getNom().getValue();
-        if (nom == null || nom.trim().isEmpty()) {
-            editTextNom.setError("Le nom du client est requis");
-            editTextNom.requestFocus();
-            return false;
-        }
+        boolean estValide = true;
+        View focusView = null; // La vue qui recevra le focus en cas d'erreur
 
-        String adresse = viewModel.getAdresse().getValue();
-        if (adresse == null || adresse.trim().isEmpty()) {
-            editTextAdresse.setError("L'adresse est requise");
-            editTextAdresse.requestFocus();
-            return false;
-        }
+        // Vérifications (du bas vers le haut ou haut vers bas, peu importe,
+        // mais pour le focus on veut le premier champ en haut de l'écran qui échoue)
 
-        String codePostal = viewModel.getCodePostal().getValue();
-        if (codePostal == null || !codePostal.matches("\\d{5}")) {
-            editTextCodePostal.setError("Le code postal doit contenir 5 chiffres");
-            editTextCodePostal.requestFocus();
-            return false;
-        }
-
-        String ville = viewModel.getVille().getValue();
-        if (ville == null || ville.trim().isEmpty()) {
-            editTextVille.setError("La ville est requise");
-            editTextVille.requestFocus();
-            return false;
-        }
-
-        String email = viewModel.getEmail().getValue();
-        if (email == null || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            editTextEmail.setError("L'adresse e-mail n'est pas valide");
-            editTextEmail.requestFocus();
-            return false;
-        }
-
+        // Téléphone
         String telephone = viewModel.getTelephone().getValue();
         if (telephone == null || !telephone.matches("\\d{10}")) {
             editTextTelephone.setError("Le téléphone doit contenir 10 chiffres");
-            editTextTelephone.requestFocus();
-            return false;
+            focusView = editTextTelephone;
+            estValide = false;
         }
 
-        return true;
+        // Email
+        String email = viewModel.getEmail().getValue();
+        if (email == null || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            editTextEmail.setError("L'adresse e-mail n'est pas valide");
+            focusView = editTextEmail;
+            estValide = false;
+        }
+
+        // Ville
+        String ville = viewModel.getVille().getValue();
+        if (ville == null || ville.trim().isEmpty()) {
+            editTextVille.setError("La ville est requise");
+            focusView = editTextVille;
+            estValide = false;
+        }
+
+        // Code Postal
+        String codePostal = viewModel.getCodePostal().getValue();
+        if (codePostal == null || !codePostal.matches("\\d{5}")) {
+            editTextCodePostal.setError("Le code postal doit contenir 5 chiffres");
+            focusView = editTextCodePostal;
+            estValide = false;
+        }
+
+        // Adresse
+        String adresse = viewModel.getAdresse().getValue();
+        if (adresse == null || adresse.trim().isEmpty()) {
+            editTextAdresse.setError("L'adresse est requise");
+            focusView = editTextAdresse;
+            estValide = false;
+        }
+
+        // Nom (On vérifie le premier champ en dernier pour qu'il écrase 'focusView' si erreur)
+        // Ou on inverse la logique : on ne met à jour focusView que s'il est null.
+        String nom = viewModel.getNom().getValue();
+        if (nom == null || nom.trim().isEmpty()) {
+            editTextNom.setError("Le nom du client est requis");
+            focusView = editTextNom;
+            estValide = false;
+        }
+
+        // Gestion du focus
+        if (!estValide) {
+            // Il y a des erreurs, on focus le champ le plus haut qui est en erreur
+            if (focusView != null) {
+                focusView.requestFocus();
+            }
+        }
+
+        return estValide;
     }
 
     private void showCancelConfirmationDialog() {

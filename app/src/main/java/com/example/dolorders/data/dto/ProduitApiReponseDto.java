@@ -5,8 +5,12 @@ import com.google.gson.annotations.SerializedName;
 /**
  * DTO (Data Transfer Object) pour la réponse API de Dolibarr concernant les produits.
  * Représente la structure JSON exacte renvoyée par l'API /products.
+ * Appel API : GET /products
  */
 public class ProduitApiReponseDto {
+    /** Note : Les annotations @SerializedName sont utilisées pour faire correspondre les noms des
+     * champs JSON avec les noms des variables Java, même s'ils diffèrent.
+     * */
 
     @SerializedName("id")
     private String id;

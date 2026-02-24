@@ -15,14 +15,17 @@ import java.util.Date;
  * Nécessaire car Client utilise un pattern Builder et n'a pas de constructeur public sans paramètres.
  */
 public class AdaptateurStockageClient extends TypeAdapter<Client> {
-
+    /** * Sérialise un objet Client en JSON, en gérant les valeurs null et en respectant l'ordre des propriétés.
+     * @param out le JsonWriter pour écrire le JSON
+     * @param client l'objet Client à sérialiser
+     * @throws IOException si une erreur d'écriture se produit
+     */
     @Override
     public void write(JsonWriter out, Client client) throws IOException {
         if (client == null) {
             out.nullValue();
             return;
         }
-
         out.beginObject();
         out.name("id").value(client.getId());
         out.name("nom").value(client.getNom());
@@ -36,14 +39,19 @@ public class AdaptateurStockageClient extends TypeAdapter<Client> {
         out.name("fromApi").value(client.isFromApi());
         out.endObject();
     }
-
+     /** * Désérialise un objet Client à partir de JSON, en gérant les valeurs null et en utilisant le Builder approprié selon la source (API ou local).
+     * @param in le JsonReader pour lire le JSON
+     * @return l'objet Client désérialisé
+     * @throws IOException si une erreur de lecture se produit
+     */
     @Override
     public Client read(JsonReader in) throws IOException {
         if (in.peek() == JsonToken.NULL) {
             in.nextNull();
             return null;
         }
-
+        // Utiliser le Builder pour construire l'objet Client,
+        // en différenciant les clients API et locaux
         Client.Builder builder = new Client.Builder();
         boolean fromApi = false; // Par défaut, considéré comme client local
 
@@ -56,7 +64,7 @@ public class AdaptateurStockageClient extends TypeAdapter<Client> {
                 in.nextNull();
                 continue;
             }
-
+            // Assigner les valeurs au Builder en fonction du nom de la propriété
             switch (name) {
                 case "id":
                     builder.setId(in.nextString());
@@ -98,7 +106,7 @@ public class AdaptateurStockageClient extends TypeAdapter<Client> {
         in.endObject();
 
         // Utiliser buildFromApi() pour les clients API (validation souple avec valeurs par défaut)
-        // Utiliser build() pour les clients locaux (validation stricte)
+        // Utiliser build() pour les clients locaux
         return fromApi ? builder.buildFromApi() : builder.build();
     }
 }

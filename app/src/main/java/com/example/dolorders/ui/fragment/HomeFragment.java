@@ -63,15 +63,23 @@ public class HomeFragment extends Fragment {
             btnSyncClients.setEnabled(false);
             btnSyncClients.setText("Synchronisation...");
 
-            Toast.makeText(requireContext(),
-                    "Synchronisation des clients en cours...",
-                    Toast.LENGTH_SHORT).show();
+            // Créer et afficher le ProgressDialog
+            android.app.ProgressDialog progressDialog = new android.app.ProgressDialog(requireContext());
+            progressDialog.setTitle("Synchronisation des clients");
+            progressDialog.setMessage("Récupération des clients depuis Dolibarr...");
+            progressDialog.setCancelable(false);
+            progressDialog.show();
 
             clientsViewModel.synchroniserClientsDepuisApi(requireContext());
 
             // Observer les ERREURS de synchronisation
             clientsViewModel.getErreurSynchronisation().observe(getViewLifecycleOwner(), erreur -> {
                 if (erreur != null && !erreur.isEmpty()) {
+                    // Fermer le ProgressDialog
+                    if (progressDialog.isShowing()) {
+                        progressDialog.dismiss();
+                    }
+
                     btnSyncClients.setEnabled(true);
                     btnSyncClients.setText("Synchroniser les clients");
 
@@ -96,6 +104,11 @@ public class HomeFragment extends Fragment {
             // Observer le SUCCÈS de la synchronisation (ne s'affiche QUE si succès)
             clientsViewModel.getSynchronisationReussie().observe(getViewLifecycleOwner(), reussie -> {
                 if (reussie != null && reussie) {
+                    // Fermer le ProgressDialog
+                    if (progressDialog.isShowing()) {
+                        progressDialog.dismiss();
+                    }
+
                     btnSyncClients.setEnabled(true);
                     btnSyncClients.setText("Synchroniser les clients");
 
@@ -122,15 +135,23 @@ public class HomeFragment extends Fragment {
             btnSyncProduits.setEnabled(false);
             btnSyncProduits.setText("Synchronisation...");
 
-            Toast.makeText(requireContext(),
-                    "Synchronisation des produits en cours...",
-                    Toast.LENGTH_SHORT).show();
+            // Créer et afficher le ProgressDialog
+            android.app.ProgressDialog progressDialogProduits = new android.app.ProgressDialog(requireContext());
+            progressDialogProduits.setTitle("Synchronisation des produits");
+            progressDialogProduits.setMessage("Récupération des produits depuis Dolibarr...");
+            progressDialogProduits.setCancelable(false);
+            progressDialogProduits.show();
 
             commandesViewModel.chargerProduits(requireContext());
 
             // Observer les ERREURS de synchronisation
             commandesViewModel.getErreurSynchronisation().observe(getViewLifecycleOwner(), erreur -> {
                 if (erreur != null && !erreur.isEmpty()) {
+                    // Fermer le ProgressDialog
+                    if (progressDialogProduits.isShowing()) {
+                        progressDialogProduits.dismiss();
+                    }
+
                     btnSyncProduits.setEnabled(true);
                     btnSyncProduits.setText("Synchroniser les produits");
 
@@ -155,6 +176,11 @@ public class HomeFragment extends Fragment {
             // Observer le SUCCÈS de la synchronisation (ne s'affiche QUE si succès)
             commandesViewModel.getSynchronisationReussie().observe(getViewLifecycleOwner(), reussie -> {
                 if (reussie != null && reussie) {
+                    // Fermer le ProgressDialog
+                    if (progressDialogProduits.isShowing()) {
+                        progressDialogProduits.dismiss();
+                    }
+
                     btnSyncProduits.setEnabled(true);
                     btnSyncProduits.setText("Synchroniser les produits");
 
@@ -163,8 +189,8 @@ public class HomeFragment extends Fragment {
                     int nbProduitsTotal = nbProduits != null ? nbProduits : 0;
 
                     Toast.makeText(requireContext(),
-                        "✅ " + nbProduitsTotal + " produit(s) synchronisé(s) avec succès !",
-                        Toast.LENGTH_LONG).show();
+                            "✅ " + nbProduitsTotal + " produit(s) synchronisé(s) avec succès !",
+                            Toast.LENGTH_LONG).show();
 
                     commandesViewModel.consommerSucces();
                 }
