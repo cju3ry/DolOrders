@@ -549,12 +549,12 @@ public class CommandeStorageTest {
         // 3) Modifier le client (simuler une modification utilisateur)
         Client clientModifie = new Client.Builder()
                 .setId("CLIENT-001") // Même ID
-                .setNom("Durand") // ✅ Nom modifié
-                .setAdresse("20 avenue des Champs-Élysées") // ✅ Adresse modifiée
-                .setCodePostal("75008") // ✅ Code postal modifié
+                .setNom("Durand") // Nom modifié
+                .setAdresse("20 avenue des Champs-Élysées") // Adresse modifiée
+                .setCodePostal("75008") // Code postal modifié
                 .setVille("Paris")
-                .setAdresseMail("durand@example.com") // ✅ Email modifié
-                .setTelephone("0987654321") // ✅ Téléphone modifié
+                .setAdresseMail("durand@example.com") // Email modifié
+                .setTelephone("0987654321") // Téléphone modifié
                 .setUtilisateur("userTest")
                 .setDateSaisie(clientOriginal.getDateSaisie())
                 .build();
@@ -562,7 +562,7 @@ public class CommandeStorageTest {
         // 4) Créer une nouvelle commande avec le client modifié (simule updateClientInCommandes)
         Commande commandeModifiee = new Commande.Builder()
                 .setId(commandeOriginale.getId())
-                .setClient(clientModifie) // ✅ Client mis à jour
+                .setClient(clientModifie) // Client mis à jour
                 .setDateCommande(commandeOriginale.getDateCommande())
                 .setLignesCommande(commandeOriginale.getLignesCommande())
                 .setUtilisateur(commandeOriginale.getUtilisateur())

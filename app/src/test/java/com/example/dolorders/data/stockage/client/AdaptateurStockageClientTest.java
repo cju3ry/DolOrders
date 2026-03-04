@@ -253,5 +253,168 @@ public class AdaptateurStockageClientTest {
         assertEquals("Ville avec tirets", "Aix-en-Provence", clientReconstitue.getVille());
         assertEquals("Adresse avec apostrophe", "10 rue de l'Église", clientReconstitue.getAdresse());
     }
+
+    // ==================== Tests fromApi flag ====================
+
+    /**
+     * Test : Client local (fromApi = false) sérialisé et désérialisé correctement
+     */
+    @Test
+    public void cycleComplet_ClientLocal_PreserveFlagFromApi() {
+        Client clientLocal = new Client.Builder()
+                .setNom("Client Local")
+                .setAdresse("Adresse")
+                .setCodePostal("12345")
+                .setVille("Ville")
+                .setAdresseMail("test@test.com")
+                .setTelephone("0123456789")
+                .setUtilisateur("user")
+                .setDateSaisie(new Date())
+                .setFromApi(false)
+                .build();
+
+        String json = gson.toJson(clientLocal);
+        Client clientReconstitue = gson.fromJson(json, Client.class);
+
+        assertFalse("Le client local doit garder fromApi=false", clientReconstitue.isFromApi());
+    }
+
+    /**
+     * Test : Client API (fromApi = true) sérialisé et désérialisé correctement
+     */
+    @Test
+    public void cycleComplet_ClientApi_PreserveFlagFromApi() {
+        Client clientApi = new Client.Builder()
+                .setNom("Client API")
+                .setAdresse("Adresse")
+                .setCodePostal("12345")
+                .setVille("Ville")
+                .setAdresseMail("test@test.com")
+                .setTelephone("0123456789")
+                .setUtilisateur("API_DOLIBARR")
+                .setDateSaisie(new Date())
+                .setFromApi(true)
+                .build();
+
+        String json = gson.toJson(clientApi);
+        Client clientReconstitue = gson.fromJson(json, Client.class);
+
+        assertTrue("Le client API doit garder fromApi=true", clientReconstitue.isFromApi());
+    }
+
+    /**
+     * Test : Désérialisation client API avec données partielles utilise buildFromApi()
+     */
+    @Test
+    public void deserialisation_ClientApiAvecDonneesPartielles_UtiliseValeursParDefaut() {
+        // JSON d'un client API avec des champs manquants
+        String json = "{" +
+                "\"id\":\"1\"," +
+                "\"nom\":\"Client Test\"," +
+                "\"fromApi\":true," +
+                "\"dateSaisie\":1000000000000" +
+                "}";
+
+        Client client = gson.fromJson(json, Client.class);
+
+        assertNotNull("Le client ne devrait pas être null", client);
+        assertTrue("fromApi doit être true", client.isFromApi());
+        assertEquals("Nom doit être préservé", "Client Test", client.getNom());
+        // buildFromApi() doit avoir mis des valeurs par défaut
+        assertNotNull("L'adresse doit avoir une valeur par défaut", client.getAdresse());
+    }
+
+    /**
+     * Test : Sérialisation inclut le flag fromApi
+     */
+    @Test
+    public void serialisation_InclutFlagFromApi() {
+        Client clientApi = new Client.Builder()
+                .setNom("Test")
+                .setAdresse("Adresse")
+                .setCodePostal("12345")
+                .setVille("Ville")
+                .setAdresseMail("test@test.com")
+                .setTelephone("0123456789")
+                .setUtilisateur("user")
+                .setDateSaisie(new Date())
+                .setFromApi(true)
+                .build();
+
+        String json = gson.toJson(clientApi);
+
+        assertTrue("Le JSON doit contenir fromApi:true", json.contains("\"fromApi\":true"));
+    }
+
+    /**
+     * Test : Désérialisation avec fromApi absent traite comme client local
+     */
+    @Test
+    public void deserialisation_SansFlagFromApi_EstClientLocal() {
+        String json = "{" +
+                "\"nom\":\"Test\"," +
+                "\"adresse\":\"Adresse\"," +
+                "\"codePostal\":\"12345\"," +
+                "\"ville\":\"Ville\"," +
+                "\"adresseMail\":\"test@test.com\"," +
+                "\"telephone\":\"0123456789\"," +
+                "\"utilisateur\":\"user\"," +
+                "\"dateSaisie\":1000000000000" +
+                "}";
+
+        Client client = gson.fromJson(json, Client.class);
+
+        assertFalse("Sans flag fromApi, le client doit être traité comme local", client.isFromApi());
+    }
+
+    // ==================== Tests cas limites ====================
+
+    /**
+     * Test : Sérialisation avec valeurs très longues
+     */
+    @Test
+    public void serialisation_AvecValeursLongues_Reussit() {
+        String nomLong = "A".repeat(200);
+        String adresseLongue = "B".repeat(500);
+
+        Client clientLong = new Client.Builder()
+                .setNom(nomLong)
+                .setAdresse(adresseLongue)
+                .setCodePostal("12345")
+                .setVille("Ville")
+                .setAdresseMail("test@test.com")
+                .setTelephone("0123456789")
+                .setUtilisateur("user")
+                .setDateSaisie(new Date())
+                .build();
+
+        String json = gson.toJson(clientLong);
+        Client clientReconstitue = gson.fromJson(json, Client.class);
+
+        assertEquals("Nom long préservé", nomLong, clientReconstitue.getNom());
+        assertEquals("Adresse longue préservée", adresseLongue, clientReconstitue.getAdresse());
+    }
+
+    /**
+     * Test : Désérialisation avec date à 0
+     */
+    @Test
+    public void deserialisation_AvecDateZero_Reussit() {
+        String json = "{" +
+                "\"nom\":\"Test\"," +
+                "\"adresse\":\"Adresse\"," +
+                "\"codePostal\":\"12345\"," +
+                "\"ville\":\"Ville\"," +
+                "\"adresseMail\":\"test@test.com\"," +
+                "\"telephone\":\"0123456789\"," +
+                "\"utilisateur\":\"user\"," +
+                "\"dateSaisie\":0" +
+                "}";
+
+        Client client = gson.fromJson(json, Client.class);
+
+        assertNotNull("Le client ne devrait pas être null", client);
+        assertEquals("La date devrait être 0", 0, client.getDateSaisie().getTime());
+    }
 }
 

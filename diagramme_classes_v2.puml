@@ -1,0 +1,827 @@
+@startuml DolOrders_Architecture
+
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+
+!define ENTITY_COLOR #E8F5E9
+!define DTO_COLOR #FFF3E0
+!define STORAGE_COLOR #E3F2FD
+!define REPOSITORY_COLOR #F3E5F5
+!define SERVICE_COLOR #FCE4EC
+!define UI_COLOR #E0F2F1
+
+title Architecture DolOrders - Diagramme de Classes Complet\nMis à jour le 2026-03-02
+
+' ===== MODELES DE DOMAINE =====
+package "objet" ENTITY_COLOR {
+    class Client {
+        - id: String
+        - nom: String
+        - adresse: String
+        - codePostal: String
+        - ville: String
+        - adresseMail: String
+        - telephone: String
+        - utilisateur: String
+        - dateSaisie: Date
+        - fromApi: boolean
+        __
+        + getId(): String
+        + getNom(): String
+        + getAdresse(): String
+        + getCodePostal(): String
+        + getVille(): String
+        + getAdresseMail(): String
+        + getTelephone(): String
+        + getUtilisateur(): String
+        + getDateSaisie(): Date
+        + isFromApi(): boolean
+    }
+
+    class "Client.Builder" as ClientBuilder {
+        - id: String
+        - nom: String
+        - adresse: String
+        - codePostal: String
+        - ville: String
+        - adresseMail: String
+        - telephone: String
+        - utilisateur: String
+        - dateSaisie: Date
+        - fromApi: boolean
+        __
+        + setId(String): Builder
+        + setNom(String): Builder
+        + setAdresse(String): Builder
+        + setCodePostal(String): Builder
+        + setVille(String): Builder
+        + setAdresseMail(String): Builder
+        + setTelephone(String): Builder
+        + setUtilisateur(String): Builder
+        + setDateSaisie(Date): Builder
+        + setFromApi(boolean): Builder
+        + build(): Client
+        + buildFromApi(): Client
+    }
+
+    class Commande {
+        - id: String
+        - client: Client
+        - dateCommande: Date
+        - lignesCommande: List<LigneCommande>
+        - montantTotal: double
+        - utilisateur: String
+        __
+        + getId(): String
+        + getClient(): Client
+        + getDateCommande(): Date
+        + getLignesCommande(): List<LigneCommande>
+        + getMontantTotal(): double
+        + getUtilisateur(): String
+        - calculerMontantTotal(): double
+    }
+
+    class "Commande.Builder" as CommandeBuilder {
+        - id: String
+        - dateCommande: Date
+        - client: Client
+        - lignesCommande: List<LigneCommande>
+        - utilisateur: String
+        __
+        + setId(String): Builder
+        + setClient(Client): Builder
+        + setDateCommande(Date): Builder
+        + setLignesCommande(List<LigneCommande>): Builder
+        + setUtilisateur(String): Builder
+        + build(): Commande
+    }
+
+    class LigneCommande {
+        - produit: Produit
+        - quantite: int
+        - remise: double
+        - validee: boolean
+        - dateCreation: Date
+        __
+        + LigneCommande(Produit, int, double, boolean)
+        + LigneCommande(Produit, int, double, boolean, Date)
+        + getProduit(): Produit
+        + getQuantite(): int
+        + getRemise(): double
+        + isValidee(): boolean
+        + getDateCreation(): Date
+        + getMontantLigne(): double
+    }
+
+    class Produit {
+        - id: String
+        - libelle: String
+        - description: String
+        - prixUnitaire: double
+        - tauxTva: double
+        __
+        + Produit(String, String, String, double, double)
+        + Produit(String, String, String, double)
+        + getId(): String
+        + getLibelle(): String
+        + getDescription(): String
+        + getPrixUnitaire(): double
+        + getTauxTva(): double
+        + equals(Object): boolean
+        + hashCode(): int
+        + toString(): String
+    }
+
+    Client +-- ClientBuilder
+    Commande +-- CommandeBuilder
+    Commande "1" *-- "1" Client
+    Commande "1" *-- "1..*" LigneCommande
+    LigneCommande "*" --> "1" Produit
+}
+
+' ===== PACKAGE DATA (DTO, Stockage) =====
+package "data" {
+
+    package "dto" DTO_COLOR {
+        class ClientApiReponseDto {
+            - id: String
+            - name: String
+            - phone: String
+            - email: String
+            - address: String
+            - zip: String
+            - town: String
+            __
+            + ClientApiReponseDto()
+            + getId(): String
+            + setId(String): void
+            + getName(): String
+            + setName(String): void
+            + getPhone(): String
+            + setPhone(String): void
+            + getEmail(): String
+            + setEmail(String): void
+            + getAddress(): String
+            + setAddress(String): void
+            + getZip(): String
+            + setZip(String): void
+            + getTown(): String
+            + setTown(String): void
+        }
+
+        class ProduitApiReponseDto {
+            - id: String
+            - label: String
+            - description: String
+            - price: String
+            - tvaTx: String
+            - ref: String
+            - status: String
+            __
+            + ProduitApiReponseDto()
+            + getId(): String
+            + setId(String): void
+            + getLabel(): String
+            + setLabel(String): void
+            + getDescription(): String
+            + setDescription(String): void
+            + getPrice(): String
+            + setPrice(String): void
+            + getTvaTx(): String
+            + setTvaTx(String): void
+            + getRef(): String
+            + setRef(String): void
+            + getStatus(): String
+            + setStatus(String): void
+        }
+    }
+
+    package "stockage" STORAGE_COLOR {
+
+        package "client" {
+            class GestionnaireStockageClient {
+                - {static} DEFAULT_FILE_NAME: String
+                + {static} API_CLIENTS_FILE: String
+                - context: Context
+                - gson: Gson
+                - fileName: String
+                __
+                + GestionnaireStockageClient(Context)
+                + GestionnaireStockageClient(Context, String)
+                + saveClients(List<Client>): boolean
+                + loadClients(): List<Client>
+                + addClient(Client): boolean
+                + deleteClient(Client): boolean
+                + modifierClient(Client): boolean
+                + clearClients(): boolean
+                + hasStoredClients(): boolean
+                + getClientCount(): int
+                # getFileName(): String
+            }
+
+            class AdaptateurStockageClient {
+                + write(JsonWriter, Client): void
+                + read(JsonReader): Client
+            }
+        }
+
+        package "commande" {
+            class GestionnaireStockageCommande {
+                - {static} FILE_NAME: String
+                - context: Context
+                - gson: Gson
+                __
+                + GestionnaireStockageCommande(Context)
+                + saveCommandes(List<Commande>): boolean
+                + loadCommandes(): List<Commande>
+                + addCommande(Commande): boolean
+                + deleteCommande(Commande): boolean
+                + modifierCommande(Commande): boolean
+                + deleteCommandesByClient(String): boolean
+                + clearCommandes(): boolean
+                + hasStoredCommandes(): boolean
+                # getFileName(): String
+            }
+
+            class AdapteurStockageCommande {
+                + write(JsonWriter, Commande): void
+                + read(JsonReader): Commande
+            }
+        }
+
+        package "produit" {
+            class ProduitStorageManager {
+                - {static} FILE_NAME: String
+                - context: Context
+                - gson: Gson
+                __
+                + ProduitStorageManager(Context)
+                + saveProduits(List<Produit>): boolean
+                + loadProduits(): List<Produit>
+                + getProduitById(String): Produit
+                + clearProduits(): boolean
+                + hasStoredProduits(): boolean
+            }
+
+            class ProduitTypeAdapter {
+                + write(JsonWriter, Produit): void
+                + read(JsonReader): Produit
+            }
+        }
+    }
+}
+
+GestionnaireStockageClient ..> Client : gère >
+GestionnaireStockageClient ..> AdaptateurStockageClient : utilise >
+GestionnaireStockageCommande ..> Commande : gère >
+GestionnaireStockageCommande ..> AdapteurStockageCommande : utilise >
+ProduitStorageManager ..> Produit : gère >
+ProduitStorageManager ..> ProduitTypeAdapter : utilise >
+
+' ===== PACKAGE MAPPER =====
+package "mapper" DTO_COLOR {
+    class ClientApiMapper {
+        - ClientApiMapper()
+        + {static} fromDto(ClientApiReponseDto): Client
+        - {static} formatPhoneNumber(String): String
+    }
+
+    class ProduitMapper {
+        - ProduitMapper()
+        + {static} fromDto(ProduitApiReponseDto): Produit
+    }
+}
+
+ClientApiMapper ..> ClientApiReponseDto : convertit >
+ClientApiMapper ..> Client : produit >
+ProduitMapper ..> ProduitApiReponseDto : convertit >
+ProduitMapper ..> Produit : produit >
+
+' ===== PACKAGE REPOSITORY =====
+package "repository" REPOSITORY_COLOR {
+    class ClientApiRepository {
+        - context: Context
+        - requestQueue: RequestQueue
+        - gson: Gson
+        __
+        + ClientApiRepository(Context)
+        + synchroniserDepuisApi(ClientCallback): void
+        + envoyerClient(Client, ClientEnvoiCallback): void
+        + envoyerClientVersHistorique(Client, String, ClientHistoriqueCallback): void
+        + recupererIdUtilisateur(UserIdCallback): void
+        - envoyerClientAvecUserId(Client, String, ClientEnvoiCallback): void
+        - envoyerVersHistorique(Client, String, String, ClientEnvoiCallback): void
+        - parseJsonResponse(JSONArray): List<Client>
+        - creerJsonClient(Client, String): JSONObject
+        - getBaseUrl(): String
+        - getApiKey(): String
+        - getUsername(): String
+        ..Interfaces..
+        + <<interface>> ClientCallback
+        + <<interface>> ClientEnvoiCallback
+        + <<interface>> ClientHistoriqueCallback
+        + <<interface>> UserIdCallback
+    }
+
+    class CommandeApiRepository {
+        - context: Context
+        - requestQueue: RequestQueue
+        __
+        + CommandeApiRepository(Context)
+        + envoyerCommandeVersModuleNatif(Commande, CommandeNativeEnvoiCallback): void
+        + envoyerCommandeVersHistoriqueAvecId(Commande, String, CommandeEnvoiCallback): void
+        + envoyerCommandeVersHistoriqueSansId(Commande, CommandeEnvoiCallback): void
+        - creerJsonCommandeNative(Commande): JSONObject
+        - creerJsonLigneHistorique(Commande, LigneCommande, String, String): JSONObject
+        - getBaseUrl(): String
+        - getApiKey(): String
+        - getUsername(): String
+        ..Interfaces..
+        + <<interface>> CommandeEnvoiCallback
+        + <<interface>> CommandeNativeEnvoiCallback
+    }
+
+    class ProduitRepository {
+        - context: Context
+        - requestQueue: RequestQueue
+        - gson: Gson
+        __
+        + ProduitRepository(Context)
+        + synchroniserDepuisApi(ProduitCallback): void
+        - parseJsonResponse(JSONArray): List<Produit>
+        - getBaseUrl(): String
+        - getApiKey(): String
+        ..Interface..
+        + <<interface>> ProduitCallback
+    }
+}
+
+ClientApiRepository ..> Client : envoie/récupère >
+ClientApiRepository ..> ClientApiMapper : utilise >
+ClientApiRepository ..> ClientApiReponseDto : reçoit >
+CommandeApiRepository ..> Commande : envoie >
+ProduitRepository ..> Produit : récupère >
+ProduitRepository ..> ProduitMapper : utilise >
+ProduitRepository ..> ProduitApiReponseDto : reçoit >
+
+' ===== PACKAGE SERVICE =====
+package "service" SERVICE_COLOR {
+    class ServiceClient {
+        - storageManager: GestionnaireStockageClient
+        - commandeStorageManager: GestionnaireStockageCommande
+        __
+        + ServiceClient(Context)
+        + filter(String, String, String, String, String): List<Client>
+        + deleteClient(Client): boolean
+    }
+
+    class ServiceGestionSession {
+        - requestQueue: RequestQueue
+        __
+        + ServiceGestionSession(Context)
+        + {static} logout(AppCompatActivity): void
+        + login(String, String, String, ApiCallback): void
+        - parseError(VolleyError): String
+        ..Interface..
+        + <<interface>> ApiCallback
+    }
+
+    class ServiceUrl {
+        - {static} FILENAME: String
+        - context: Context
+        __
+        + ServiceUrl(Context)
+        + addUrl(String): boolean
+        + getAllUrls(): List<String>
+        + getMostRecentUrl(): String
+        + removeUrl(String): boolean
+        + clearAllUrls(): boolean
+        - loadUrls(): JSONArray
+        - saveUrls(JSONArray): boolean
+    }
+
+    class ServiceConnexionInternet {
+        - connectivityManager: ConnectivityManager
+        - networkCallback: NetworkCallback
+        - listener: ConnectionStatusListener
+        - isConnected: boolean
+        __
+        + ServiceConnexionInternet(Context)
+        + startMonitoring(ConnectionStatusListener): void
+        + stopMonitoring(): void
+        + isInternetAvailable(): boolean
+        + isConnected(): boolean
+        ..Interface..
+        + <<interface>> ConnectionStatusListener
+    }
+}
+
+ServiceClient ..> GestionnaireStockageClient : utilise >
+ServiceClient ..> GestionnaireStockageCommande : utilise >
+ServiceClient ..> Client : manipule >
+
+' ===== PACKAGE UI =====
+package "ui" UI_COLOR {
+
+    package "activity" {
+        class LoginActivity {
+            - etUsername: TextInputEditText
+            - etPassword: TextInputEditText
+            - etUrl: AutoCompleteTextView
+            - btnLogin: Button
+            - requestQueue: RequestQueue
+            - securePrefs: SharedPreferences
+            - serviceUrl: ServiceUrl
+            __
+            # onCreate(Bundle): void
+            + {static} getUsername(Context): String
+            - setupUrlAutoComplete(): void
+            - getEncryptedSharedPreferences(): SharedPreferences
+            - validateInputs(String, String, String): boolean
+            - login(String, String, String): void
+            - validerSessionAvantReconnexion(): void
+            - getLastUsedUrl(): String
+        }
+
+        class MainActivity {
+            - serviceUrl: ServiceUrl
+            - serviceConnexion: ServiceConnexionInternet
+            - connectionIndicator: View
+            __
+            # onCreate(Bundle): void
+            + onCreateOptionsMenu(Menu): boolean
+            + onOptionsItemSelected(MenuItem): boolean
+            - setupConnectionMonitoring(): void
+            - recupererUrl(): void
+            - recupererUtilisateur(): void
+            - getBaseUrl(): String
+        }
+
+        class AboutActivity {
+            # onCreate(Bundle): void
+            - afficherPdf(): void
+        }
+    }
+
+    package "fragment" {
+        class HomeFragment {
+            - textClients: TextView
+            - textCommandes: TextView
+            - textTotal: TextView
+            __
+            + onCreateView(LayoutInflater, ViewGroup, Bundle): View
+            - updateStats(int, int): void
+            - convertirErreurEnMessageConvivial(String): String
+        }
+
+        class ClientsFragment {
+            - viewModel: ClientsFragmentViewModel
+            - adapter: ClientAdapteur
+            - listeClientsOriginale: List<Client>
+            - filtreNom: String
+            - filtreAdresse: String
+            - filtreCP: String
+            - filtreVille: String
+            - filtreTel: String
+            __
+            + onCreateView(LayoutInflater, ViewGroup, Bundle): View
+            + onViewCreated(View, Bundle): void
+            - chargerClients(): void
+            - appliquerFiltres(): void
+            - showFilterDialog(): void
+        }
+
+        class ClientsAjoutFragment {
+            - viewModel: ClientsAjoutFragmentViewModel
+            __
+            + onCreateView(LayoutInflater, ViewGroup, Bundle): View
+            - validerFormulaire(): boolean
+            - creerClient(): void
+        }
+
+        class ClientFormulaireFragment {
+            + {static} MODE_DETAILS: int
+            + {static} MODE_EDIT: int
+            - editedListener: OnClientEditedListener
+            __
+            + {static} newInstance(int, Client): ClientFormulaireFragment
+            + setOnClientEditedListener(OnClientEditedListener): void
+            + onCreateDialog(Bundle): Dialog
+            - validerChamps(): boolean
+            ..Interface..
+            + <<interface>> OnClientEditedListener
+        }
+
+        class TableauClientsFragment {
+            - adapter: ClientsAttenteAdapteur
+            - listeClients: List<Client>
+            - serviceClient: ServiceClient
+            - gestionnaireStockageClient: GestionnaireStockageClient
+            - dialog: ClientFormulaireFragment
+            __
+            + onCreateView(LayoutInflater, ViewGroup, Bundle): View
+            + onViewCreated(View, Bundle): void
+            - chargerClients(): void
+            - supprimerClient(Client): void
+            - modifierClient(Client): void
+        }
+
+        class CommandesFragment {
+            - viewModel: CommandesFragmentViewModel
+            - clientStorageManager: GestionnaireStockageClient
+            - clientApiStorageManager: GestionnaireStockageClient
+            - commandeStorageManager: GestionnaireStockageCommande
+            __
+            + onCreateView(LayoutInflater, ViewGroup, Bundle): View
+            + onViewCreated(View, Bundle): void
+            - setupClientSpinner(): void
+            - ajouterLigneVue(LigneCommande): void
+            - validerCommande(): void
+        }
+
+        class CommandeFormDialogFragment {
+            - commandeInitiale: Commande
+            - lignesEditees: List<LigneCommande>
+            - tousLesProduits: List<Produit>
+            - dateModifiee: Date
+            - listener: OnCommandeEditedListener
+            __
+            + {static} newInstance(): CommandeFormDialogFragment
+            + setOnCommandeEditedListener(OnCommandeEditedListener): void
+            + setCommandeInitiale(Commande): void
+            + setListeProduits(List<Produit>): void
+            + onCreateDialog(Bundle): Dialog
+            - ajouterLigneVue(LigneCommande, LinearLayout): void
+            - updateTotaux(): void
+            ..Interface..
+            + <<interface>> OnCommandeEditedListener
+        }
+
+        class TableauCommandesFragment {
+            - adapter: CommandesAttenteAdapteur
+            - listeCommandes: List<Commande>
+            - gestionnaireStockageCommande: GestionnaireStockageCommande
+            - produitStorageManager: ProduitStorageManager
+            __
+            + onCreateView(LayoutInflater, ViewGroup, Bundle): View
+            + onViewCreated(View, Bundle): void
+            - chargerCommandes(): void
+            - modifierCommande(Commande): void
+            - supprimerCommande(Commande): void
+        }
+
+        class ListeAttenteFragment {
+            __
+            + onCreateView(LayoutInflater, ViewGroup, Bundle): View
+            + onViewCreated(View, Bundle): void
+            - envoyerToutVersDolibarr(): void
+            - envoyerClientEtCommandes(List<Client>, List<Commande>, ...): void
+            - envoyerCommandesClient(Client, List<Commande>, ...): void
+            - verifierConnexion(): boolean
+        }
+    }
+
+    package "viewModel" {
+        class ClientsFragmentViewModel {
+            - clientCree: MutableLiveData<Client>
+            - listeClients: MutableLiveData<List<Client>>
+            - erreurSynchronisation: MutableLiveData<String>
+            - synchronisationReussie: MutableLiveData<Boolean>
+            - nombreClientsSynchronises: MutableLiveData<Integer>
+            - clientApiRepository: ClientApiRepository
+            - clientApiStorageManager: GestionnaireStockageClient
+            - clientStorageManager: GestionnaireStockageClient
+            __
+            + getClientCree(): LiveData<Client>
+            + publierClientCree(Client): void
+            + consommerClientCree(): void
+            + getListeClients(): LiveData<List<Client>>
+            + getErreurSynchronisation(): LiveData<String>
+            + getSynchronisationReussie(): LiveData<Boolean>
+            + getNombreClientsSynchronises(): LiveData<Integer>
+            + consommerErreur(): void
+            + consommerSucces(): void
+            + chargerTousLesClients(Context): void
+            + synchroniserClientsDepuisApi(Context): void
+        }
+
+        class CommandesFragmentViewModel {
+            - lignesCommande: MutableLiveData<List<LigneCommande>>
+            - clientSelectionne: MutableLiveData<Client>
+            - date: MutableLiveData<String>
+            - listeClients: MutableLiveData<List<Client>>
+            - listeProduits: MutableLiveData<List<Produit>>
+            - fromAccueil: MutableLiveData<Boolean>
+            - fromListeClients: MutableLiveData<Boolean>
+            - erreurSynchronisation: MutableLiveData<String>
+            - synchronisationReussie: MutableLiveData<Boolean>
+            - nombreProduitsSynchronises: MutableLiveData<Integer>
+            - fragmentOrigine: MutableLiveData<String>
+            - produitRepository: ProduitRepository
+            - produitStorageManager: ProduitStorageManager
+            - clientStorageManager: GestionnaireStockageClient
+            - clientApiStorageManager: GestionnaireStockageClient
+            __
+            + getLignesCommande(): LiveData<List<LigneCommande>>
+            + getClientSelectionne(): LiveData<Client>
+            + getDate(): LiveData<String>
+            + getListeClients(): LiveData<List<Client>>
+            + getListeProduits(): LiveData<List<Produit>>
+            + getFromAccueil(): LiveData<Boolean>
+            + getFromListeClients(): LiveData<Boolean>
+            + getErreurSynchronisation(): LiveData<String>
+            + getSynchronisationReussie(): LiveData<Boolean>
+            + getNombreProduitsSynchronises(): LiveData<Integer>
+            + consommerErreur(): void
+            + consommerSucces(): void
+            + setFromAccueil(): void
+            + setFromListeClients(): void
+            + consumeFromAccueil(): boolean
+            + consumeFromListeClients(): boolean
+            + setClientSelectionne(Client): void
+            + setDate(String): void
+            + addLigne(LigneCommande): void
+            + removeLigne(LigneCommande): void
+            + clear(): void
+            + chargerProduits(Context): void
+            + synchroniserProduitsDepuisApi(Context): void
+            + chargerTousLesClients(Context): void
+        }
+
+        class ClientsAjoutFragmentViewModel {
+            - nom: MutableLiveData<String>
+            - adresse: MutableLiveData<String>
+            - codePostal: MutableLiveData<String>
+            - ville: MutableLiveData<String>
+            - email: MutableLiveData<String>
+            - telephone: MutableLiveData<String>
+            __
+            + getNom(): LiveData<String>
+            + getAdresse(): LiveData<String>
+            + getCodePostal(): LiveData<String>
+            + getVille(): LiveData<String>
+            + getEmail(): LiveData<String>
+            + getTelephone(): LiveData<String>
+            + setNom(String): void
+            + setAdresse(String): void
+            + setCodePostal(String): void
+            + setVille(String): void
+            + setEmail(String): void
+            + setTelephone(String): void
+            + clear(): void
+        }
+    }
+
+    package "adapteur" {
+        class ClientAdapteur {
+            - clients: List<Client>
+            - listener: OnClientActionListener
+            __
+            + ClientAdapteur(List<Client>, OnClientActionListener)
+            + onCreateViewHolder(ViewGroup, int): ClientViewHolder
+            + onBindViewHolder(ClientViewHolder, int): void
+            + getItemCount(): int
+            - showActionsMenu(View, Client): void
+            - handleMenuClick(MenuItem, Client): boolean
+            ..Interface..
+            + <<interface>> OnClientActionListener
+        }
+
+        class ClientsAttenteAdapteur {
+            - clients: List<Client>
+            - listener: OnClientActionListener
+            __
+            + ClientsAttenteAdapteur(List<Client>, OnClientActionListener)
+            + onCreateViewHolder(ViewGroup, int): ViewHolder
+            + onBindViewHolder(ViewHolder, int): void
+            + getItemCount(): int
+            ..Interface..
+            + <<interface>> OnClientActionListener
+        }
+
+        class CommandesAttenteAdapteur {
+            - commandes: List<Commande>
+            - listener: OnCommandeActionListener
+            __
+            + CommandesAttenteAdapteur(List<Commande>, OnCommandeActionListener)
+            + onCreateViewHolder(ViewGroup, int): ViewHolder
+            + onBindViewHolder(ViewHolder, int): void
+            + getItemCount(): int
+            ..Interface..
+            + <<interface>> OnCommandeActionListener
+        }
+
+        class ProduitAdapter {
+            - produitsComplet: List<Produit>
+            - produitsFiltres: List<Produit>
+            __
+            + ProduitAdapter(Context, List<Produit>)
+            + getCount(): int
+            + getItem(int): Produit
+            + getView(int, View, ViewGroup): View
+            + getFilter(): Filter
+            + resetFilter(): void
+        }
+    }
+
+    package "util" {
+        class RapportSynchronisation {
+            - clientsReussis: List<String>
+            - clientsEchoues: List<String>
+            - commandesReussies: List<String>
+            - commandesEchouees: List<String>
+            __
+            + ajouterClientReussi(String): void
+            + ajouterClientEchoue(String, String): void
+            + ajouterCommandeReussie(String): void
+            + ajouterCommandeEchouee(String, String): void
+            + genererRapportDetaille(): String
+            + genererRapportSimple(): String
+            + hasErrors(): boolean
+            + getNbClientsReussis(): int
+            + getNbClientsEchoues(): int
+            + getNbCommandesReussies(): int
+            + getNbCommandesEchouees(): int
+        }
+
+        class NavigationUtils {
+            - NavigationUtils()
+            + {static} navigateToClientAjout(Fragment): void
+        }
+    }
+}
+
+' ===== ASSOCIATIONS UI =====
+LoginActivity ..> ServiceGestionSession : utilise >
+LoginActivity ..> ServiceUrl : utilise >
+
+MainActivity ..> ServiceGestionSession : utilise >
+MainActivity ..> ServiceUrl : utilise >
+MainActivity ..> ServiceConnexionInternet : utilise >
+
+HomeFragment ..> ClientsFragmentViewModel : observe >
+HomeFragment ..> CommandesFragmentViewModel : observe >
+HomeFragment ..> GestionnaireStockageClient : utilise >
+HomeFragment ..> GestionnaireStockageCommande : utilise >
+HomeFragment ..> NavigationUtils : utilise >
+
+ClientsFragment ..> ClientsFragmentViewModel : observe >
+ClientsFragment ..> ClientAdapteur : utilise >
+
+ClientsAjoutFragment ..> ClientsAjoutFragmentViewModel : observe >
+ClientsAjoutFragment ..> GestionnaireStockageClient : utilise >
+
+TableauClientsFragment ..> ClientsAttenteAdapteur : utilise >
+TableauClientsFragment ..> ServiceClient : utilise >
+TableauClientsFragment ..> GestionnaireStockageClient : utilise >
+TableauClientsFragment ..> ClientFormulaireFragment : affiche >
+
+CommandesFragment ..> CommandesFragmentViewModel : observe >
+CommandesFragment ..> GestionnaireStockageClient : utilise >
+CommandesFragment ..> GestionnaireStockageCommande : utilise >
+CommandesFragment ..> ProduitAdapter : utilise >
+
+CommandeFormDialogFragment ..> CommandesFragmentViewModel : observe >
+CommandeFormDialogFragment ..> GestionnaireStockageCommande : utilise >
+CommandeFormDialogFragment ..> ProduitAdapter : utilise >
+
+TableauCommandesFragment ..> CommandesAttenteAdapteur : utilise >
+TableauCommandesFragment ..> GestionnaireStockageCommande : utilise >
+TableauCommandesFragment ..> ProduitStorageManager : utilise >
+TableauCommandesFragment ..> CommandeFormDialogFragment : affiche >
+
+ListeAttenteFragment ..> ClientApiRepository : utilise >
+ListeAttenteFragment ..> CommandeApiRepository : utilise >
+ListeAttenteFragment ..> GestionnaireStockageClient : utilise >
+ListeAttenteFragment ..> GestionnaireStockageCommande : utilise >
+ListeAttenteFragment ..> ServiceClient : utilise >
+ListeAttenteFragment ..> RapportSynchronisation : génère >
+
+ClientsFragmentViewModel ..> ClientApiRepository : appelle >
+ClientsFragmentViewModel ..> GestionnaireStockageClient : utilise >
+
+CommandesFragmentViewModel ..> ProduitRepository : appelle >
+CommandesFragmentViewModel ..> ProduitStorageManager : utilise >
+CommandesFragmentViewModel ..> GestionnaireStockageClient : utilise >
+
+ClientAdapteur ..> Client : affiche >
+ClientsAttenteAdapteur ..> Client : affiche >
+CommandesAttenteAdapteur ..> Commande : affiche >
+ProduitAdapter ..> Produit : affiche >
+
+NavigationUtils ..> ClientsAjoutFragmentViewModel : utilise >
+NavigationUtils ..> ClientsAjoutFragment : navigue vers >
+
+' ===== LÉGENDE =====
+legend right
+    |<back:ENTITY_COLOR>   | Modèles de domaine (objet) |
+    |<back:DTO_COLOR>      | DTO & Mappers |
+    |<back:STORAGE_COLOR>  | Stockage local (JSON) |
+    |<back:REPOSITORY_COLOR>| Repositories (API Dolibarr) |
+    |<back:SERVICE_COLOR>  | Services métier |
+    |<back:UI_COLOR>       | Interface utilisateur |
+endlegend
+
+@enduml
+
