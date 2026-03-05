@@ -48,11 +48,11 @@ public class HomeFragment extends Fragment {
         ClientsFragmentViewModel clientsViewModel = new ViewModelProvider(requireActivity()).get(ClientsFragmentViewModel.class);
 
         // Récupération réelle des données
-        // Charger UNIQUEMENT les clients EN ATTENTE (locaux, pas encore envoyés à Dolibarr)
+        // Charge UNIQUEMENT les clients EN ATTENTE (locaux, pas encore envoyés à Dolibarr)
         GestionnaireStockageClient gestionnaireClientLocal = new GestionnaireStockageClient(requireContext());
         int nbClientsEnAttente = gestionnaireClientLocal.loadClients().size();
 
-        // Charger UNIQUEMENT les commandes EN ATTENTE (locales, pas encore envoyées)
+        // Charge UNIQUEMENT les commandes EN ATTENTE (locales, pas encore envoyées)
         GestionnaireStockageCommande gestionnaireCommande = new GestionnaireStockageCommande(requireContext());
         final int nbCommandesEnAttente = gestionnaireCommande.loadCommandes().size();
 
@@ -63,19 +63,52 @@ public class HomeFragment extends Fragment {
             btnSyncClients.setEnabled(false);
             btnSyncClients.setText("Synchronisation...");
 
-            // Créer et afficher le ProgressDialog
+            // Réinitialise les états avant de lancer la synchronisation
+            clientsViewModel.consommerErreur();
+            clientsViewModel.consommerSucces();
+
+            // Crée et afficher le ProgressDialog avec bouton Annuler
             android.app.ProgressDialog progressDialog = new android.app.ProgressDialog(requireContext());
             progressDialog.setTitle("Synchronisation des clients");
             progressDialog.setMessage("Récupération des clients depuis Dolibarr...");
-            progressDialog.setCancelable(false);
+            progressDialog.setCancelable(true);
+
+            // Variables pour stocker les observers (pour pouvoir les supprimer)
+            final androidx.lifecycle.Observer<String>[] erreurObserverHolder = new androidx.lifecycle.Observer[1];
+            final androidx.lifecycle.Observer<Boolean>[] succesObserverHolder = new androidx.lifecycle.Observer[1];
+
+            // Fonction pour nettoyer les observers
+            Runnable cleanupObservers = () -> {
+                if (erreurObserverHolder[0] != null) {
+                    clientsViewModel.getErreurSynchronisation().removeObserver(erreurObserverHolder[0]);
+                }
+                if (succesObserverHolder[0] != null) {
+                    clientsViewModel.getSynchronisationReussie().removeObserver(succesObserverHolder[0]);
+                }
+            };
+
+            progressDialog.setButton(android.app.ProgressDialog.BUTTON_NEGATIVE, "Annuler", (dialog, which) -> {
+                cleanupObservers.run();
+                dialog.dismiss();
+                btnSyncClients.setEnabled(true);
+                btnSyncClients.setText("Synchroniser les clients");
+                Toast.makeText(requireContext(), "Synchronisation annulée", Toast.LENGTH_SHORT).show();
+            });
+            progressDialog.setOnCancelListener(dialog -> {
+                cleanupObservers.run();
+                btnSyncClients.setEnabled(true);
+                btnSyncClients.setText("Synchroniser les clients");
+            });
             progressDialog.show();
 
-            clientsViewModel.synchroniserClientsDepuisApi(requireContext());
-
-            // Observer les ERREURS de synchronisation
-            clientsViewModel.getErreurSynchronisation().observe(getViewLifecycleOwner(), erreur -> {
+            // Observe pour les ERREURS - usage unique
+            erreurObserverHolder[0] = erreur -> {
                 if (erreur != null && !erreur.isEmpty()) {
-                    // Fermer le ProgressDialog
+                    // Nettoye les observers
+                    cleanupObservers.run();
+                    clientsViewModel.consommerErreur();
+
+                    // Ferme le ProgressDialog
                     if (progressDialog.isShowing()) {
                         progressDialog.dismiss();
                     }
@@ -83,28 +116,26 @@ public class HomeFragment extends Fragment {
                     btnSyncClients.setEnabled(true);
                     btnSyncClients.setText("Synchroniser les clients");
 
-                    // Convertir l'erreur technique en message convivial
+                    // Converti l'erreur technique en message convivial
                     String messageConvivial = convertirErreurEnMessageConvivial(erreur);
 
-                    // Afficher un dialogue d'erreur
+                    // Affiche un dialogue d'erreur - juste OK
                     new android.app.AlertDialog.Builder(requireContext())
                             .setTitle("❌ Erreur de synchronisation clients")
                             .setMessage(messageConvivial)
                             .setPositiveButton("OK", null)
-                            .setNegativeButton("Réessayer", (dialog, which) -> {
-                                clientsViewModel.consommerErreur();
-                                btnSyncClients.performClick();
-                            })
                             .show();
-
-                    clientsViewModel.consommerErreur();
                 }
-            });
+            };
 
-            // Observer le SUCCÈS de la synchronisation (ne s'affiche QUE si succès)
-            clientsViewModel.getSynchronisationReussie().observe(getViewLifecycleOwner(), reussie -> {
+            // Observe pour le SUCCÈS - usage unique
+            succesObserverHolder[0] = reussie -> {
                 if (reussie != null && reussie) {
-                    // Fermer le ProgressDialog
+                    // Nettoyer les observers
+                    cleanupObservers.run();
+                    clientsViewModel.consommerSucces();
+
+                    // Ferme le ProgressDialog
                     if (progressDialog.isShowing()) {
                         progressDialog.dismiss();
                     }
@@ -112,22 +143,22 @@ public class HomeFragment extends Fragment {
                     btnSyncClients.setEnabled(true);
                     btnSyncClients.setText("Synchroniser les clients");
 
-                    // Récupérer le nombre de clients synchronisés depuis le LiveData dédié
+                    // Récupérer le nombre de clients synchronisés
                     Integer nbClients = clientsViewModel.getNombreClientsSynchronises().getValue();
                     int nbClientsTotal = nbClients != null ? nbClients : 0;
 
                     Toast.makeText(requireContext(),
                             "✅ " + nbClientsTotal + " client(s) synchronisé(s) avec succès !",
                             Toast.LENGTH_LONG).show();
-
-                    // Rafraîchir les stats après synchronisation
-                    // Note: Les stats affichent les clients EN ATTENTE (locaux uniquement)
-                    // donc on ne met pas à jour ici car les clients synchronisés ne sont plus "en attente"
-                    // Les stats seront mises à jour au prochain rechargement du fragment
-
-                    clientsViewModel.consommerSucces();
                 }
-            });
+            };
+
+            // Attache les observers AVANT de lancer la synchronisation
+            clientsViewModel.getErreurSynchronisation().observe(getViewLifecycleOwner(), erreurObserverHolder[0]);
+            clientsViewModel.getSynchronisationReussie().observe(getViewLifecycleOwner(), succesObserverHolder[0]);
+
+            // Lance la synchronisation
+            clientsViewModel.synchroniserClientsDepuisApi(requireContext());
         });
 
         // Bouton de synchronisation des produits
@@ -135,19 +166,52 @@ public class HomeFragment extends Fragment {
             btnSyncProduits.setEnabled(false);
             btnSyncProduits.setText("Synchronisation...");
 
-            // Créer et afficher le ProgressDialog
+            // Réinitialise les états avant de lancer la synchronisation
+            commandesViewModel.consommerErreur();
+            commandesViewModel.consommerSucces();
+
+            // Crée et afficher le ProgressDialog avec bouton Annuler
             android.app.ProgressDialog progressDialogProduits = new android.app.ProgressDialog(requireContext());
             progressDialogProduits.setTitle("Synchronisation des produits");
             progressDialogProduits.setMessage("Récupération des produits depuis Dolibarr...");
-            progressDialogProduits.setCancelable(false);
+            progressDialogProduits.setCancelable(true);
+
+            // Variables pour stocker les observers (pour pouvoir les supprimer)
+            final androidx.lifecycle.Observer<String>[] erreurObserverHolder = new androidx.lifecycle.Observer[1];
+            final androidx.lifecycle.Observer<Boolean>[] succesObserverHolder = new androidx.lifecycle.Observer[1];
+
+            // Fonction pour nettoyer les observers
+            Runnable cleanupObservers = () -> {
+                if (erreurObserverHolder[0] != null) {
+                    commandesViewModel.getErreurSynchronisation().removeObserver(erreurObserverHolder[0]);
+                }
+                if (succesObserverHolder[0] != null) {
+                    commandesViewModel.getSynchronisationReussie().removeObserver(succesObserverHolder[0]);
+                }
+            };
+
+            progressDialogProduits.setButton(android.app.ProgressDialog.BUTTON_NEGATIVE, "Annuler", (dialog, which) -> {
+                cleanupObservers.run();
+                dialog.dismiss();
+                btnSyncProduits.setEnabled(true);
+                btnSyncProduits.setText("Synchroniser les produits");
+                Toast.makeText(requireContext(), "Synchronisation annulée", Toast.LENGTH_SHORT).show();
+            });
+            progressDialogProduits.setOnCancelListener(dialog -> {
+                cleanupObservers.run();
+                btnSyncProduits.setEnabled(true);
+                btnSyncProduits.setText("Synchroniser les produits");
+            });
             progressDialogProduits.show();
 
-            commandesViewModel.chargerProduits(requireContext());
-
-            // Observer les ERREURS de synchronisation
-            commandesViewModel.getErreurSynchronisation().observe(getViewLifecycleOwner(), erreur -> {
+            // Observe pour les ERREURS - usage unique
+            erreurObserverHolder[0] = erreur -> {
                 if (erreur != null && !erreur.isEmpty()) {
-                    // Fermer le ProgressDialog
+                    // Nettoye les observers
+                    cleanupObservers.run();
+                    commandesViewModel.consommerErreur();
+
+                    // Ferme le ProgressDialog
                     if (progressDialogProduits.isShowing()) {
                         progressDialogProduits.dismiss();
                     }
@@ -158,25 +222,23 @@ public class HomeFragment extends Fragment {
                     // Convertir l'erreur technique en message convivial
                     String messageConvivial = convertirErreurEnMessageConvivial(erreur);
 
-                    // Afficher un dialogue d'erreur
+                    // Affiche un dialogue d'erreur - juste OK
                     new android.app.AlertDialog.Builder(requireContext())
                             .setTitle("❌ Erreur de synchronisation produits")
                             .setMessage(messageConvivial)
                             .setPositiveButton("OK", null)
-                            .setNegativeButton("Réessayer", (dialog, which) -> {
-                                commandesViewModel.consommerErreur();
-                                btnSyncProduits.performClick();
-                            })
                             .show();
-
-                    commandesViewModel.consommerErreur();
                 }
-            });
+            };
 
-            // Observer le SUCCÈS de la synchronisation (ne s'affiche QUE si succès)
-            commandesViewModel.getSynchronisationReussie().observe(getViewLifecycleOwner(), reussie -> {
+            // Observe pour le SUCCÈS - usage unique
+            succesObserverHolder[0] = reussie -> {
                 if (reussie != null && reussie) {
-                    // Fermer le ProgressDialog
+                    // Nettoyer les observers
+                    cleanupObservers.run();
+                    commandesViewModel.consommerSucces();
+
+                    // Ferme le ProgressDialog
                     if (progressDialogProduits.isShowing()) {
                         progressDialogProduits.dismiss();
                     }
@@ -184,17 +246,22 @@ public class HomeFragment extends Fragment {
                     btnSyncProduits.setEnabled(true);
                     btnSyncProduits.setText("Synchroniser les produits");
 
-                    // Récupérer le nombre de produits synchronisés depuis le LiveData dédié
+                    // Récupére le nombre de produits synchronisés
                     Integer nbProduits = commandesViewModel.getNombreProduitsSynchronises().getValue();
                     int nbProduitsTotal = nbProduits != null ? nbProduits : 0;
 
                     Toast.makeText(requireContext(),
                             "✅ " + nbProduitsTotal + " produit(s) synchronisé(s) avec succès !",
                             Toast.LENGTH_LONG).show();
-
-                    commandesViewModel.consommerSucces();
                 }
-            });
+            };
+
+            // Attache les observers AVANT de lancer la synchronisation
+            commandesViewModel.getErreurSynchronisation().observe(getViewLifecycleOwner(), erreurObserverHolder[0]);
+            commandesViewModel.getSynchronisationReussie().observe(getViewLifecycleOwner(), succesObserverHolder[0]);
+
+            // Lance la synchronisation
+            commandesViewModel.chargerProduits(requireContext());
         });
 
         // Navigation via les boutons
