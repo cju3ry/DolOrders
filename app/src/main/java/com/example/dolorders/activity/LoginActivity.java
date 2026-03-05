@@ -121,10 +121,16 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
 
-        // Vérification si l'utilisateur est déjà connecté
+        // Vérification si l'utilisateur est déjà connecté (clé API présente)
+        // Reconnexion automatique sans appel API pour fonctionner hors ligne
         if (securePrefs.getBoolean("is_logged_in", false)) {
-            // Valide la clé API avant de reconnecter automatiquement
-            validerSessionAvantReconnexion();
+            String apiKey = securePrefs.getString("api_key", null);
+            if (apiKey != null && !apiKey.isEmpty()) {
+                Log.d(LOGIN_ACTIVITY, "✅ Clé API présente, reconnexion automatique");
+                startActivity(new Intent(LoginActivity.this, MainActivity.class));
+                finish();
+                return;
+            }
         }
     }
 
